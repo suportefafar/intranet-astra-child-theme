@@ -1,0 +1,16 @@
+/*
+ * Theme Name: Intranet Astra Child Theme
+ * Author: Suporte FAFAR UFMG
+ * Author URI: https://github.com/suportefafar
+ * Description: Tema filho para a Intranet da Faculdade de Farmácia UFMG 
+ * Version: 1.0.0
+ * License: GNU General Public License v2 or later
+ * License URI: http://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: intranet-astra-child-theme
+ * Template: astra
+ * GitHub Theme URI: https://github.com/suportefafar/intranet-astra-child-theme
+*/
+
+.w-button {
+  width: 8rem !important;
+}
