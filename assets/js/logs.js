@@ -68,27 +68,28 @@ async function fetchDataHadler() {
     return [];
   }
 
-  const disciplinas = JSON.parse(response.data);
+  const logs = JSON.parse(response.data);
 
-  let disciplinas_tabela_arr = [];
-  for (const disciplina of disciplinas) {
-    disciplinas_tabela_arr.push([
-      disciplina["id"],
-      disciplina["category"],
-      disciplina["source"],
-      disciplina["user"],
-      disciplina["created_at"],
+  let logs_tabela_arr = [];
+  for (const log of logs.reverse()) {
+    console.log(log);
+    logs_tabela_arr.push([
+      log["id"],
+      log["category"],
+      log["source"],
+      log["user"],
+      log["created_at"],
     ]);
   }
 
-  return disciplinas_tabela_arr;
+  return logs_tabela_arr;
 }
 
 function formatterHandler(_, row) {
   const html_content = `
   <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href='/vizualizar-objeto/?id=${row.cells[0].data}'>
-      <i class="bi bi-ticket-detailed"></i>
+    <a class="btn btn-outline-secondary" href='/vizualizar-objeto/?id=${row.cells[0].data}' title='Detalhes'>
+      <i class="bi bi-info-lg"></i>
     </a>
   </div>  
       `;

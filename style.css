@@ -14,3 +14,40 @@
 .w-button {
   width: 8rem !important;
 }
+
+/*
+  Layout is devided by two: sidebar and main content.
+  Primary: main content container
+  Secondary: sidebar container
+  Content: content inside the main content container
+  START
+*/
+#primary {
+  padding-top: 1.25rem !important;
+  padding-left: 1.25rem !important;
+  margin-top: 0 !important;
+}
+
+#secondary {
+  padding-top: 1.25rem !important;
+  padding-right: 1.25rem !important;
+  margin-top: 0 !important;
+}
+
+#content {
+  padding-top: 0rem !important;
+  margin-top: 0 !important;
+}
+
+#bp-nouveau-activity-form {
+  padding-top: 0rem !important;
+  margin-top: 0 !important;
+}
+
+/**
+  END
+*/
+
+.cursor-pointer {
+  cursor: pointer;
+}

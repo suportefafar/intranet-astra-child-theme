@@ -41,7 +41,7 @@ new gridjs.Grid({
     "Turma",
     "CH",
     "Créditos",
-    "Número Vagas",
+    "Curso",
     {
       name: "Ações",
       formatter: formatterHandler,
@@ -63,7 +63,7 @@ async function fetchDataHadler() {
 
   try {
     response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/disciplina"
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/class_subject"
     );
   } catch (error) {
     console.log(error.response.data.message);
@@ -76,12 +76,12 @@ async function fetchDataHadler() {
   for (const disciplina of disciplinas) {
     disciplinas_tabela_arr.push([
       disciplina["id"],
-      disciplina["codigo"],
-      disciplina["nome"],
-      disciplina["turma"],
-      disciplina["cargaHoraria"],
-      parseInt(disciplina["cargaHoraria"]) / 15,
-      disciplina["numeroVagasDisponiveis"],
+      disciplina["code"],
+      disciplina["name_of_subject"],
+      disciplina["group"],
+      disciplina["course_load"],
+      parseInt(disciplina["course_load"]) / 15,
+      disciplina["course"],
     ]);
   }
 
@@ -90,19 +90,19 @@ async function fetchDataHadler() {
 
 function formatterHandler(_, row) {
   const html_content = `
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href='/vizualizar-objeto/?id=${row.cells[0].data}'>
-      <i class="bi bi-ticket-detailed"></i>
-    </a>
-    <a class="btn btn-outline-secondary" href='/editar-disciplina/?id=${row.cells[0].data}'>
-      <i class="bi bi-pencil"></i>
-    </a>
-    <a class="btn btn-outline-danger" href='/excluir-disciplina/?id=${row.cells[0].data}'>
-      <i class="bi bi-trash"></i>
-    </a>
-    <a class="btn btn-outline-primary" href='/reservas-por-disciplina/?id=${row.cells[0].data}'>
-      <i class="bi bi-calendar-week"></i>
-    </a>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href='/vizualizar-objeto/?id=${row.cells[0].data}' title='Detalhes'>
+        <i class="bi bi-info-lg"></i>
+      </a>
+      <a class="btn btn-outline-secondary" href='/editar-disciplina/?id=${row.cells[0].data}' title='Editar'>
+        <i class="bi bi-pencil"></i>
+      </a>
+      <a class="btn btn-outline-danger" href='/excluir-disciplina/?id=${row.cells[0].data}' title='Excluir'>
+        <i class="bi bi-trash"></i>
+      </a>
+      <a class="btn btn-outline-primary" href='/reservas-por-disciplina/?id=${row.cells[0].data}' title='Eventos'>
+        <i class="bi bi-calendar-week"></i>
+      </a>
     </div>  
       `;
 

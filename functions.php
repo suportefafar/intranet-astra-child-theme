@@ -40,14 +40,16 @@ add_action( 'wp_enqueue_scripts', 'child_enqueue_styles', 15 );
 
 require_once "import-scripts.php";
 
-//require_once "api.php";
+require_once "api.php";
 
 require_once "shortcodes.php";
 
-//require_once "logs.php";
+require_once "logs.php";
 
 
 //add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_is_place_available_for_class_event', 10, 3 );
+
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_new_event', 10, 2 );
 
 
 require_once 'class-wp-bootstrap-navwalker.php';

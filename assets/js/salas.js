@@ -62,42 +62,45 @@ async function fetchDataHadler() {
 
   try {
     response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/sala"
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/place"
     );
   } catch (error) {
     console.log(error.response.data.message);
     return [];
   }
 
-  const salas = JSON.parse(response.data);
-  let salas_tabela_arr = [];
-  for (const sala of salas) {
-    salas_tabela_arr.push([
-      sala["id"],
-      sala["numero"],
-      sala["descricao"],
-      sala["capacidade"],
-      sala["bloco"],
-      sala["andar"],
+  const submissions = JSON.parse(response.data).sort(
+    (a, b) => a.number - b.number
+  );
+
+  const table_arr = [];
+  for (const submission of submissions) {
+    table_arr.push([
+      submission["id"],
+      submission["number"],
+      submission["desc"],
+      submission["capacity"],
+      submission["block"],
+      submission["floor"],
     ]);
   }
 
-  return salas_tabela_arr;
+  return table_arr;
 }
 
 function formatterHandler(_, row) {
   const html_content = `
   <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href='/vizualizar-objeto/?id=${row.cells[0].data}'>
-      <i class="bi bi-ticket-detailed"></i>
+    <a class="btn btn-outline-secondary" href='/vizualizar-objeto/?id=${row.cells[0].data}' title='Detalhes'>
+      <i class="bi bi-info-lg"></i>
     </a>
-    <a class="btn btn-outline-secondary" href='/editar-sala/?id=${row.cells[0].data}'>
+    <a class="btn btn-outline-secondary" href='/editar-sala/?id=${row.cells[0].data}' title='Editar'>
       <i class="bi bi-pencil"></i>
     </a>
-    <a class="btn btn-outline-danger" href='/excluir-sala/?id=${row.cells[0].data}'>
+    <a class="btn btn-outline-danger" href='/excluir-sala/?id=${row.cells[0].data}' title='Excluir'>
       <i class="bi bi-trash"></i>
     </a>
-    <a class="btn btn-outline-primary" href='/reservas-por-sala/?id=${row.cells[0].data}'>
+    <a class="btn btn-outline-primary" href='/reservas/?place=${row.cells[0].data}' title='Eventos'>
       <i class="bi bi-calendar-week"></i>
     </a>
     </div>  

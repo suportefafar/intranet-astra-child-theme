@@ -20,6 +20,8 @@ add_action( 'fafar_cf7crud_after_create', 'intranet_fafar_logs_create_log_from_f
 
 add_action( 'fafar_cf7crud_after_update', 'intranet_fafar_logs_update_log_from_fafar_cf7crud', 10, 1 );
 
+add_action( 'intranet_fafar_api_after_create', 'intranet_fafar_logs_create_log_from_api', 10, 1 );
+
 
 function intranet_fafar_logs_login( $user_login, $user ) {
 
@@ -81,6 +83,12 @@ function intranet_fafar_logs_update_log_from_fafar_cf7crud( $submission_id ) {
 
 }
 
+function intranet_fafar_logs_create_log_from_api( $submission_id ) {
+
+    intranet_fafar_logs_register_log( 'CREATE API', $submission_id , 'Submission created by internal API' );
+
+}
+
 function intranet_fafar_logs_register_log( $category, $source, $desc, $user = null ) {
 
     global $wpdb;
@@ -128,22 +136,31 @@ function intranet_fafar_logs_register_log( $category, $source, $desc, $user = nu
      */
     $bytes             = random_bytes(5);
     $unique_hash       = time().bin2hex($bytes); 
-    $form_post_id      = -1;
-    $form_data_as_json = json_encode( 
+    $form_post_id      = '-1';
+    $form_data_as_json = stripslashes( json_encode( 
         array( 
             'category' => $category,
             'source' => $source,
             'desc' => $desc,
             'user' => $user,
             ) 
-    );
+    ) );
+    $id_wp_adm_user              = '1';
+    $it_role_name                = 'informatica';
+    /** 
+     * Total access to owner(adm user) and users on 'informatica' role
+     * */ 
+    $log_permissions_code_access = '770';
 
 
     $wpdb->insert( $table_name, array(
         'id'          => $unique_hash,
-        'form_id'     => $form_post_id,
-        'object_name' => 'log',
         'data'        => $form_data_as_json,
+        'object_name' => 'log',
+        'form_id'     => $form_post_id,
+        'owner'       => $id_wp_adm_user,
+        'group_owner' => $it_role_name,
+        'permissions' => $log_permissions_code_access,
     ) );
 
     return $has_register_log_correct;
