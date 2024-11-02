@@ -6,15 +6,11 @@ add_shortcode( 'intranet_fafar_sidebar_menu', 'intranet_fafar_sidebar_menu' );
 
 add_shortcode( 'intranet_fafar_logs', 'intranet_fafar_logs' );
 
-add_shortcode( 'intranet_fafar_disciplinas', 'intranet_fafar_disciplinas' );
-
 add_shortcode( 'intranet_fafar_salas', 'intranet_fafar_salas' );
 
 add_shortcode( 'intranet_fafar_importar_json', 'intranet_fafar_importar_json' );
 
 add_shortcode( 'intranet_fafar_importar_reservas', 'intranet_fafar_importar_reservas' );
-
-add_shortcode( 'intranet_fafar_vizualizar_objeto', 'intranet_fafar_vizualizar_objeto' );
 
 add_shortcode( 'intranet_fafar_reservas', 'intranet_fafar_reservas' );
 
@@ -24,18 +20,32 @@ add_shortcode( 'intranet_fafar_assistente_de_reservas', 'intranet_fafar_assisten
 
 add_shortcode( 'intranet_fafar_importar_disciplinas', 'intranet_fafar_importar_disciplinas' );
 
+add_shortcode( 'intranet_fafar_equipamentos', 'intranet_fafar_equipamentos' );
+
+add_shortcode( 'intranet_fafar_remove_object', 'intranet_fafar_remove_object' );
 
 function intranet_fafar_sidebar_profile() {
 
     $user       = wp_get_current_user();
     $avatar_url = get_avatar_url( $user->get( 'ID' ) );
-    $user_meta  = get_userdata( $user->get( 'ID' ) );
-    $main_role  = $user_meta->roles[0];
+    $role_slug  = $user->roles[0];
+
+    // Get the display name of the role
+    $role_display_name = '--';
+    if ( isset( wp_roles()->roles[ $role_slug ] ) ) {
+
+        $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
+
+    }
+
+    $has_more_then_one_role = false;
+    if( sizeof( $user->roles ) > 1 )
+        $has_more_then_one_role = true;
 
     echo '
         <div class="d-flex gap-4 mb-5">
             <a href="https://intranet.farmacia.ufmg.br/membros/' . $user->get( 'user_login' ) . '/profile/change-avatar/">
-                <img src="' . $avatar_url . '" width="64" alt="User profile avatar" />
+                <img src="' . $avatar_url . '" width="80" alt="User profile avatar" />
             </a>
 
             <div class="d-flex flex-column justify-content-center gap-1">
@@ -44,7 +54,7 @@ function intranet_fafar_sidebar_profile() {
                     $user->get( 'display_name' ) . 
                     '</a>
                 </h6>
-                <small class="p-0 m-0 text-muted">' . ucfirst( $main_role ) . '</small>
+                <small class="p-0 m-0 text-muted lh-base font-monospace">' . $role_display_name . ' ' . ( ( $has_more_then_one_role ) ? '+' : '') . '</small>
             </div>
         </div>
         ';
@@ -119,86 +129,6 @@ function intranet_fafar_logs() {
         </ul>
 
         -->
-
-        <!-- TABLES -->
-
-        <div id="table-wrapper"></div>
-
-    ';
-
-}
-
-function intranet_fafar_vizualizar_objeto() {
-
-    if( ! isset( $_GET["id"] ) ) {
-        echo '<pre> Nenhum ID informado. </pre>';
-        return;
-    }
-
-    $id = sanitize_text_field( wp_unslash( $_GET["id"] ) );
-
-    $submission = intranet_fafar_api_get_submission_by_id( $id );
-
-    echo "<pre>";
-    print_r($submission);
-    echo "</pre>";
-
-}
-
-function intranet_fafar_disciplinas() {
-
-    echo '
-    
-        <!-- HEADER BUTTONS -->
-
-        <div class="d-flex justify-content-start gap-2 mb-4">
-            <a href="/adicionar-disciplina" class="btn btn-outline-success text-decoration-none w-button">
-                <i class="bi bi-plus-lg"></i>
-                Adicionar
-            </a>
-        </div>
-
-        <!-- CHARTS -->
-
-        <!--<div class="d-flex justify-content-around mb-4">
-            <div class="card" style="width: 18rem;">intranet_fafar_importar_json
-                <canvas id="myChart1"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Mês</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart2"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Ano</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart3"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Setor</h5>
-                </div>
-            </div>
-        </div>-->
-
-        <!-- TABS -->
-
-        <!--<ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#">Active</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-            </li>
-        </ul>-->
 
         <!-- TABLES -->
 
@@ -897,5 +827,257 @@ function intranet_fafar_excluir_objeto() {
             window.history.back();
         </script>
     ';
+
+}
+
+function intranet_fafar_equipamentos() {
+
+    echo '
+    
+        <!---->
+
+        <div class="alert alert-warning d-none" role="alert" id="alert">Carregando....</div>
+
+        <!-- HEADER BUTTONS -->
+
+        <div class="d-flex justify-content-start gap-2 mb-4">
+            <a href="/adicionar-equipamento" class="btn btn-outline-success text-decoration-none w-button">
+                <i class="bi bi-plus-lg"></i>
+                Adicionar
+            </a>
+        </div>
+
+        <!-- CHARTS -->
+
+        <!--<div class="d-flex justify-content-around mb-4">
+            <div class="card" style="width: 18rem;">intranet_fafar_importar_json
+                <canvas id="myChart1"></canvas>
+                <div class="card-body">
+                    <h5 class="card-title">Chart vs Mês</h5>
+                </div>
+            </div>
+
+            <div class="card" style="width: 18rem;">
+                <canvas id="myChart2"></canvas>
+                <div class="card-body">
+                    <h5 class="card-title">Chart vs Ano</h5>
+                </div>
+            </div>
+
+            <div class="card" style="width: 18rem;">
+                <canvas id="myChart3"></canvas>
+                <div class="card-body">
+                    <h5 class="card-title">Chart vs Setor</h5>
+                </div>
+            </div>
+        </div>-->
+
+        <!-- TABS -->
+
+        <ul class="nav nav-tabs" id="ul_place_tabs">
+            
+        </ul>
+        
+        <!-- CALENDER -->
+
+         <div id="calendar"></div>
+
+         <br />
+
+        <!-- TABLES -->
+
+        <h4>Lista</h4>
+
+        <div id="table-wrapper"></div>
+
+        <!-- MODALS -->
+
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+            Launch demo modal
+        </button>
+
+        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title m-0">Detalhes</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table table-borderless border-0">
+                            <tbody>
+                                <tr>
+                                    <td class="text-body">Título</td>
+                                    <td id="modal_event_title" class="text-body-emphasis">--</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-body">Início</td>
+                                    <td id="modal_event_start" class="text-body-emphasis">--</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-body">Fim</td>
+                                    <td id="modal_event_end" class="text-body-emphasis">--</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-body">Dono</td>
+                                    <td id="modal_event_owner" class="text-body-emphasis">--</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <a class="btn btn-light text-decoration-none" href="/vizualizar-objeto/" target="_blank">
+                            <i class="bi bi-info-lg"></i>
+                            Mais
+                        </a>
+                        <button type="button" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i>
+                            Editar
+                        </button>
+                        <button type="button" class="btn btn-danger">
+                            <i class="bi bi-trash"></i>
+                            Excluir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    ';
+}
+
+function intranet_fafar_remove_object() {
+
+    if ( is_admin() ) return;
+
+    if ( ! isset( $_GET['id'] ) ) {
+
+        echo '<script>
+                alert("Nenhum ID informado!");
+                window.history.back();
+            </script>';
+
+        return;
+
+    }
+
+    if ( ! isset( $_GET['confirmed'] ) ) {
+
+        echo '<script>
+                const r = confirm("\nExcluir objeto?\n\nNão poderá ser desfeito!\n");
+
+                if(r){
+                    window.location.href = "./?id=' . $_GET['id'] . '&confirmed=1";
+                } else {
+                    window.history.back();
+                }
+            </script>';
+
+        return;
+
+    }
+
+    global $wpdb;
+
+    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
+
+    $id = sanitize_text_field( $_GET['id'] );
+
+    $res = $wpdb->delete(
+        $table_name,
+        array(
+            'id' => $id,
+        )
+    );
+
+    if ( ! $res ) {
+
+        echo '
+            <script>
+                alert("No object found!");
+                window.history.back();
+            </script>
+        ';
+
+        return;
+
+    }
+
+    echo '
+        <script> 
+            window.history.back();
+        </script>
+    ';
+
+}
+
+/**
+ * 
+ * 
+ * 
+ * Shortcodes that returns html for forms, used on 
+ * Contact Form 7 - Dynamic Text Extension plugin
+*/
+
+add_shortcode( 'intranet_fafar_get_users_as_select_options', 'intranet_fafar_get_users_as_select_options' );
+
+add_shortcode( 'intranet_fafar_get_user_slug_role', 'intranet_fafar_get_user_slug_role' );
+
+function intranet_fafar_get_users_as_select_options_old() {
+
+    $users = get_users( 
+            array ( 
+                    'role__not_in' => 'Administrator', 
+                    'orderby' => 'display_name', 
+                    'order' => 'ASC' 
+                ) 
+            );
+
+    $options = '<option value=""></option>';
+    foreach ( $users as $user ) {
+
+        $options .= '<option value="' . $user->data->ID . '">';
+        $options .=     $user->data->display_name;
+        $options .= '</option>';
+
+    }
+
+    return $options;
+
+}
+
+function intranet_fafar_get_users_as_select_options() {
+
+    $users = get_users( 
+            array ( 
+                    'role__not_in' => 'Administrator', 
+                    'orderby' => 'display_name', 
+                    'order' => 'ASC' 
+                ) 
+            );
+
+    $options = array();
+
+    foreach ( $users as $user ) {
+        $options[esc_attr( $user->ID )] = esc_html( $user->display_name );
+    }
+    
+    return json_encode( $options );
+
+}
+
+function intranet_fafar_get_user_slug_role() {
+
+    $user       = wp_get_current_user();
+    $role_slug  = $user->roles[0];
+    $role_slug  = '';
+
+    if ( $user->roles[0] ) {
+
+        $role_slug = $user->roles[0];
+
+    }
+
+    return $role_slug;
 
 }

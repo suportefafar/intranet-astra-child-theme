@@ -16,12 +16,12 @@
 }
 
 /*
-  Layout is devided by two: sidebar and main content.
-  Primary: main content container
-  Secondary: sidebar container
-  Content: content inside the main content container
-  START
-*/
+ * Layout is devided by two: sidebar and main content.
+ * Primary: main content container
+ * Secondary: sidebar container
+ * Content: content inside the main content container
+ * START
+ */
 #primary {
   padding-top: 1.25rem !important;
   padding-left: 1.25rem !important;
@@ -44,10 +44,62 @@
   margin-top: 0 !important;
 }
 
-/**
-  END
-*/
-
+/*
+ * Simple class for cursor pointer
+ */
 .cursor-pointer {
   cursor: pointer;
+}
+
+/*
+ * Bootstrap alert additional style 
+ * START
+ */
+.alert {
+  position: fixed !important;
+  width: max-content;
+  left: 0;
+  right: 0;
+  bottom: 2rem;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2000;
+}
+
+.alert-old {
+  position: fixed !important;
+  width: max-content;
+  left: 0;
+  right: 0;
+  bottom: 2rem;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2000;
+
+  visibility: hidden;
+  transform: translateY(1.85rem);
+  opacity: 0;
+
+  display: flex;
+  gap: 0.5rem;
+}
+
+.alert-show {
+  animation: fade-in 3s linear;
+}
+
+.alert-show-long {
+  animation: fade-in 7s linear;
+}
+
+@keyframes fade-in {
+  5% {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  95% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

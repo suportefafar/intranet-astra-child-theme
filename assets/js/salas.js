@@ -89,22 +89,20 @@ async function fetchDataHadler() {
 }
 
 function formatterHandler(_, row) {
-  const html_content = `
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href='/vizualizar-objeto/?id=${row.cells[0].data}' title='Detalhes'>
-      <i class="bi bi-info-lg"></i>
-    </a>
-    <a class="btn btn-outline-secondary" href='/editar-sala/?id=${row.cells[0].data}' title='Editar'>
-      <i class="bi bi-pencil"></i>
-    </a>
-    <a class="btn btn-outline-danger" href='/excluir-sala/?id=${row.cells[0].data}' title='Excluir'>
-      <i class="bi bi-trash"></i>
-    </a>
-    <a class="btn btn-outline-primary" href='/reservas/?place=${row.cells[0].data}' title='Eventos'>
-      <i class="bi bi-calendar-week"></i>
-    </a>
-    </div>  
-      `;
+  const html_content = `<div class="d-flex gap-2">
+                          <a class="btn btn-outline-secondary" href='/vizualizar-objeto/?id=${row.cells[0].data}' title='Detalhes'>
+                            <i class="bi bi-info-lg"></i>
+                          </a>
+                          <a class="btn btn-outline-secondary" href='/editar-sala/?id=${row.cells[0].data}' title='Editar'>
+                            <i class="bi bi-pencil"></i>
+                          </a>
+                          <a class="btn btn-outline-danger" href='/excluir-sala/?id=${row.cells[0].data}' title='Excluir'>
+                            <i class="bi bi-trash"></i>
+                          </a>
+                          <a class="btn btn-outline-primary" href='/reservas/?place=${row.cells[0].data}' title='Eventos'>
+                            <i class="bi bi-calendar-week"></i>
+                          </a>
+                        </div>`;
 
   return html(html_content);
 }

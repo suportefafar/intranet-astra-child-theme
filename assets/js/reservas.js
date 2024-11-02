@@ -22,7 +22,7 @@ async function loadUI(place_id = false) {
 
   const submissions = await getEventsByPlaceID(place_id);
 
-  renderCalendar(submissions);
+  //renderCalendar(submissions);
   updateTableData(submissions);
 }
 
@@ -93,7 +93,6 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
   initialView: "timeGridWeek",
   views: {
     week: {
-      // name of view
       titleFormat: {
         month: "2-digit",
         day: "2-digit",
@@ -104,7 +103,13 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
   },
   hiddenDays: [0],
   eventClick: viewEvent,
-  events: EVENTS,
+  events: [
+    {
+      title: "my recurring STRING event",
+      rrule:
+        "DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201;BYDAY=MO,FR",
+    },
+  ],
 });
 
 calendar.render();
@@ -328,15 +333,4 @@ function getTimestampAsDateJsPattern(timestamp) {
   const length_diff = current_timestamp_length - in_timestamp_length;
 
   return parseInt(timestamp) * Math.pow(10, length_diff);
-}
-
-//ALERT RENDER
-function showAlert(msg = "Carregando....") {
-  document.querySelector("div#alert").innerHTML = msg;
-
-  document.querySelector("div#alert").classList.remove("d-none");
-}
-
-function hideAlert() {
-  document.querySelector("div#alert").classList.add("d-none");
 }

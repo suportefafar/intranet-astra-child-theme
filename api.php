@@ -25,6 +25,23 @@ function intranet_fafar_api_register_submission_routes() {
         ),
     ) );
 
+
+    // READABLE
+
+    register_rest_route( 'intranet/v1', '/submissions/equipaments', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_equipaments_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/submissions/place/available', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_places_available',
+    ) );
+
     register_rest_route( 'intranet/v1', '/submissions/(?P<id>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
@@ -39,13 +56,6 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_user_by_id_handler',
     ) );
 
-    register_rest_route( 'intranet/v1', '/events/(?P<id>[\w]+)', array(
-        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
-        'methods'  => WP_REST_Server::READABLE,
-        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_event_by_id_handler',
-    ) );
-
     register_rest_route( 'intranet/v1', '/submissions/object/(?P<object>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
@@ -53,54 +63,96 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_submissions_by_object_name_handler',
     ) );
 
-    register_rest_route( 'intranet/v1', '/submissions/place/available', array(
+    register_rest_route( 'intranet/v1', '/submissions/(?P<place>[\w]+)/reservations', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_places_available',
+        'callback' => 'intranet_fafar_api_get_place_reservations',
     ) );
 
-    register_rest_route( 'intranet/v1', '/submissions/(?P<place>[\w]+)/events', array(
+    register_rest_route( 'intranet/v1', '/submissions/reservations/(?P<id>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_place_events',
+        'callback' => 'intranet_fafar_api_get_reservation_by_id_handler',
     ) );
 
+
+    // DELETABLE
+
+
+    register_rest_route( 'intranet/v1', '/submissions/(?P<id>[\w]+)', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::DELETABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_delete_submission_by_id_handler',
+    ) );
 
 }
 
-function intranet_fafar_api_get_place_events( $request ) {
+function intranet_fafar_api_delete_submission_by_id_handler( $request ) {
+
+    $id = (string) $request['id'];
+
+    $submission = intranet_fafar_api_delete_submission_by_id( $id );
+
+    if ( isset( $submission['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( json_encode( $submission ) );
+
+}
+
+function intranet_fafar_api_delete_submission_by_id( $id ) {
+
+    if( ! $id ) 
+        return array( 'error_msg' => '[0101]No id informed.', 'http_status' => 400 );
+
+    $submission = intranet_fafar_api_get_submission_by_id( $id );
+
+    if ( isset( $submission['error_msg'] ) )
+        return $submission;
+
+    $submission = intranet_fafar_api_delete( $submission, $delete_permanently = false, $check_permissions = true );
+
+    return $submission;
+}
+
+
+function intranet_fafar_api_get_place_reservations( $request ) {
 
     $place_id = (string) $request['place'];
 
-    $submissions = intranet_fafar_api_get_events_by_place( $place_id );
+    $submissions = intranet_fafar_api_get_reservations_by_place( $place_id );
 
-    if ( isset( $submissions['msg_error'] ) ) {
+    if ( isset( $submissions['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['msg_error'], 'intranet-fafar-api' ), $submissions['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
 
     }
 
     return rest_ensure_response( 
             json_encode( 
-                intranet_fafar_api_bff_events_prepare( 
+                intranet_fafar_api_bff_reservations_prepare( 
                     $submissions,
-                    array( 'id', 'start', 'end', 'desc', 'discipline', 'owner', 'applicant', 'event_group_id', 'place' )
+                    array( 'id', 'start', 'end', 'desc', 'discipline', 'owner', 'applicant', 'reservation_group_id', 'place' )
                 ) 
             ) 
         );
 
 }
 
-function intranet_fafar_api_bff_events_prepare( $events, $attr_wl ) {
+function intranet_fafar_api_bff_reservations_prepare( $reservations, $attr_wl ) {
 
 
     $arr = array();
-    foreach ( $events as $event ) {
+    foreach ( $reservations as $reservation ) {
 
         $item_arr = array();
-        foreach ( $event as $key => $value ) {
+        foreach ( $reservation as $key => $value ) {
 
             if ( ! in_array( $key, $attr_wl ) ) continue;
             
@@ -129,8 +181,33 @@ function intranet_fafar_api_bff_events_prepare( $events, $attr_wl ) {
 
 }
 
+
+function intranet_fafar_api_create_new_loan( $form_data, $contact_form ) {
+    
+    if( ! isset( $form_data['object_name'] ) ) return $form_data;
+
+    if ( $form_data['object_name'] !== 'equipament_loan' ) return $form_data;
+
+    $equipament = intranet_fafar_api_get_submission_by_id( $form_data['data']['equipament'] );
+
+    if ( ! $equipament )
+        return array( 'error_msg' => '[001] Equipamento não existe!' );
+
+    if ( $equipament['on_loan'] )
+        return array( 'error_msg' => '[002] Equipamento está emprestado!' );
+
+    $equipament['on_loan'] = '1';
+
+    $res = intranet_fafar_api_update( $equipament['id'], $equipament );
+
+    if ( isset( $equipament['error_msg'] ) )
+        return array( 'error_msg' => $equipament['error_msg'] );
+
+    return $form_data;
+}
+
 /**
- * This function listen a creation of a event and checks if 
+ * This function listen a creation of a reservation and checks if 
  * is available.
  * Its uses the '' filter hook of fafar-cf7crud.
  * Returns null to abort the creating
@@ -149,9 +226,9 @@ function intranet_fafar_api_bff_events_prepare( $events, $attr_wl ) {
  *   'applicant' => $applicant,
  *   'place' => $place,
  *   'object_sub_type' => $object_sub_type,
- *   'event_day' => $event_day,
+ *   'reservation_day' => $reservation_day,
  *   'weekday' => $weekday,
- *   'event_group_id' => $event_group_id,
+ *   'reservation_group_id' => $reservation_group_id,
  *   'post_on_fafar_website' => $post_on_fafar_website,
  *  )
  * 
@@ -160,94 +237,125 @@ function intranet_fafar_api_bff_events_prepare( $events, $attr_wl ) {
 */
 function intranet_fafar_api_create_new_event( $form_data, $contact_form ) {
 
-    
+    // 0 - Verificar se se trata se uma reserva
+    if( ! isset( $form_data['object_name'] ) ) return $form_data;
+
+    if ( $form_data['object_name'] !== 'reservation' ) return $form_data;
 
     $form_data_as_arr = intranet_fafar_api_get_submission_as_arr( $form_data );
 
-    // 0 - Verificar se se trata se um evento
-    if( ! isset( $form_data['object_name'] ) ) return $form_data;
-
-    if ( $form_data['object_name'] !== "event" ) return $form_data;
+    $form_data_as_arr = intranet_fafar_api_san_arr( $form_data_as_arr );
 
     // 1 - Verificar se os dados vieram corretos, conforme cada tipo de reserva
     // 1.1 - Verificação geral
 
-    if ( ! isset( $form_data_as_arr['start_time'] ) ||
-         ! isset( $form_data_as_arr['end_time'] ) ||
+    if ( ! isset( $form_data_as_arr['start'] ) ||
+         ! isset( $form_data_as_arr['end'] ) ||
          ! isset( $form_data_as_arr['place'] ) || 
          ! isset( $form_data_as_arr['frequency'] ) )
-        return array( "error_msg" => "[001] Campo(s) inválido(s) de Data, Hora, Lugar e/ou Tipo do Objeto!" );
+        return array( 'error_msg' => '[001] Campo(s) inválido(s) de Data, Hora, Lugar e/ou Tipo do Objeto!' );
 
-    if ( intranet_fafar_api_get_timestamp( $form_data_as_arr['start_time']) > 
-         intranet_fafar_api_get_timestamp( $form_data_as_arr['end_time'] ) )
-        return array( "error_msg" => "[002] Hora Início não pode ser depois de Hora Fim!" );
+    if ( intranet_fafar_api_get_timestamp( $form_data_as_arr['start']) > 
+         intranet_fafar_api_get_timestamp( $form_data_as_arr['end'] ) )
+        return array( 'error_msg' => '[002] Hora Início não pode ser depois de Hora Fim!' );
 
-    if ( intranet_fafar_api_get_timestamp( $form_data_as_arr['start_time'] ) === 
-         intranet_fafar_api_get_timestamp( $form_data_as_arr['end_time'] ) )
-        return array( "error_msg" => "[003] Hora Início não pode ser igual a Hora Fim!" );
+    if ( intranet_fafar_api_get_timestamp( $form_data_as_arr['start'] ) === 
+         intranet_fafar_api_get_timestamp( $form_data_as_arr['end'] ) )
+        return array( 'error_msg' => '[003] Hora Início não pode ser igual a Hora Fim!' );
 
+    $new_reservations = array();
 
     $frequency = ( is_array( $form_data_as_arr['frequency'] ) ? 
         $form_data_as_arr['frequency'][0] : 
         $form_data_as_arr['frequency'] );
-    $frequency = intranet_fafar_api_san( $frequency );
-    // 1.2.2 Once
-    if ( $frequency == 'once' ) {
+    // 1.2.1 Once
+    if ( $frequency === 'once' ) {
 
-        if ( ! isset( $form_data_as_arr['event_day'] ) )
-            return array( "error_msg" => "[006] Data do evento não informado!" );
-        
+        $new_reservations[] = array( 'start' => $start, 'end' => $end );
+
+        // compara eventos gerados pelo rrule com os que já existem no BD 
+       
     } 
-    // 1.2.2 Daily, Weekly, etc...
+    // 1.2.2 Weekly
+    else if ( $frequency === 'weekly' ) {
+
+        if ( ! isset( $form_data_as_arr['weekday'] ) )
+            return array( 'error_msg' => '[004] Início, Fim do período e/ou Dia da semana não informado!' );
+
+        if ( ! is_array( $form_data_as_arr['weekday'] ) )
+            return array( 'error_msg' => '[005] Dia de semana em formato desconhecido' );
+
+        $by_days = implode( ',', $form_data_as_arr['weekday'] );
+
+        // gera rrule
+        $rrule = 'DTSTART:' . $start . '\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL='. $end . ';BYDAY=' . $by_days;
+
+        // gera eventos por rrule
+        $new_reservations = intranet_fafar_api_generate_events_from_rrule( $rrule );
+
+        // compara eventos gerados pelo rrule com os que já existem no BD
+
+        // dentro do comparador
+            // se o evento tiver rrule
+                // gera eventos por rrule
+                // compara eventos gerados pelo rrule com os novos
+
+    }
+    // 1.2.x Desconhecido
     else {
 
-        if ( ! isset( $form_data_as_arr['start_period'] ) || 
-             ! isset( $form_data_as_arr['end_period'] ) || 
-             ! isset( $form_data_as_arr['weekday'] ) )
-            return array( "error_msg" => "[004] Início, Fim do período e/ou Dia da semana não informado!" );
+        return array( 'error_msg' => '[100] Frequência desconhecida!' );
 
-        if ( intranet_fafar_api_get_timestamp( $form_data_as_arr['start_period'] ) > 
-             intranet_fafar_api_get_timestamp( $form_data_as_arr['end_period'] ) )
-            return array( "error_msg" => "[005] Hora Início não pode ser depois de Hora Fim!" );
+    }
 
-    } 
+    // 'DTSTART:20241021T133000\nRRULE:TZID=America/Sao_Paulo;FREQ=WEEKLY;INTERVAL=1;UNTIL=20241022T183000'
+
+    // $rruleString = 'FREQ=WEEKLY;COUNT=5;BYDAY=MO,WE,FR;UNTIL=2024-12-31T23:59:59';
+    // $startDate = '2024-10-01 09:00:00';
+    
+    // $events = generateEventsFromRRule($rruleString, $startDate);
+    
+    // echo 'Generated events:\n';
+    // foreach ($events as $event) {
+    //     echo $event . '\n';
+    // }
 
     // 2 - 'Gera' as reserva(s)
-    $new_events = intranet_fafar_api_generate_events( $form_data_as_arr );
+    $new_reservations = intranet_fafar_api_generate_reservations( $form_data_as_arr );
 
-    if ( empty( $new_events ) )
-        return array( "error_msg" => "[007] Não foi possível gerar eventos!" );
+    if ( empty( $new_reservations ) )
+        return array( 'error_msg' => '[007] Não foi possível gerar reservationos!' );
 
     // 3 - Verificar se todos as reservas podem ser feitas e não colidem com outras
     $place = ( is_array( $form_data_as_arr['place'] ) ? $form_data_as_arr['place'][0] : $form_data_as_arr['place'] );
     $place_id = intranet_fafar_api_san( $place );
-    $new_events = intranet_fafar_api_is_place_available_for_class_event( $new_events, $place_id );
+    $new_reservations = intranet_fafar_api_is_place_available_for_class_reservation( $new_reservations, $place_id );
     
     //
 
-    if ( isset( $new_events['error_msg'] ) )
-        return $new_events;
+    if ( isset( $new_reservations['error_msg'] ) )
+        return $new_reservations;
 
     // 4 - Se todas PODEM ser feitas, então faça.
     $form_post_id = $contact_form->id();
 
-    // 4.1 - Mas antes, se for multiplos eventos, preenche o 'event_group_id'
-    $event_group_id = '';
-    if ( sizeof( $new_events ) > 1 ) {
+    // 4.1 - Mas antes, se for multiplos reservationos, preenche o 'reservation_group_id'
+    $reservation_group_id = '';
+    if ( sizeof( $new_reservations ) > 1 ) {
 
         $bytes          = random_bytes(5);
         $unique_hash    = time().bin2hex($bytes); 
-        $event_group_id = $unique_hash; 
+        $reservation_group_id = $unique_hash; 
 
     }
     
-    foreach ( $new_events as $new_event ) {
+    foreach ( $new_reservations as $new_reservation ) {
 
         $form_data_as_json                   = json_decode( $form_data['data'], true );
         
-        $form_data_as_json['event_group_id'] = $event_group_id;
-        $form_data_as_json['start']          = $new_event['start'];
-        $form_data_as_json['end']            = $new_event['end'];
+        $form_data_as_json['reservation_group_id'] = $reservation_group_id;
+        $form_data_as_json['start']          = $new_reservation['start'];
+        $form_data_as_json['end']            = $new_reservation['end'];
         $form_data['id']                     = false;
 
         $form_data['data']                   = json_encode( $form_data_as_json );
@@ -256,11 +364,112 @@ function intranet_fafar_api_create_new_event( $form_data, $contact_form ) {
   
     }
 
-    return array( "prevent_submit" => true );
+    return array( 'prreservation_submit' => true );
 
 }
 
-function intranet_fafar_api_generate_events( $data ) {
+/**
+ * 
+ * @param String $rruleString
+ * @return Array
+ * 
+ * Param example:
+ * 'DTSTART:20241001T133000\nRRULE:TZID=America/Sao_Paulo;FREQ=WEEKLY;INTERVAL=1;UNTIL=20241031T183000;BYDAY=MO,WE'
+ * 
+ * Return example:
+ *   Array
+ *   (
+ *       [0] => Array
+ *           (
+ *               [start] => 2024-10-01 13:30:00
+ *               [end] => 2024-10-31 18:30:00
+ *           )
+ *
+ *       [1] => Array
+ *           (
+ *               [start] => 2024-10-08 13:30:00
+ *               [end] => 2024-10-31 18:30:00
+ *           )
+ * 
+*/
+function intranet_fafar_api_generate_events_from_rrule( $rruleString ) {
+    $events = [];
+    
+    $lines = explode( '\n', $rruleString );
+    
+    if ( sizeof( $lines ) < 2 )
+        return 'RRule bad formatted';
+        
+    $dtstart_part = $lines[0];
+    $rrule_part = explode( ':', $lines[1] )[1];
+
+    // Parse the RRULE string into an array
+    $rules = [];
+    $rruleParts = explode(';', $rrule_part);
+    foreach ($rruleParts as $rule) {
+        list($key, $value) = explode('=', $rule);
+        $rules[$key] = $value;
+    }
+    
+    $rules['DTSTART'] = explode( ':', $dtstart_part )[1];
+
+    $startDateTime = new DateTime($rules['DTSTART']);
+    
+    // Determine the frequency of recurrence
+    $frequency = isset($rules['FREQ']) ? $rules['FREQ'] : null;
+    $count = isset($rules['COUNT']) ? (int)$rules['COUNT'] : null;
+    $interval = isset($rules['INTERVAL']) ? (int)$rules['INTERVAL'] : 1;
+    $byday = isset($rules['BYDAY']) ? explode(',', $rules['BYDAY']) : [];
+    $until = isset($rules['UNTIL']) ? new DateTime($rules['UNTIL']) : null;
+
+    // Event generation loop
+    $i = 0;
+    while (true) {
+        // Stop if UNTIL is defined and we pass it
+        if ($until && $startDateTime > $until) {
+            break;
+        }
+
+        // Stop if COUNT is defined and we've generated enough events
+        if ($count && $i >= $count) {
+            break;
+        }
+
+        // Add the current event date to the array
+        $events[] = $startDateTime->format('Y-m-d H:i:s');
+        $i++;
+
+        // Generate the next occurrence based on frequency
+        switch ($frequency) {
+            case 'DAILY':
+                $startDateTime->modify("+$interval day");
+                break;
+            case 'WEEKLY':
+                if (!empty($byday)) {
+                    // Advance to the next day in BYDAY
+                    foreach ($byday as $day) {
+                        $currentDay = strtoupper($startDateTime->format('D'));
+                        if ($currentDay === substr($day, 0, 2)) {
+                            $startDateTime->modify("+$interval week");
+                            break;
+                        }
+                    }
+                } else {
+                    $startDateTime->modify("+$interval week");
+                }
+                break;
+            case 'MONTHLY':
+                $startDateTime->modify("+$interval month");
+                break;
+            default:
+                throw new Exception("Unsupported frequency: $frequency");
+        }
+    }
+
+    return $events;
+}
+
+function intranet_fafar_api_generate_reservations( $data ) {
 
     if ( ! $data ) return array();
     if ( ! isset( $data['frequency'] ) ) return array();
@@ -270,10 +479,10 @@ function intranet_fafar_api_generate_events( $data ) {
     switch( $frequency ) {
 
         case 'once':
-            return intranet_fafar_api_generate_single_event( $data['event_day'], $data['start_time'], $data['end_time'] );
+            return intranet_fafar_api_generate_single_reservation( $data['reservation_day'], $data['start_time'], $data['end_time'] );
         
         case 'weekly':
-            return intranet_fafar_api_generate_events_weekly( 
+            return intranet_fafar_api_generate_reservations_weekly( 
                 $data['start_period'], 
                 $data['end_period'], 
                 $data['start_time'], 
@@ -288,19 +497,19 @@ function intranet_fafar_api_generate_events( $data ) {
     
 }
 
-function intranet_fafar_api_generate_single_event( $event_day, $start_time, $end_time ) {
+function intranet_fafar_api_generate_single_reservation( $reservation_day, $start_time, $end_time ) {
 
-    $event_day  = intranet_fafar_api_san( $event_day );
+    $reservation_day  = intranet_fafar_api_san( $reservation_day );
     $start_time = intranet_fafar_api_san( $start_time );
     $end_time   = intranet_fafar_api_san( $end_time );
 
-    $start = intranet_fafar_api_get_timestamp( $event_day . " " . $start_time );
-    $end = intranet_fafar_api_get_timestamp( $event_day . " " . $end_time );
+    $start = intranet_fafar_api_get_timestamp( $reservation_day . " " . $start_time );
+    $end = intranet_fafar_api_get_timestamp( $reservation_day . " " . $end_time );
 
     return array( 0 => array( 'start' => $start, 'end' => $end ) );
 }
 
-function intranet_fafar_api_generate_events_weekly( $start_period, $end_period, $start_hours, $end_hours, $weekday ) {
+function intranet_fafar_api_generate_reservations_weekly( $start_period, $end_period, $start_hours, $end_hours, $weekday ) {
 
     $weekday           = ( is_array( $weekday ) ? $weekday[0] : $weekday );
 
@@ -315,46 +524,46 @@ function intranet_fafar_api_generate_events_weekly( $start_period, $end_period, 
     $end_period_date   = new DateTime( $end_period, $timezone );
     $current_date      = $start_period_date;
 
-    $events            = array();
+    $reservations            = array();
     
     while ( $current_date->getTimestamp() <= $end_period_date->getTimestamp() ) {
     
         // Sunday: 0, Monday: 1 ...
         if ( date( "w", $current_date->getTimestamp() ) == $weekday ) {
             
-            $start = intranet_get_event_timestamp( $current_date, $start_hours );
-            $end   = intranet_get_event_timestamp( $current_date, $end_hours );
+            $start = intranet_get_reservation_timestamp( $current_date, $start_hours );
+            $end   = intranet_get_reservation_timestamp( $current_date, $end_hours );
     
-            array_push( $events, array( 'start' => $start, 'end' => $end ) );
+            array_push( $reservations, array( 'start' => $start, 'end' => $end ) );
     
         }
     
         $current_date->modify( '+1 day' );
     }
         
-    return $events;
+    return $reservations;
     
 }
 
-function intranet_fafar_api_is_place_available_for_class_event( $new_events, $place_id ) {
+function intranet_fafar_api_is_place_available_for_class_reservation( $new_reservations, $place_id ) {
   
-    $events_saved = intranet_fafar_api_get_events_by_place( $place_id );
+    $reservations_saved = intranet_fafar_api_get_reservations_by_place( $place_id );
     
-    foreach ( $new_events as $new_event ) {
-        foreach ( $events_saved as $event_saved ) {
+    foreach ( $new_reservations as $new_reservation ) {
+        foreach ( $reservations_saved as $reservation_saved ) {
     
-          if ( intranet_fafar_api_does_events_overlaps( $new_event, $event_saved ) )
+          if ( intranet_fafar_api_does_reservations_overlaps( $new_reservation, $reservation_saved ) )
             return array( "error_msg" => "[005] Horário/Data indisponível!" );
     
         }
     }
   
-    return $new_events;
+    return $new_reservations;
 }
 
-function intranet_fafar_api_get_events_by_place( $place ) {
+function intranet_fafar_api_get_reservations_by_place( $place ) {
     
-    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'event' AND JSON_CONTAINS(data, '[\"" . $place . "\"]', '$.place')";
+    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'reservation' AND JSON_CONTAINS(data, '[\"" . $place . "\"]', '$.place')";
     
     $submissions = intranet_fafar_api_read( $query );
 
@@ -362,37 +571,37 @@ function intranet_fafar_api_get_events_by_place( $place ) {
 
 }
 
-function intranet_fafar_api_does_events_overlaps( $event_a, $event_b ) {
+function intranet_fafar_api_does_reservations_overlaps( $reservation_a, $reservation_b ) {
     
   // | ((al/2)+as) - ((bl/2)+bs) | >= (al + bl) / 2 => if true, not overlaped
   // al = length a; as = start a ...
     
-  $event_a_length_center =
-    intranet_fafar_api_get_event_length_and_center( $event_a );
-  $event_b_length_center =
-    intranet_fafar_api_get_event_length_and_center( $event_b );
+  $reservation_a_length_center =
+    intranet_fafar_api_get_reservation_length_and_center( $reservation_a );
+  $reservation_b_length_center =
+    intranet_fafar_api_get_reservation_length_and_center( $reservation_b );
     
-  $distance_between_centers = abs( $event_a_length_center["center"] - 
-                                    $event_b_length_center["center"] );
+  $distance_between_centers = abs( $reservation_a_length_center["center"] - 
+                                    $reservation_b_length_center["center"] );
     
-  $events_length_sums =
-    ($event_a_length_center["length"] + $event_b_length_center["length"]) / 2;
+  $reservations_length_sums =
+    ($reservation_a_length_center["length"] + $reservation_b_length_center["length"]) / 2;
     
-  if ($distance_between_centers >= $events_length_sums) 
+  if ($distance_between_centers >= $reservations_length_sums) 
     return false;
         
   return true;
 }
 
-function intranet_fafar_api_get_event_length_and_center( $event ) {
-    $length = (int) $event["end"] - (int) $event["start"];
+function intranet_fafar_api_get_reservation_length_and_center( $reservation ) {
+    $length = (int) $reservation["end"] - (int) $reservation["start"];
 
-    $center = $length / 2 + (int) $event["start"];
+    $center = $length / 2 + (int) $reservation["start"];
 
     return array( "length" => $length, "center" => $center );
 }
 
-function intranet_get_event_timestamp( $date_obj, $time ) {
+function intranet_get_reservation_timestamp( $date_obj, $time ) {
 
     $d = new DateTime( $date_obj->format( "Y-m-d" ), $date_obj->getTimezone() );
 
@@ -428,9 +637,9 @@ function intranet_fafar_api_get_submission_by_id_handler( $request ) {
 
     $submission = intranet_fafar_api_get_submission_by_id( $id );
 
-    if ( isset( $submission['msg_error'] ) ) {
+    if ( isset( $submission['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submission['msg_error'], 'intranet-fafar-api' ), $submission['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), $submission['http_status'] );
 
     }
 
@@ -438,7 +647,7 @@ function intranet_fafar_api_get_submission_by_id_handler( $request ) {
 
 }
 
-function intranet_fafar_api_get_submission_by_id( $id ) {
+function intranet_fafar_api_get_submission_by_id( $id, $check_permissions = true ) {
 
     global $wpdb;
 
@@ -446,7 +655,7 @@ function intranet_fafar_api_get_submission_by_id( $id ) {
 
     if( ! $id ) {
 
-        return array( 'msg_error' => '[0101]No "id" found.', 'http_status' => 400 );
+        return array( 'error_msg' => '[0101]No "id" found.', 'http_status' => 400 );
 
     }
     
@@ -458,7 +667,7 @@ function intranet_fafar_api_get_submission_by_id( $id ) {
 
     if( ! $submissions || count( $submissions ) == 0 ) {
 
-        return array( 'msg_error' => '[0102]No submission found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
+        return array( 'error_msg' => '[0102]No submission found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
 
     }
 
@@ -470,7 +679,7 @@ function intranet_fafar_api_get_submission_by_id( $id ) {
             '[0102]Submission "id" duplicate:' . ( $id ?? 'UNKNOW_ID')
         );
 
-        return array( 'msg_error' => '[0103]Submission "' . ( $id ?? 'UNKNOW_ID') . '" with duplicated "id"' , 'http_status' => 100 );
+        return array( 'error_msg' => '[0103]Submission "' . ( $id ?? 'UNKNOW_ID') . '" with duplicated "id"' , 'http_status' => 100 );
 
     }
 
@@ -478,11 +687,29 @@ function intranet_fafar_api_get_submission_by_id( $id ) {
 
     // Check if 'is active'
     if( $submission['is_active'] != 1 )
-        return array( 'msg_error' => '[0104]Submission "' . ( $id ?? 'UNKNOW_ID') . '" deactivated/deleted' , 'http_status' => 400 );
+        return array( 'error_msg' => '[0104]Submission "' . ( $id ?? 'UNKNOW_ID') . '" deactivated/deleted' , 'http_status' => 400 );
 
     // Check if is allowed to read
-    if( ! intranet_fafar_api_check_read_permission( $submission ) )
-        return array( 'msg_error' => '[0105]Permission denied for submission "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
+    if( $check_permissions && 
+        ! intranet_fafar_api_check_read_permission( $submission ) )
+        return array( 'error_msg' => '[0105]Permission denied for submission "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
+
+    /*
+     * Checks for read permission.
+     * If doesn't, set a 'prevent_write' prop to true
+     */
+    if( $check_permissions &&
+        ! intranet_fafar_api_check_write_permission( $submission ) )
+        $submission['prevent_write'] = true;
+
+    /*
+     * Checks for read permission.
+     * If doesn't, set a 'prevent_exec' prop to true
+     */
+    if( $check_permissions &&
+        ! intranet_fafar_api_check_exec_permission( $submission ) )
+        $submission['prevent_exec'] = true;
+
 
     return $submission;
 }
@@ -493,9 +720,9 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
 
     $submissions = intranet_fafar_api_get_submissions_by_object_name( $object_name );
 
-    if ( isset( $submissions['msg_error'] ) ) {
+    if ( isset( $submissions['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['msg_error'], 'intranet-fafar-api' ), $submissions['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
 
     }
 
@@ -511,7 +738,7 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name ) {
 
     if( ! $object_name ) {
 
-        return array( 'msg_error' => '[0201]No "object name" found.', 'http_status' => 500 );
+        return array( 'error_msg' => '[0201]No "object name" found.', 'http_status' => 500 );
 
     }
 
@@ -523,7 +750,7 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name ) {
 
     if( ! $submissions || count( $submissions ) == 0 ) {
 
-        return array( 'msg_error' => '[0202]No submission found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
+        return array( 'error_msg' => '[0202]No submission found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
 
     }
 
@@ -536,9 +763,9 @@ function intranet_fafar_api_get_user_by_id_handler( $request ) {
 
     $submission = intranet_fafar_api_get_user_by_id( $id );
 
-    if ( isset( $submission['msg_error'] ) ) {
+    if ( isset( $submission['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submission['msg_error'], 'intranet-fafar-api' ), $submission['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), $submission['http_status'] );
 
     }
 
@@ -550,7 +777,7 @@ function intranet_fafar_api_get_user_by_id( $id ) {
 
     if( ! $id ) {
 
-        return array( 'msg_error' => '[0101]No "id" found.', 'http_status' => 400 );
+        return array( 'error_msg' => '[0101]No "id" found.', 'http_status' => 400 );
 
     }
 
@@ -558,30 +785,67 @@ function intranet_fafar_api_get_user_by_id( $id ) {
 
     if ( ! $user ) {
 
-        return array( 'msg_error' => '[0101]No user found.', 'http_status' => 400 );
+        return array( 'error_msg' => '[0101]No user found.', 'http_status' => 400 );
 
     }
     
     return $user;
 }
 
-function intranet_fafar_api_get_event_by_id_handler( $request ) {
+function intranet_fafar_api_get_reservation_by_id_handler( $request ) {
 
     $id = (string) $request['id'];
 
-    $event = intranet_fafar_api_get_event_by_id( $id );
+    $reservation = intranet_fafar_api_get_reservation_by_id( $id );
 
-    if ( isset( $event['msg_error'] ) ) {
+    if ( isset( $reservation['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $event['msg_error'], 'intranet-fafar-api' ), $event['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $reservation['error_msg'], 'intranet-fafar-api' ), $reservation['http_status'] );
 
     }
 
-    return rest_ensure_response( json_encode( $event ) );
+    return rest_ensure_response( json_encode( $reservation ) );
 
 }
 
-function intranet_fafar_api_get_event_by_id( $id ) {
+function intranet_fafar_api_get_equipaments_handler() {
+
+    global $wpdb;
+
+    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
+    
+    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'equipament'";
+
+    $submissions = intranet_fafar_api_read( $query ); 
+
+    if( ! $submissions || count( $submissions ) == 0 ) {
+
+        return array( 'error_msg' => '[0202]No submission found', 'http_status' => 400 );
+
+    }
+
+    /*
+     * Substituir os campos que tem ID de outro objeto,
+     * pelo objeto de mesmo ID
+     */ 
+    $submissions_joined = array_map( function ( $s ) {
+
+        $applicant      = get_userdata( $s['applicant'][0] );
+        $s['applicant'] = $applicant->get( 'display_name' );
+
+        $s['place'] = intranet_fafar_api_get_submission_by_id( $s['place'][0] );
+
+        return $s;
+        
+    }, $submissions );
+
+
+
+    return rest_ensure_response( json_encode( $submissions_joined ) );
+
+}
+
+function intranet_fafar_api_get_reservation_by_id( $id ) {
     
     global $wpdb;
 
@@ -589,7 +853,7 @@ function intranet_fafar_api_get_event_by_id( $id ) {
 
     if( ! $id ) {
 
-        return array( 'msg_error' => '[0201]No "ID" found.', 'http_status' => 500 );
+        return array( 'error_msg' => '[0201]No "ID" found.', 'http_status' => 500 );
 
     }
 
@@ -597,23 +861,23 @@ function intranet_fafar_api_get_event_by_id( $id ) {
     
     $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `id` = '" . $id . "'";
 
-    $event = intranet_fafar_api_read( $query );
+    $reservation = intranet_fafar_api_read( $query );
 
-    if( ! $event || count( $event ) == 0 ) {
+    if( ! $reservation || count( $reservation ) == 0 ) {
 
-        return array( 'msg_error' => '[0202]No event found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
-
-    }
-
-    $event = $event[0];
-
-    if ( isset( $event['owner'] ) && $event['owner'] ) {
-
-        $event['owner'] = intranet_fafar_api_get_user_by_id( $event['owner'] );
+        return array( 'error_msg' => '[0202]No reservation found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
 
     }
 
-    return $event;
+    $reservation = $reservation[0];
+
+    if ( isset( $reservation['owner'] ) && $reservation['owner'] ) {
+
+        $reservation['owner'] = intranet_fafar_api_get_user_by_id( $reservation['owner'] );
+
+    }
+
+    return $reservation;
 }
 
 /**
@@ -671,11 +935,27 @@ function intranet_fafar_api_read( $query, $check_permissions = true, $check_is_a
             $submission['is_active'] != 1 )
             continue;
     
-        // Check if is allowed to read
+        // Checks for read permission
         if( $check_permissions &&
             ! intranet_fafar_api_check_read_permission( $submission ) )
             continue;
-    
+
+        /*
+         * Checks for read permission.
+         * If doesn't, set a 'prevent_write' prop to true
+         */
+        if( $check_permissions &&
+            ! intranet_fafar_api_check_write_permission( $submission ) )
+            $submission['prevent_write'] = true;
+
+        /*
+         * Checks for read permission.
+         * If doesn't, set a 'prevent_exec' prop to true
+         */
+        if( $check_permissions &&
+            ! intranet_fafar_api_check_exec_permission( $submission ) )
+            $submission['prevent_exec'] = true;
+
         array_push( $submissions_checked,  $submission );
     
     }
@@ -701,6 +981,47 @@ function intranet_fafar_api_update( $id, $new_data, $check_permissions = true ) 
     do_action( 'intranet_fafar_api_after_update', $id, $new_data );
 
     return array( 'id' => $id, 'new_data' => $new_data );
+  
+}
+
+function intranet_fafar_api_delete( $submission, $deactivate = true, $check_permissions = true ) {
+
+    if ( ! isset( $submission['id'] ) )
+        return array( 'error_msg' => 'No ID informed!' );
+
+    if ( $check_permissions && ! intranet_fafar_api_check_write_permission( $submission ) )
+        return array( 'error_msg' => 'Permission denied!' );
+
+    global $wpdb;
+  
+    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
+
+    if ( $deactivate ) {
+
+        $res = $wpdb->delete( $table_name, array( 'id' => $submission['id'] ) );
+
+        if ( ! $res ) 
+            return array( 'error_msg' => 'No object found!' );
+
+        do_action( 'intranet_fafar_api_after_delete', $submission );
+        
+    } else {
+
+        if ( ! isset( $submission['is_active'] ) )
+            return array( 'error_msg' => 'Submission can not be deactivate!' );
+
+        $submission['is_active'] = '0';
+
+        $wpdb->update( $table_name, array( 'is_active' => $submission['is_active'] ), array( 'id' => $submission['id'] ) );
+    
+        if ( isset( $submission['error_msg'] ) )
+            return $submission;
+    
+        do_action( 'intranet_fafar_api_after_deactivated', $submission );
+
+    }
+
+    return array( 'submission' => $submission );
   
 }
 
@@ -803,12 +1124,49 @@ function intranet_fafar_api_check_permissions( $submission, $permission_digit_va
  * >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  */
 
-
 function intranet_fafar_api_san( $v ) {
+
     $v = ( is_array( $v ) ? $v[0] : $v );
+
     return sanitize_text_field( wp_unslash( $v ) );
+
 }
 
+function intranet_fafar_api_san_recursive( $data ) {
+    
+    if ( is_array( $data ) ) {
+        foreach ( $data as $key => $value ) {
+            // Recursively sanitize each value if it's an array
+            $data[$key] = intranet_fafar_api_san_recursive( $value );
+        }
+    } else {
+        // Sanitize individual value
+        $data = intranet_fafar_api_san( $data );
+    }
+
+    return $data;
+
+}
+
+function intranet_fafar_api_san_arr( $arr ) {
+
+    foreach( $arr as $k => $v ) {
+
+        /*
+        * Isso aqui pode dar merda porque:
+        * - Checks for invalid UTF-8,
+        * - Converts single < characters to entities,
+        * - Strips all tags, 
+        * - Removes line breaks, tabs, and extra whitespace, 
+        * - Strips percent-encoded characters,
+        */
+        $arr[$k] = intranet_fafar_api_san_recursive( $v );
+
+    }
+
+    return $arr;
+
+}
 
 function intranet_fafar_api_decode_all_submissions_as_arr( $arr ) {
     
@@ -851,7 +1209,7 @@ function intranet_fafar_api_get_submission_as_arr( $submission ) {
 
         if ( is_array( $value ) && ! empty( $value ) ) {
             
-            $arr[$key] = $value[0];
+            $arr[$key] =  $value[0];
         
         } else {
 

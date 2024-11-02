@@ -35,12 +35,13 @@ const ptBR = {
 const grid = new gridjs.Grid({
   columns: [
     "ID",
-    "Cód.",
-    "Nome",
-    "Turma",
-    "CH",
-    "Créditos",
-    "Curso",
+    "Patrimônio.",
+    "Patrimônio Int.",
+    "Tipo",
+    "Marca",
+    "Modelo",
+    "Sala",
+    "Responsável",
     {
       name: "Ações",
       formatter: formatterHandler,
@@ -62,7 +63,7 @@ async function fetchDataHandler() {
 
   try {
     response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/class_subject"
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/equipaments"
     );
   } catch (error) {
     console.log(error.response.data.message);
@@ -81,12 +82,13 @@ async function fetchDataHandler() {
 
     table_arr.push([
       submission["id"],
-      submission["code"],
-      submission["name_of_subject"],
-      submission["group"],
-      submission["course_load"],
-      submission["credits_of_subject"],
-      submission["course"].join(", "),
+      submission["asset"],
+      submission["internal_asset"],
+      submission["object_sub_type"][0],
+      submission["brand"],
+      submission["model"],
+      submission["place"]["number"],
+      submission["applicant"],
       permissions,
     ]);
   }
@@ -118,14 +120,14 @@ function formatterHandler(_, row) {
       <a class="btn btn-outline-secondary" href="/vizualizar-objeto/?id=${id}" title="Detalhes">
         <i class="bi bi-info-lg"></i>
       </a>
-      <a class="btn btn-outline-primary" href="#" title="Eventos">
-        <i class="bi bi-calendar-week"></i>
-      </a>
+      <button class="btn btn-outline-primary btn-loan-equipament" data-id="${id}" title="Emprestar">
+        <i class="bi bi-arrow-down-up"></i>
+      </button>
       ${
         prevent_write
           ? ""
           : `
-      <a class="btn btn-outline-secondary" href="/editar-disciplina/?id=${id}" title="Editar">
+      <a class="btn btn-outline-secondary" href="/editar-equipamento/?id=${id}" title="Editar">
         <i class="bi bi-pencil"></i>
       </a>
       <button class="btn btn-outline-danger btn-delete-submission" data-id="${id}" title="Excluir">
@@ -149,6 +151,22 @@ document.addEventListener("click", (event) => {
   if (deleteButton) {
     const id = deleteButton.dataset.id;
     confirmDelete(id);
+  }
+});
+
+/*
+ * Adiciona um evento de clique à DOM,
+ * e despara se o elemento que recebeu o clique tem
+ * a classe 'btn-loan-equipament' ou é filho de um elemento
+ * com essa classe
+ */
+document.addEventListener("click", (event) => {
+  const loanButton = event.target.closest(".btn-loan-equipament");
+
+  if (loanButton) {
+    const id = loanButton.dataset.id;
+    document.querySelector("#equipament").value = id;
+    showLoanModal("Emprestar Equipamento");
   }
 });
 
@@ -189,4 +207,50 @@ async function deleteSubmission(id) {
 
     showAlert(error_msg, "danger");
   }
+}
+
+/*
+ * Modal de empréstimos
+ */
+
+function showLoanModal(
+  title = "Delete Folder?",
+  body = "This can't be undone",
+  confirm_btn_text = "Delete",
+  confirm_btn_type = "danger",
+  onAcceptCB = () => {},
+  onDenyCB = () => {}
+) {
+  const intranetFafarLoanModal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarLoanModal")
+  );
+
+  const modal_title = document.querySelector(
+    "#intranetFafarLoanModal .modal-title"
+  );
+  modal_title.innerText = title;
+
+  // const modal_body = document.querySelector(
+  //   "#intranetFafarLoanModal .modal-body"
+  // );
+  // modal_body.innerText = body;
+
+  // const modal_btn_accept = document.querySelector("#btn_accept");
+  // modal_btn_accept.classList = "";
+  // modal_btn_accept.classList.add("btn");
+  // modal_btn_accept.classList.add("btn-" + confirm_btn_type);
+  // modal_btn_accept.innerText = confirm_btn_text;
+  // modal_btn_accept.addEventListener("click", onAcceptCB);
+
+  // const modal_btn_deny = document.querySelector("#btn_deny");
+  // modal_btn_deny.addEventListener("click", onDenyCB);
+
+  intranetFafarLoanModal.show();
+}
+
+function hideLoanModal() {
+  const intranetFafarLoanModal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarLoanModal")
+  );
+  intranetFafarLoanModal.hide();
 }

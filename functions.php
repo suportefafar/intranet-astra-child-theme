@@ -38,19 +38,132 @@ add_action( 'wp_enqueue_scripts', 'child_enqueue_styles', 15 );
  *		ADDED BY Setor de Suporte e T.I. 
 */
 
+require_once 'class-wp-bootstrap-navwalker.php';
+
 require_once "import-scripts.php";
 
 require_once "api.php";
 
 require_once "shortcodes.php";
 
-require_once "logs.php";
+//require_once "logs.php";
 
-
-//add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_is_place_available_for_class_event', 10, 3 );
-
+/*
+ * Adicionando checagem para criação de reservas.
+ */
 add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_new_event', 10, 2 );
 
+/*
+ * Adicionando checagem para criação de empréstimos de equipamentos.
+ */
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_new_loan', 10, 2 );
 
-require_once 'class-wp-bootstrap-navwalker.php';
+/*
+ * Mudando o caminho dos arquivos template 'page-NOME_DA_PAGINA.php'
+ */
+function custom_page_template_hierarchy( $templates ) {
+    $new_templates = array();
+
+    // Add custom directory for page templates
+    foreach ( $templates as $template ) {
+        $new_templates[] = 'pages/' . $template;
+    }
+
+    // Merge with default template hierarchy
+    $new_templates = array_merge( $new_templates, $templates );
+
+    return $new_templates;
+}
+add_filter( 'page_template_hierarchy', 'custom_page_template_hierarchy' );
+
+/*
+ * Adicionando o HTML do Bootstrap Alert
+ */
+function intranet_fafar_add_bootstrap_alert_html() {
+    ?>
+    <!-- Bootstrap Toast HTML -->
+	<div id="intranetFafarLiveAlertPlaceholder"></div>
+    <?php
+}
+add_action('wp_footer', 'intranet_fafar_add_bootstrap_alert_html');
+
+/*
+ * Importanto script JS do Bootstrap Alert
+ */
+add_action( 'wp_enqueue_scripts', function () {
+
+	wp_enqueue_script( 'intranet-fafar-alert', get_stylesheet_directory_uri() . '/assets/js/alert.js', array( 'jquery' ), false, true );
+
+} );
+
+/*
+ * Adicionando o HTML do Bootstrap Modal de confirmação
+ */
+function intranet_fafar_add_bootstrap_confirm_modal_html() {
+
+	?>
+
+		<div id="intranetFafarConfirmModal" class="modal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title">Modal title</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <p>Modal body text goes here.</p>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" id="btn_deny" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                      <button type="button" id="btn_accept" class="btn btn-primary">Save changes</button>
+                  </div>
+                </div>
+            </div>
+        </div>
+
+	<?php
+
+}
+add_action('wp_footer', 'intranet_fafar_add_bootstrap_confirm_modal_html');
+
+/*
+ * Importanto script JS do Bootstrap Modal de confirmação
+ */
+add_action( 'wp_enqueue_scripts', function () {
+
+	wp_enqueue_script( 'intranet-fafar-confirm-modal', get_stylesheet_directory_uri() . '/assets/js/confirm-modal.js', array( 'jquery' ), false, true );
+
+} );
+
+/*
+ * Adicionando o HTML do Bootstrap Toast
+ */
+function add_bootstrap_toast_every_page() {
+    ?>
+    <!-- Bootstrap Toast HTML -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div id="globalToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+          <img src="..." class="rounded me-2" alt="...">
+          <strong class="me-auto">Notification</strong>
+          <small class="text-muted">Just now</small>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          This toast appears on every page!
+        </div>
+      </div>
+    </div>
+    <?php
+}
+add_action('wp_footer', 'add_bootstrap_toast_every_page');
+
+/*
+ * Importanto script JS do Bootstrap Toast
+ */
+add_action( 'wp_enqueue_scripts', function () {
+
+	wp_enqueue_script( 'intranet-fafar-toast', get_stylesheet_directory_uri() . '/assets/js/toast.js', array( 'jquery' ), false, true );
+
+} );
 
