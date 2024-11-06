@@ -34,7 +34,6 @@ const ptBR = {
 
 const grid = new gridjs.Grid({
   columns: [
-    "ID",
     "Cód.",
     "Nome",
     "Turma",
@@ -43,7 +42,7 @@ const grid = new gridjs.Grid({
     "Curso",
     {
       name: "Ações",
-      formatter: formatterHandler,
+      formatter: actionColFormatter,
     },
   ],
   data: fetchDataHandler,
@@ -75,19 +74,25 @@ async function fetchDataHandler() {
 
   let table_arr = [];
   for (const submission of submissions) {
+    const submission_data = submission["data"];
+
     const prevent_write = submission["prevent_write"] ? "1" : "0";
     const prevent_exec = submission["prevent_exec"] ? "1" : "0";
     const permissions = prevent_write + prevent_exec;
 
-    table_arr.push([
-      submission["id"],
-      submission["code"],
-      submission["name_of_subject"],
-      submission["group"],
-      submission["course_load"],
-      submission["credits_of_subject"],
-      submission["course"].join(", "),
+    const action_column_data = JSON.stringify({
+      id: submission["id"],
       permissions,
+    });
+
+    table_arr.push([
+      submission_data["code"],
+      submission_data["name_of_subject"],
+      submission_data["group"],
+      submission_data["course_load"],
+      submission_data["credits_of_subject"],
+      submission_data["course"].join(", "),
+      action_column_data,
     ]);
   }
 
@@ -106,12 +111,12 @@ async function renderGridJS(data = []) {
     .forceRender();
 }
 
-function formatterHandler(_, row) {
-  const id = row.cells[0].data;
+function actionColFormatter(current, row) {
+  const { id, permissions } = JSON.parse(current);
 
-  const prevent_write = parseInt(row.cells.at(-1).data.split("")[0]);
+  const prevent_write = parseInt(permissions.split("")[0]);
 
-  console.log(_, row);
+  console.log(current, row);
 
   const html_content = `
     <div class="d-flex gap-2">

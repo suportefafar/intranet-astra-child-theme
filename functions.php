@@ -59,6 +59,11 @@ add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_new_event'
 add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_new_loan', 10, 2 );
 
 /*
+ * Adicionando checagem para registrar o retorno de um empréstimo
+ */
+add_filter( 'fafar_cf7crud_before_update', 'intranet_fafar_api_register_loan_return', 10, 2 );
+
+/*
  * Mudando o caminho dos arquivos template 'page-NOME_DA_PAGINA.php'
  */
 function custom_page_template_hierarchy( $templates ) {

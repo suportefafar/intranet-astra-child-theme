@@ -205,19 +205,19 @@ const grid = new gridjs.Grid({
     "Descrição",
     {
       name: "Disciplina",
-      formatter: (_, row) => row.cells[2].data.code,
+      formatter: (current, row) => current,
     },
     {
       name: "Dia",
-      formatter: (_, row) => getDateStr(row.cells[3].data),
+      formatter: (current, row) => getDateStr(current),
     },
     {
       name: "De",
-      formatter: (_, row) => getHourStr(row.cells[4].data),
+      formatter: (current, row) => getHourStr(current),
     },
     {
       name: "Até",
-      formatter: (_, row) => getHourStr(row.cells[5].data),
+      formatter: (current, row) => getHourStr(current),
     },
     "Operador",
     "Solicitante",

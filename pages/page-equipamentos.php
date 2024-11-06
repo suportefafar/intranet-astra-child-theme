@@ -103,12 +103,29 @@ get_header(); ?>
             <div class="modal-dialog">
                 <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="intranetFafarLoanModalLabel">New message</h1>
+                    <h1 class="modal-title fs-5" id="intranetFafarLoanModalLabel">Emprestar</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <?php
                         echo do_shortcode( '[contact-form-7 id="115a11b" title="Emprestar Equipamento"]' );
+                    ?>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para empréstimo de equipamentos -->
+        <div class="modal fade" id="intranetFafarLoanReturnModal" tabindex="-1" aria-labelledby="intranetFafarLoanReturnModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="intranetFafarLoanReturnModalLabel">Devolver</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <?php
+                        echo do_shortcode( '[contact-form-7 id="0dedf40" title="Devolver Equipamento"]' );
                     ?>
                 </div>
                 </div>

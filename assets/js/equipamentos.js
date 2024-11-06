@@ -1,10 +1,78 @@
 import { Grid, html } from "https://unpkg.com/gridjs?module";
 
-/**
+/*
+ * LISTENER'S
+ */
+/*
+ * Adiciona um evento de clique à DOM,
+ * e despara se o elemento que recebeu o clique tem
+ * a classe 'btn-loan-equipament' ou é filho de um elemento
+ * com essa classe
+ */
+document.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest(".btn-delete-submission");
+
+  if (deleteButton) {
+    const id = deleteButton.dataset.id;
+    confirmDelete(id);
+  }
+});
+
+/*
+ * Adiciona um evento de clique à DOM,
+ * e despara se o elemento que recebeu o clique tem
+ * a classe 'btn-loan-equipament' ou é filho de um elemento
+ * com essa classe
+ */
+document.addEventListener("click", (event) => {
+  const loanButton = event.target.closest(".btn-loan-equipament");
+
+  if (loanButton) {
+    const id = loanButton.dataset.id;
+    document.querySelector("#equipament_to_loan").value = id;
+    showLoanOrReturnoEquipamentModal("intranetFafarLoanModal");
+  }
+});
+
+/*
+ * Adiciona um evento de clique à DOM,
+ * e despara se o elemento que recebeu o clique tem
+ * a classe 'btn-loan-return-equipament' ou é filho de um elemento
+ * com essa classe
+ */
+document.addEventListener("click", (event) => {
+  const loanButton = event.target.closest(".btn-loan-return-equipament");
+
+  if (loanButton) {
+    const id = loanButton.dataset.id;
+    document.querySelector("#equipament_to_return").value = id;
+    showLoanOrReturnoEquipamentModal("intranetFafarLoanReturnModal");
+  }
+});
+
+/*
+ * Adiciona um evento de clique no botão
+ * de submit dentro do modal de empréstimo
+ */
+document.addEventListener("onLoanSuccess", () => {
+  hideLoanOrReturnoEquipamentModal("intranetFafarLoanModal");
+  renderGridJS();
+});
+
+/*
+ * Adiciona um evento de clique no botão
+ * de submit dentro do modal de devolução
+ */
+document.addEventListener("onReturnLoanSuccess", () => {
+  hideLoanOrReturnoEquipamentModal("intranetFafarLoanReturnModal");
+  renderGridJS();
+});
+
+/*
  * CHARTS RENDER
  */
 
-/**
+/*
  * TABLE RENDER
  */
 const ptBR = {
@@ -34,17 +102,21 @@ const ptBR = {
 
 const grid = new gridjs.Grid({
   columns: [
-    "ID",
     "Patrimônio.",
     "Patrimônio Int.",
     "Tipo",
     "Marca",
     "Modelo",
+    "IP",
     "Sala",
     "Responsável",
     {
+      name: "Status",
+      formatter: statusColFormatter,
+    },
+    {
       name: "Ações",
-      formatter: formatterHandler,
+      formatter: actionColFormatter,
     },
   ],
   data: fetchDataHandler,
@@ -76,20 +148,31 @@ async function fetchDataHandler() {
 
   let table_arr = [];
   for (const submission of submissions) {
-    const prevent_write = submission["prevent_write"] ? "1" : "0";
-    const prevent_exec = submission["prevent_exec"] ? "1" : "0";
+    const submission_data = submission.data;
+
+    const prevent_write = submission_data.prevent_write ? "1" : "0";
+    const prevent_exec = submission_data.prevent_exec ? "1" : "0";
     const permissions = prevent_write + prevent_exec;
 
-    table_arr.push([
-      submission["id"],
-      submission["asset"],
-      submission["internal_asset"],
-      submission["object_sub_type"][0],
-      submission["brand"],
-      submission["model"],
-      submission["place"]["number"],
-      submission["applicant"],
+    const action_column_data = JSON.stringify({
+      id: submission.id,
       permissions,
+    });
+
+    let status_text = submission_data.status[0];
+    if (submission_data.on_loan) status_text = "Emprestado";
+
+    table_arr.push([
+      submission_data.asset,
+      submission_data.internal_asset,
+      submission_data.object_sub_type[0],
+      submission_data.brand,
+      submission_data.model,
+      submission_data.ip.data?.address ?? "",
+      submission_data.place.data.number,
+      submission_data.applicant,
+      status_text,
+      action_column_data,
     ]);
   }
 
@@ -108,20 +191,39 @@ async function renderGridJS(data = []) {
     .forceRender();
 }
 
-function formatterHandler(_, row) {
-  const id = row.cells[0].data;
+function statusColFormatter(current, row) {
+  let type = "text-bg-info";
+  const current_lower = current.toLowerCase();
 
-  const prevent_write = parseInt(row.cells.at(-1).data.split("")[0]);
+  if (current_lower === "emprestado") type = "text-bg-warning";
+  else if (current_lower === "ativado") type = "text-bg-primary";
+  else if (
+    current_lower === "desativado" ||
+    current_lower === "quebrado" ||
+    current_lower === "desaparecido"
+  )
+    type = "text-bg-danger";
 
-  console.log(_, row);
+  return html(`<span class="badge ${type}">${current}</span>`);
+}
+
+function actionColFormatter(current, row) {
+  const { id, permissions } = JSON.parse(current);
+
+  const prevent_write = parseInt(permissions.split("")[0]);
+
+  console.log(current, row);
 
   const html_content = `
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary" href="/vizualizar-objeto/?id=${id}" title="Detalhes">
+      <a class="btn btn-outline-secondary" href="/vizualizar-equipamento/?id=${id}" title="Detalhes">
         <i class="bi bi-info-lg"></i>
       </a>
       <button class="btn btn-outline-primary btn-loan-equipament" data-id="${id}" title="Emprestar">
-        <i class="bi bi-arrow-down-up"></i>
+        <i class="bi bi-arrow-up"></i>
+      </button>
+      <button class="btn btn-outline-primary btn-loan-return-equipament" data-id="${id}" title="Receber">
+        <i class="bi bi-arrow-down"></i>
       </button>
       ${
         prevent_write
@@ -138,37 +240,6 @@ function formatterHandler(_, row) {
 
   return html(html_content);
 }
-
-/*
- * Adiciona um evento de clique à DOM,
- * e despara se o elemento que recebeu o clique tem
- * a classe 'btn-loan-equipament' ou é filho de um elemento
- * com essa classe
- */
-document.addEventListener("click", (event) => {
-  const deleteButton = event.target.closest(".btn-delete-submission");
-
-  if (deleteButton) {
-    const id = deleteButton.dataset.id;
-    confirmDelete(id);
-  }
-});
-
-/*
- * Adiciona um evento de clique à DOM,
- * e despara se o elemento que recebeu o clique tem
- * a classe 'btn-loan-equipament' ou é filho de um elemento
- * com essa classe
- */
-document.addEventListener("click", (event) => {
-  const loanButton = event.target.closest(".btn-loan-equipament");
-
-  if (loanButton) {
-    const id = loanButton.dataset.id;
-    document.querySelector("#equipament").value = id;
-    showLoanModal("Emprestar Equipamento");
-  }
-});
 
 function confirmDelete(id) {
   showConfirmModal(
@@ -210,47 +281,19 @@ async function deleteSubmission(id) {
 }
 
 /*
- * Modal de empréstimos
+ * Controle dos Modal's de Empréstimo e Devolução
  */
-
-function showLoanModal(
-  title = "Delete Folder?",
-  body = "This can't be undone",
-  confirm_btn_text = "Delete",
-  confirm_btn_type = "danger",
-  onAcceptCB = () => {},
-  onDenyCB = () => {}
-) {
-  const intranetFafarLoanModal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarLoanModal")
+function showLoanOrReturnoEquipamentModal(modal_id) {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById(modal_id)
   );
 
-  const modal_title = document.querySelector(
-    "#intranetFafarLoanModal .modal-title"
-  );
-  modal_title.innerText = title;
-
-  // const modal_body = document.querySelector(
-  //   "#intranetFafarLoanModal .modal-body"
-  // );
-  // modal_body.innerText = body;
-
-  // const modal_btn_accept = document.querySelector("#btn_accept");
-  // modal_btn_accept.classList = "";
-  // modal_btn_accept.classList.add("btn");
-  // modal_btn_accept.classList.add("btn-" + confirm_btn_type);
-  // modal_btn_accept.innerText = confirm_btn_text;
-  // modal_btn_accept.addEventListener("click", onAcceptCB);
-
-  // const modal_btn_deny = document.querySelector("#btn_deny");
-  // modal_btn_deny.addEventListener("click", onDenyCB);
-
-  intranetFafarLoanModal.show();
+  modal.show();
 }
 
-function hideLoanModal() {
-  const intranetFafarLoanModal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarLoanModal")
+function hideLoanOrReturnoEquipamentModal(modal_id) {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById(modal_id)
   );
-  intranetFafarLoanModal.hide();
+  modal.hide();
 }

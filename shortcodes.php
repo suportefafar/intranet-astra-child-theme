@@ -1021,6 +1021,8 @@ function intranet_fafar_remove_object() {
 
 add_shortcode( 'intranet_fafar_get_users_as_select_options', 'intranet_fafar_get_users_as_select_options' );
 
+add_shortcode( 'intranet_fafar_get_ips_as_select_options', 'intranet_fafar_get_ips_as_select_options' );
+
 add_shortcode( 'intranet_fafar_get_user_slug_role', 'intranet_fafar_get_user_slug_role' );
 
 function intranet_fafar_get_users_as_select_options_old() {
@@ -1063,6 +1065,61 @@ function intranet_fafar_get_users_as_select_options() {
     }
     
     return json_encode( $options );
+
+}
+
+function intranet_fafar_get_ips_as_select_options() {
+
+    $ips = intranet_fafar_api_get_submissions_by_object_name( 'ip', array(
+        'orderby_json' => 'address',
+        'inet_aton' => '1',
+    ) ); 
+
+    $equipaments = intranet_fafar_api_get_submissions_by_object_name( 'equipament' );
+
+    $current_equipament = null;
+    if ( isset( $_GET['id'] ) ) {
+
+        $id = intranet_fafar_api_san( $_GET['id'] );
+        $current_equipament = intranet_fafar_api_get_submission_by_id( $id );
+
+    }
+
+    $options = array();
+
+    foreach ( $ips as $ip ) {
+
+        $is_available = true;
+        foreach ( $equipaments as $equipament ) {
+
+            /* 
+             * Isso garante que o IP que está sendo usado pelo 
+             * equipamento sendo editado, esteja na lista de opções
+             */
+            if( $current_equipament &&
+            $current_equipament['data']['ip'][0] === $ip['id'] ) {
+        
+                $is_available = true;
+                continue;
+            
+            }
+
+            if ( isset( $equipament['data']['ip'][0] ) &&
+                 $equipament['data']['ip'][0] === $ip['id'] ) {
+            
+                $is_available = false;
+                break;
+
+            }
+
+        }
+
+        if ( $is_available )
+            $options[esc_attr( $ip['id'] )] = esc_html( $ip['data']['address'] );
+
+    }
+
+    return json_encode( $options ); 
 
 }
 

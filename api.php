@@ -121,7 +121,6 @@ function intranet_fafar_api_delete_submission_by_id( $id ) {
     return $submission;
 }
 
-
 function intranet_fafar_api_get_place_reservations( $request ) {
 
     $place_id = (string) $request['place'];
@@ -181,29 +180,122 @@ function intranet_fafar_api_bff_reservations_prepare( $reservations, $attr_wl ) 
 
 }
 
-
 function intranet_fafar_api_create_new_loan( $form_data, $contact_form ) {
     
+    // Verificações iniciais
     if( ! isset( $form_data['object_name'] ) ) return $form_data;
 
     if ( $form_data['object_name'] !== 'equipament_loan' ) return $form_data;
+
+    //error_log(print_r($form_data, true));
+
+    $form_data['data'] = json_decode( $form_data['data'], true );
+
+    if ( ! isset( $form_data['data']['loan_date'] ) )
+        return array( 'error_msg' => '[001] Data de empréstimo não informada!' );
 
     $equipament = intranet_fafar_api_get_submission_by_id( $form_data['data']['equipament'] );
 
     if ( ! $equipament )
         return array( 'error_msg' => '[001] Equipamento não existe!' );
 
-    if ( $equipament['on_loan'] )
+    if ( isset( $equipament['data']['on_loan'] ) && $equipament['data']['on_loan'] )
         return array( 'error_msg' => '[002] Equipamento está emprestado!' );
 
-    $equipament['on_loan'] = '1';
+    $equipament['data']['on_loan'] = '1';
 
-    $res = intranet_fafar_api_update( $equipament['id'], $equipament );
+    $equipament = intranet_fafar_api_update( $equipament['id'], $equipament );
 
     if ( isset( $equipament['error_msg'] ) )
         return array( 'error_msg' => $equipament['error_msg'] );
 
+    $form_data['data'] = json_encode( $form_data['data'] );
+
     return $form_data;
+}
+
+function intranet_fafar_api_register_loan_return( $form_data, $contact_form ) { 
+
+    // Verificações iniciais
+    if ( ! isset( $form_data['object_name'] ) ) return $form_data;
+
+    if ( $form_data['object_name'] !== 'equipament_loan_return' ) return $form_data;
+
+    //error_log(print_r($form_data, true));
+
+    // Atualizando a propriedade 'on_loan' do equipamento
+    $form_data['data'] = json_decode( $form_data['data'], true );
+
+    if ( ! isset( $form_data['data']['return_date'] ) )
+        return array( 'error_msg' => '[001] Data de retorno não informada!' );
+
+    $equipament = intranet_fafar_api_get_submission_by_id( $form_data['data']['equipament'] );
+
+    if ( ! $equipament )
+        return array( 'error_msg' => '[001] Equipamento não existe!' );
+
+    $equipament['data']['on_loan'] = 0;
+
+    $equipament = intranet_fafar_api_update( $equipament['id'], $equipament );
+
+    if ( isset( $res['error_msg'] ) )
+        return array( 'error_msg' => $res['error_msg'] );
+
+    // Atualizando o status do empréstimo do equipamento
+    $loans = intranet_fafar_api_get_loans_by_equipament( $form_data['data']['equipament'] );
+
+    $loan = $loans[0];
+
+    if ( ! $loan )
+        return array( 'error_msg' => '[001] Equipamento atualizado. Porém, ' . $loan['error_msg'] );
+
+    $loan['data']['returned']    = '1';
+    $loan['data']['return_date'] = $form_data['data']['return_date']; // Verificado no topo
+    $loan['data']['return_desc'] = ( ( $form_data['data']['return_desc'] ) ?? '');
+
+    $loan = intranet_fafar_api_update( $loan['id'], $loan );
+
+    if ( isset( $loan['error_msg'] ) )
+        return array( 'error_msg' => '[001] Equipamento atualizado. Porém, ' . $loan['error_msg'] );
+
+    // Retorna uma obj genérico para concluir a submissão com sucesso
+    return array( 'far_prevent_submit' => true );
+
+}
+
+function intranet_fafar_api_get_loans_by_equipament( $id ) {
+
+    global $wpdb;
+
+    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
+
+    if( ! $id ) {
+
+        return array( 'error_msg' => '[0101] No "id" found.', 'http_status' => 400 );
+
+    }
+
+    /* 
+     * Montando a query SQL.
+     * Pesquisa por equipamento com o id informado e 
+     * ordena do empréstimo mais recente ao mais antigo
+     */
+    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE ";
+
+    $query .= 'JSON_CONTAINS( data, \'' . json_encode( array( 'equipament' => $id ) ) . '\')';
+
+    $query .= " ORDER BY created_at DESC";
+
+    // Fluxo padrão de leitura
+    $submissions = intranet_fafar_api_read( $query );
+
+    if ( ! $submissions || count( $submissions ) == 0 ) {
+
+        return array( 'error_msg' => '[0102] No submission found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
+
+    }
+
+    return $submissions;
 }
 
 /**
@@ -364,7 +456,7 @@ function intranet_fafar_api_create_new_event( $form_data, $contact_form ) {
   
     }
 
-    return array( 'prreservation_submit' => true );
+    return array( 'far_prevent_submit' => true );
 
 }
 
@@ -647,7 +739,7 @@ function intranet_fafar_api_get_submission_by_id_handler( $request ) {
 
 }
 
-function intranet_fafar_api_get_submission_by_id( $id, $check_permissions = true ) {
+function intranet_fafar_api_get_submission_by_id( $id ) {
 
     global $wpdb;
 
@@ -663,7 +755,7 @@ function intranet_fafar_api_get_submission_by_id( $id, $check_permissions = true
 
     $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `id` = '" . $id . "'";
 
-    $submissions = intranet_fafar_api_read( $query, false, false );
+    $submissions = intranet_fafar_api_read( $query );
 
     if( ! $submissions || count( $submissions ) == 0 ) {
 
@@ -683,35 +775,7 @@ function intranet_fafar_api_get_submission_by_id( $id, $check_permissions = true
 
     }
 
-    $submission = $submissions[0];
-
-    // Check if 'is active'
-    if( $submission['is_active'] != 1 )
-        return array( 'error_msg' => '[0104]Submission "' . ( $id ?? 'UNKNOW_ID') . '" deactivated/deleted' , 'http_status' => 400 );
-
-    // Check if is allowed to read
-    if( $check_permissions && 
-        ! intranet_fafar_api_check_read_permission( $submission ) )
-        return array( 'error_msg' => '[0105]Permission denied for submission "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
-
-    /*
-     * Checks for read permission.
-     * If doesn't, set a 'prevent_write' prop to true
-     */
-    if( $check_permissions &&
-        ! intranet_fafar_api_check_write_permission( $submission ) )
-        $submission['prevent_write'] = true;
-
-    /*
-     * Checks for read permission.
-     * If doesn't, set a 'prevent_exec' prop to true
-     */
-    if( $check_permissions &&
-        ! intranet_fafar_api_check_exec_permission( $submission ) )
-        $submission['prevent_exec'] = true;
-
-
-    return $submission;
+    return $submissions[0];
 }
 
 function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
@@ -730,7 +794,12 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
 
 }
 
-function intranet_fafar_api_get_submissions_by_object_name( $object_name ) {
+
+/**
+ * @param array $order_by ( 'orderby_column' => '', 'orderby_json' => '', 'order' => 'ASC' | 'DESC', 'inet_aton' => '1' )
+ * @return array $submissions 
+*/
+function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order_by = array() ) {
     
     global $wpdb;
 
@@ -745,6 +814,37 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name ) {
     $object_name = sanitize_text_field( wp_unslash( $object_name ) );
     
     $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = '" . $object_name . "'";
+
+    if ( ! empty( $order_by ) ) {
+
+        $order = 'ASC';
+        if ( isset( $order_by['order'] ) && $order_by['order'] === 'DESC' ) {
+            $order = 'DESC';
+        }
+
+        if ( isset( $order_by['orderby_column'] ) ) {
+
+            $query .= ' ORDER BY ' . $order_by['orderby_column'] . ' ' . $order;
+
+        } else if ( isset( $order_by['orderby_json'] ) ) {
+
+            $prop = $order_by['orderby_json'];
+
+            /* 
+             * A propriedade 'inet_aton' é usada para 
+             * informar ao MySQL que deve-se considerar 
+             * a propriedade como número
+             */ 
+            $inet_function_str = ( ( isset( $order_by['inet_aton'] ) ) ? 'INET_ATON' : '' );
+
+            $query = 'SELECT *, ' . $inet_function_str . '(JSON_UNQUOTE(JSON_EXTRACT(data, "$.' . $prop . '"))) AS json_prop' .
+                        ' FROM `SET_TABLE_NAME` ' . 
+                        ' WHERE `object_name` = "' . $object_name . '" ' . 
+                        ' ORDER BY json_prop ' . $order;
+
+        }
+
+    }
 
     $submissions = intranet_fafar_api_read( $query );
 
@@ -830,10 +930,13 @@ function intranet_fafar_api_get_equipaments_handler() {
      */ 
     $submissions_joined = array_map( function ( $s ) {
 
-        $applicant      = get_userdata( $s['applicant'][0] );
-        $s['applicant'] = $applicant->get( 'display_name' );
+        $applicant      = get_userdata( $s['data']['applicant'][0] );
 
-        $s['place'] = intranet_fafar_api_get_submission_by_id( $s['place'][0] );
+        $s['data']['applicant'] = $applicant->get( 'display_name' );
+
+        $s['data']['place'] = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
+
+        $s['data']['ip'] = intranet_fafar_api_get_submission_by_id( $s['data']['ip'][0] );
 
         return $s;
         
@@ -842,6 +945,36 @@ function intranet_fafar_api_get_equipaments_handler() {
 
 
     return rest_ensure_response( json_encode( $submissions_joined ) );
+
+}
+
+function intranet_fafar_api_get_equipament_by_id( $id ) {
+
+    $equipmanet = intranet_fafar_api_get_submission_by_id( $id );
+
+    if ( ! $equipmanet ) 
+        return array( 'error_msg' => '[0202]No equipmanet found', 'http_status' => 400 );
+
+    if ( isset( $equipmanet['error_msg'] ) ) 
+        return array( 'error_msg' => $equipmanet['error_msg'], 'http_status' => 400 );
+
+    /*
+     * Substituir os campos que tem ID de outro objeto,
+     * pelo objeto de mesmo ID
+     */ 
+
+    $applicant = get_userdata( $equipmanet['data']['applicant'][0] );
+
+    if ( isset( $applicant ) )
+        $equipmanet['data']['applicant'] = $applicant->get( 'display_name' );
+
+    if ( isset( $equipmanet['data']['place'][0] ) )
+        $equipmanet['data']['place'] = intranet_fafar_api_get_submission_by_id( $equipmanet['data']['place'][0] );
+
+    if ( isset( $equipmanet['data']['ip'][0] ) )
+        $equipmanet['data']['ip'] = intranet_fafar_api_get_submission_by_id( $equipmanet['data']['ip'][0] );
+
+    return $equipmanet;
 
 }
 
@@ -924,12 +1057,15 @@ function intranet_fafar_api_read( $query, $check_permissions = true, $check_is_a
 
     if ( $submissions === null ) return array();
 
-    if( ! $check_permissions && ! $check_is_active )
-        return intranet_fafar_api_decode_all_submissions_as_arr( $submissions );
+    if( empty( $submissions ) ) return array();
 
     $submissions_checked = array();
     foreach( $submissions as $submission ) {
     
+        $submission['data'] = json_decode( $submission['data'], true );
+
+        //error_log( print_r( $submission, true ) );
+
         // Check if 'is active'
         if( $check_is_active && 
             $submission['is_active'] != 1 )
@@ -946,7 +1082,7 @@ function intranet_fafar_api_read( $query, $check_permissions = true, $check_is_a
          */
         if( $check_permissions &&
             ! intranet_fafar_api_check_write_permission( $submission ) )
-            $submission['prevent_write'] = true;
+            $submission['data']['prevent_write'] = true;
 
         /*
          * Checks for read permission.
@@ -954,33 +1090,38 @@ function intranet_fafar_api_read( $query, $check_permissions = true, $check_is_a
          */
         if( $check_permissions &&
             ! intranet_fafar_api_check_exec_permission( $submission ) )
-            $submission['prevent_exec'] = true;
+            $submission['data']['prevent_exec'] = true;
 
         array_push( $submissions_checked,  $submission );
     
     }
 
-    return intranet_fafar_api_decode_all_submissions_as_arr( $submissions_checked );
+    return $submissions_checked;
 
 }
 
-function intranet_fafar_api_update( $id, $new_data, $check_permissions = true ) {
+function intranet_fafar_api_update( $id, $submission, $check_permissions = true ) {
 
-    if ( ! $new_data || ! $id )
-        return array( 'error_msg' => 'No ID or data informed!' );
+    if ( ! $id || ! $submission )
+        return array( 'error_msg' => 'No ID or obj informed!' );
+
+    if ( ! isset( $submission['data'] ) )
+        return array( 'error_msg' => 'No data from obj informed!' );
 
     global $wpdb;
   
     $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
 
-    if ( ! isset( $new_data['data'] ) )
-        $new_data['data'] = json_encode( $new_data['data'] );
+    if ( ! is_string( $submission['data'] ) )
+        $submission['data'] = json_encode( $submission['data'] );
+
+    error_log(print_r($submission, true));
   
-    $wpdb->update( $table_name, $new_data, array( 'id' => $id ) );
+    $wpdb->update( $table_name, $submission, array( 'id' => $id ) );
 
-    do_action( 'intranet_fafar_api_after_update', $id, $new_data );
+    do_action( 'intranet_fafar_api_after_update', $id, $submission );
 
-    return array( 'id' => $id, 'new_data' => $new_data );
+    return array( 'id' => $id, 'submission' => $submission );
   
 }
 
@@ -1025,7 +1166,7 @@ function intranet_fafar_api_delete( $submission, $deactivate = true, $check_perm
   
 }
 
-/**
+/*
  * <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  * PERMISSION FUNCTIONS BLOCK
  * START
@@ -1118,12 +1259,16 @@ function intranet_fafar_api_check_permissions( $submission, $permission_digit_va
 
 }
 
-/**
+/*
  * PERMISSION FUNCTIONS BLOCK
  * END
  * >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  */
 
+
+/*
+ * Functions to sanitize values, array or not, recurvive or not 
+ */
 function intranet_fafar_api_san( $v ) {
 
     $v = ( is_array( $v ) ? $v[0] : $v );
@@ -1161,61 +1306,6 @@ function intranet_fafar_api_san_arr( $arr ) {
         * - Strips percent-encoded characters,
         */
         $arr[$k] = intranet_fafar_api_san_recursive( $v );
-
-    }
-
-    return $arr;
-
-}
-
-function intranet_fafar_api_decode_all_submissions_as_arr( $arr ) {
-    
-    $s_arr = array();
-
-    foreach ( $arr as $item ) {
-        array_push( $s_arr, intranet_fafar_api_get_submission_as_arr( $item ) );
-    }
-
-    return $s_arr;
-}
-
-/*
- * This function join all submissions properties(columns and json) 
- * from $wpdb->get_results in one php array.
- *
- * @since 1.0.0
- * @param mixed $submission Return from $wpdb->get_results
- * @return array $submission_joined  Submission joined
-*/
-function intranet_fafar_api_get_submission_as_arr( $submission ) {
-    
-    if ( ! isset( $submission['data'] ) ) {
-
-        intranet_fafar_logs_register_log( 
-            'ERROR', 
-            'intranet_fafar_api_get_submission_as_arr', 
-            'submission ' . ( $submission['id'] ?? 'UNKNOW_ID') . ' do not have "data" column value' 
-        );
-
-        return $submission;
-
-    }
-
-    $arr = json_decode( $submission['data'], true );
-
-    foreach ( $submission as $key => $value ) {
-
-        if( $key == 'data' ) continue;
-
-        if ( is_array( $value ) && ! empty( $value ) ) {
-            
-            $arr[$key] =  $value[0];
-        
-        } else {
-
-            $arr[$key] = ( $value ) ?? '--';
-
-        }
 
     }
 
