@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /*
  * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-visualizador-equipamento-script', get_stylesheet_directory_uri() . '/assets/js/visualizador-equipamento.js', array( 'jquery' ), false, false );
+ * wp_enqueue_script_module( 'intranet-fafar-visualizador-equipamento-script', get_stylesheet_directory_uri() . '/assets/js/visualizador-equipamento.js', array( 'jquery' ), false, false );
  */
 wp_enqueue_script_module( 'intranet-fafar-visualizar-equipamento-script', get_stylesheet_directory_uri() . '/assets/js/visualizar-equipamento.js', array( 'jquery' ), false, false );
 
@@ -159,7 +159,17 @@ get_header(); ?>
                         <tbody>
                             <tr>
                                 <td>Responsável</td>
-                                <td class="fw-medium"><?php echo ( ( $equipament['data']['applicant'] ) ?? '' ) ?></td>
+                                <td class="fw-medium">
+                                <?php 
+                                echo ( 
+                                    ( $equipament['data']['applicant']['data'] ) ?
+                                    '<a href="/membros/' . $equipament['data']['applicant']['data']->user_login . '" target="_blank" title="Perfil de ' . $equipament['data']['applicant']['data']->display_name . '">' .
+                                       $equipament['data']['applicant']['data']->display_name .
+                                    '</a>' : 
+                                    '' 
+                                    ) 
+                                ?>
+                                </td>
                             <tr>
                             <tr>
                                 <td>Status</td>
@@ -208,7 +218,7 @@ get_header(); ?>
                                         echo ( 
                                                 ( isset( $equipament['data']['place'] ) ) ?
                                                     '<a 
-                                                        href="./vizualizar-objeto?id=' . $equipament['data']['place']['id'] . '" 
+                                                        href="./visualizar-objeto?id=' . $equipament['data']['place']['id'] . '" 
                                                         target="blank" 
                                                         title="Detalhes da sala"
                                                     >' .

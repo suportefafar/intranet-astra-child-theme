@@ -72,11 +72,11 @@ get_header(); ?>
         <table class="table">
             <tbody>
                 <?php
-                
-                foreach ( $submission as $key => $value) {
-                    
+
+                foreach ( $submission['data'] as $key => $value) {
+                                    
                     if ( ! $value || 
-                         ( is_array( $value ) && empty( $value ) ) )
+                        ( is_array( $value ) && empty( $value ) ) )
                         continue;
 
                     echo '<tr>';
@@ -84,6 +84,22 @@ get_header(); ?>
                     echo    '<td class="fw-medium">' . ( is_array( $value ) ? implode( ', ', $value ) : $value ) . '</td>';
                     echo '<tr>';
                 }
+                
+                foreach ( $submission as $key => $value) {
+                    
+                    if ( ! $value || 
+                         ( is_array( $value ) && empty( $value ) ) )
+                        continue;
+                    
+                    if ( $key === 'data' )
+                        continue;
+
+                    echo '<tr>';
+                    echo    '<td>' . str_replace( '_', ' ', ucwords( $key, '_' ) ) . '</td>';
+                    echo    '<td class="fw-medium">' . ( is_array( $value ) ? implode( ', ', $value ) : $value ) . '</td>';
+                    echo '<tr>';
+                }
+                
 
                 ?>
             </tbody>

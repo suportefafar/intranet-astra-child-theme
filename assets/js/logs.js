@@ -88,7 +88,7 @@ async function fetchDataHadler() {
 function formatterHandler(_, row) {
   const html_content = `
   <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href='/vizualizar-objeto/?id=${row.cells[0].data}' title='Detalhes'>
+    <a class="btn btn-outline-secondary" href='/visualizar-objeto/?id=${row.cells[0].data}' title='Detalhes'>
       <i class="bi bi-info-lg"></i>
     </a>
   </div>  

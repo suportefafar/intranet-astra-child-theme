@@ -47,7 +47,7 @@ const grid = new gridjs.Grid({
   ],
   data: fetchDataHandler,
   pagination: {
-    limit: 20,
+    limit: 10,
     summary: true,
   },
   search: true,
@@ -120,7 +120,7 @@ function actionColFormatter(current, row) {
 
   const html_content = `
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary" href="/vizualizar-objeto/?id=${id}" title="Detalhes">
+      <a class="btn btn-outline-secondary" href="/visualizar-objeto/?id=${id}" title="Detalhes">
         <i class="bi bi-info-lg"></i>
       </a>
       <a class="btn btn-outline-primary" href="#" title="Eventos">
@@ -160,7 +160,7 @@ document.addEventListener("click", (event) => {
 function confirmDelete(id) {
   showConfirmModal(
     "Excluir Disciplina?",
-    "Essa ação não pode ser refeita.",
+    "Essa ação não pode ser desfeita.",
     "Excluir",
     "danger",
     () => deleteSubmission(id)

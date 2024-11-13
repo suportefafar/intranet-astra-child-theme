@@ -133,14 +133,16 @@ function intranet_fafar_api_get_place_reservations( $request ) {
 
     }
 
-    return rest_ensure_response( 
-            json_encode( 
-                intranet_fafar_api_bff_reservations_prepare( 
-                    $submissions,
-                    array( 'id', 'start', 'end', 'desc', 'discipline', 'owner', 'applicant', 'reservation_group_id', 'place' )
-                ) 
-            ) 
-        );
+    // return rest_ensure_response( 
+    //         json_encode( 
+    //             intranet_fafar_api_bff_reservations_prepare( 
+    //                 $submissions,
+    //                 array( 'id', 'rrule', 'duration', 'desc', 'discipline', 'owner', 'applicant', 'place' )
+    //             ) 
+    //         ) 
+    //     );
+
+    return rest_ensure_response( json_encode( $submissions ) );
 
 }
 
@@ -298,369 +300,284 @@ function intranet_fafar_api_get_loans_by_equipament( $id ) {
     return $submissions;
 }
 
-/**
- * This function listen a creation of a reservation and checks if 
- * is available.
- * Its uses the '' filter hook of fafar-cf7crud.
- * Returns null to abort the creating
+/*
+ * {
+ *   title: "my recurring STRING event",
+ *   rrule:
+ *     "DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201;BYDAY=MO,FR",
+ * },
  * 
- *   $data = array( 
- *   'desc' => $desc,
- *   'discipline' => $discipline,
- *   'frequency' => $frequency,
- *   'start_time' => $start_time,
- *   'end_time' => $end_time,
- *   'start_period' => $start_period,
- *   'end_period' => $end_period,
- *   'start' => $start,
- *   'end' => $end,
- *   'owner' => $owner,
- *   'applicant' => $applicant,
- *   'place' => $place,
- *   'object_sub_type' => $object_sub_type,
- *   'reservation_day' => $reservation_day,
- *   'weekday' => $weekday,
- *   'reservation_group_id' => $reservation_group_id,
- *   'post_on_fafar_website' => $post_on_fafar_website,
- *  )
+ * Array\n(
+ *     [id] => 17310244196c882324f4
+ *     [data] => {
+ *          "far_prevent_submit":"1",
+ *          "desc":"DESCRICAO DO EVENTO SIM",
+ *          "discipline":["1728413739e86f5dc2b8"],
+ *          "date":"2024-11-07",
+ *          "start_time":"08:00",
+ *          "end_time":"09:00",
+ *          "frequency":["weekly"],
+ *          "weekdays":["1","3"],
+ *          "end_date":"2024-11-07",
+ *          "place":["172842803339bbfade73"],
+ *          "applicant":["5"],
+ *          "does_post_on_fafar_website":["Publicar no site da FAFAR"]
+ *      }
+ *     [form_id] => 446
+ *     [object_name] => reservation
+ *     [owner] => 5
+ *     [group_owner] => ti
+ *     [remote_ip] => 150.164.110.253
+ *     [submission_url] => 
+ * )
+ * 
+ *  {
+       title: "my recurring STRING event",
+       rrule:
+         "DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201;BYDAY=MO,FR",
+    },
  * 
  * @param $form_data
  * @return FromData | null
 */
-function intranet_fafar_api_create_new_event( $form_data, $contact_form ) {
+function intranet_fafar_api_create_or_update_reservation( $form_data, $contact_form ) {
 
-    // 0 - Verificar se se trata se uma reserva
+    // Verificações iniciais
     if( ! isset( $form_data['object_name'] ) ) return $form_data;
 
     if ( $form_data['object_name'] !== 'reservation' ) return $form_data;
-
-    $form_data_as_arr = intranet_fafar_api_get_submission_as_arr( $form_data );
-
-    $form_data_as_arr = intranet_fafar_api_san_arr( $form_data_as_arr );
-
-    // 1 - Verificar se os dados vieram corretos, conforme cada tipo de reserva
-    // 1.1 - Verificação geral
-
-    if ( ! isset( $form_data_as_arr['start'] ) ||
-         ! isset( $form_data_as_arr['end'] ) ||
-         ! isset( $form_data_as_arr['place'] ) || 
-         ! isset( $form_data_as_arr['frequency'] ) )
-        return array( 'error_msg' => '[001] Campo(s) inválido(s) de Data, Hora, Lugar e/ou Tipo do Objeto!' );
-
-    if ( intranet_fafar_api_get_timestamp( $form_data_as_arr['start']) > 
-         intranet_fafar_api_get_timestamp( $form_data_as_arr['end'] ) )
-        return array( 'error_msg' => '[002] Hora Início não pode ser depois de Hora Fim!' );
-
-    if ( intranet_fafar_api_get_timestamp( $form_data_as_arr['start'] ) === 
-         intranet_fafar_api_get_timestamp( $form_data_as_arr['end'] ) )
-        return array( 'error_msg' => '[003] Hora Início não pode ser igual a Hora Fim!' );
-
-    $new_reservations = array();
-
-    $frequency = ( is_array( $form_data_as_arr['frequency'] ) ? 
-        $form_data_as_arr['frequency'][0] : 
-        $form_data_as_arr['frequency'] );
-    // 1.2.1 Once
-    if ( $frequency === 'once' ) {
-
-        $new_reservations[] = array( 'start' => $start, 'end' => $end );
-
-        // compara eventos gerados pelo rrule com os que já existem no BD 
-       
-    } 
-    // 1.2.2 Weekly
-    else if ( $frequency === 'weekly' ) {
-
-        if ( ! isset( $form_data_as_arr['weekday'] ) )
-            return array( 'error_msg' => '[004] Início, Fim do período e/ou Dia da semana não informado!' );
-
-        if ( ! is_array( $form_data_as_arr['weekday'] ) )
-            return array( 'error_msg' => '[005] Dia de semana em formato desconhecido' );
-
-        $by_days = implode( ',', $form_data_as_arr['weekday'] );
-
-        // gera rrule
-        $rrule = 'DTSTART:' . $start . '\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL='. $end . ';BYDAY=' . $by_days;
-
-        // gera eventos por rrule
-        $new_reservations = intranet_fafar_api_generate_events_from_rrule( $rrule );
-
-        // compara eventos gerados pelo rrule com os que já existem no BD
-
-        // dentro do comparador
-            // se o evento tiver rrule
-                // gera eventos por rrule
-                // compara eventos gerados pelo rrule com os novos
-
-    }
-    // 1.2.x Desconhecido
-    else {
-
-        return array( 'error_msg' => '[100] Frequência desconhecida!' );
-
-    }
-
-    // 'DTSTART:20241021T133000\nRRULE:TZID=America/Sao_Paulo;FREQ=WEEKLY;INTERVAL=1;UNTIL=20241022T183000'
-
-    // $rruleString = 'FREQ=WEEKLY;COUNT=5;BYDAY=MO,WE,FR;UNTIL=2024-12-31T23:59:59';
-    // $startDate = '2024-10-01 09:00:00';
     
-    // $events = generateEventsFromRRule($rruleString, $startDate);
-    
-    // echo 'Generated events:\n';
-    // foreach ($events as $event) {
-    //     echo $event . '\n';
-    // }
+    $new_form_data = $form_data;
+    $new_form_data['data'] = json_decode( $new_form_data['data'], true );
 
-    // 2 - 'Gera' as reserva(s)
-    $new_reservations = intranet_fafar_api_generate_reservations( $form_data_as_arr );
-
-    if ( empty( $new_reservations ) )
-        return array( 'error_msg' => '[007] Não foi possível gerar reservationos!' );
-
-    // 3 - Verificar se todos as reservas podem ser feitas e não colidem com outras
-    $place = ( is_array( $form_data_as_arr['place'] ) ? $form_data_as_arr['place'][0] : $form_data_as_arr['place'] );
-    $place_id = intranet_fafar_api_san( $place );
-    $new_reservations = intranet_fafar_api_is_place_available_for_class_reservation( $new_reservations, $place_id );
-    
-    //
-
-    if ( isset( $new_reservations['error_msg'] ) )
-        return $new_reservations;
-
-    // 4 - Se todas PODEM ser feitas, então faça.
-    $form_post_id = $contact_form->id();
-
-    // 4.1 - Mas antes, se for multiplos reservationos, preenche o 'reservation_group_id'
-    $reservation_group_id = '';
-    if ( sizeof( $new_reservations ) > 1 ) {
-
-        $bytes          = random_bytes(5);
-        $unique_hash    = time().bin2hex($bytes); 
-        $reservation_group_id = $unique_hash; 
-
-    }
-    
-    foreach ( $new_reservations as $new_reservation ) {
-
-        $form_data_as_json                   = json_decode( $form_data['data'], true );
+    // Verificar se dados necessários foram informados
+    if ( ! isset( $new_form_data['data']['date'] )  ||
+         ! isset( $new_form_data['data']['start_time'] ) || 
+         ! isset( $new_form_data['data']['end_time'] ) || 
+         ! isset( $new_form_data['data']['frequency'][0] ) || 
+         ! isset( $new_form_data['data']['place'][0] ) 
+       ) {
+            
+        return array( 'error_msg' => '[001] Data, tempo, frenquência ou lugar não informado!' );
         
-        $form_data_as_json['reservation_group_id'] = $reservation_group_id;
-        $form_data_as_json['start']          = $new_reservation['start'];
-        $form_data_as_json['end']            = $new_reservation['end'];
-        $form_data['id']                     = false;
-
-        $form_data['data']                   = json_encode( $form_data_as_json );
-
-        intranet_fafar_api_create( $form_data );
-  
     }
 
-    return array( 'far_prevent_submit' => true );
+    // Verificar se *hora* de fim é posterior ao de início
+    $s = new DateTime( $new_form_data['data']['start_time'] );
+    $e = new DateTime( $new_form_data['data']['end_time'] );
+    if ( $s >= $e ) {
+
+        return array( 'error_msg' => '[001] Horário de início não pode ser depois de fim!' );
+
+    }
+
+    // Verircar se *data* de fim é posterior ao de início, se houver data de fim
+    if ( $new_form_data['data']['frequency'][0] !== 'once' && isset( $new_form_data['data']['end_date'] ) ) {
+
+        $s = new DateTime( $new_form_data['data']['date'] );
+        $e = new DateTime( $new_form_data['data']['end_date'] );
+
+        if ( $s >= $e ) {
+
+            return array( 'error_msg' => '[001] Data de início não pode ser depois de fim!' );
+        
+        }
+
+    }
+
+    $title = 'Reserva ' . time();
+
+    if( isset( $new_form_data['data']['desc'] ) && 
+        $new_form_data['data']['desc'] !== '' 
+      ) {
+
+        $title = $new_form_data['data']['desc'];
+
+    } else if ( isset( $new_form_data['data']['discipline'][0] ) ) {
+
+        $discipline = intranet_fafar_api_get_submission_by_id( $new_form_data['data']['discipline'][0]  );
+
+        if ( $discipline ) {
+
+            $title = $discipline['data']['code'] . ' [' . $discipline['data']['group'] . ']';
+
+        }
+
+    }
+
+    // Setando a prop 'title'
+    $new_form_data['data']['title'] = $title;
+
+    if ( $new_form_data['data']['frequency'][0] === 'weekly' ) {
+
+        if ( ! isset( $new_form_data['data']['weekdays'] ) || 
+             ! isset( $new_form_data['data']['end_date'] ) 
+           ) {
+
+            return array( 'error_msg' => '[001] Dia de semana e/ou data de término não informado(s)!' );
+
+        }
+
+        // Gerando a prop 'dt_dstart' (Data início + Hora início) só com números
+        $date = new DateTime( $new_form_data['data']['date'] );
+
+        $time = DateTime::createFromFormat( 'H:i', $new_form_data['data']['start_time'] );
+
+        $dt_start = $date->format( 'Ymd' ) . 'T' . $time->format('His');
+
+        // Gerando a prop 'byday' com o array retornado pelos checkboxes do CF7
+        $byday = [];
+
+        foreach ( $new_form_data['data']['weekdays'] as $day ) {
+
+            $date = new DateTime();
+
+            $date->setISODate( 2024, 1, $day ); // Using week 1 of 2024
+
+            $byday[] = strtoupper( substr( $date->format('l'), 0, 2 ) ); // Get the first two letters and convert to uppercase
+            
+        }
+
+        // Gerando a prop 'until' só com números
+        $date = new DateTime( $new_form_data['data']['end_date'] );
+
+        $until = $date->format( 'Ymd' ) . 'T000000';
+
+        /*
+         * Gerando RRULE string com a: 
+         * 'DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201;BYDAY=MO,FR'
+         */
+        $new_rrule = 'DTSTART:' . $dt_start . '\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=' . $until . ';BYDAY=' . implode( ',', $byday );
+
+        // Gerando a prop 'duration'
+        $start = DateTime::createFromFormat('H:i', $new_form_data['data']['start_time']);
+        $end = DateTime::createFromFormat('H:i', $new_form_data['data']['end_time']);
+
+        // Calculate the difference between the two times
+        $interval = $start->diff($end);
+
+        // 'duration' é uma prop independente de 'rrule'
+        $new_duration = $interval->format('%H:%I');
+
+    } else {
+
+        // Gerando a prop 'dt_dstart' (Data início + Hora início) só com números
+        $date = new DateTime( $new_form_data['data']['date'] );
+
+        $time = DateTime::createFromFormat( 'H:i', $new_form_data['data']['start_time'] );
+
+        $dt_start = $date->format( 'Ymd' ) . 'T' . $time->format('His');
+
+        /*
+         * Gerando RRULE string com a: 
+         * 'DTSTART:20241107T113000\nRRULE:FREQ=DAILY;COUNT=1'
+         */
+        $new_rrule = 'DTSTART:' . $dt_start . '\nRRULE:FREQ=DAILY;COUNT=1';
+
+        // Gerando a prop 'duration'
+        $start = DateTime::createFromFormat('H:i', $new_form_data['data']['start_time']);
+        $end = DateTime::createFromFormat('H:i', $new_form_data['data']['end_time']);
+
+        // Calculate the difference between the two times
+        $interval = $start->diff($end);
+
+        // 'duration' é uma prop independente de 'rrule'
+        $new_duration = $interval->format('%H:%I');
+
+    }
+
+
+    $skip_check_overlap = false;
+    if ( isset( $new_form_data['data']['rrule'] ) && $new_form_data['data']['rrule'] == $new_rrule ) {
+    
+        $skip_check_overlap = true;
+
+    }
+
+    // É, pois é.... Medo....
+    $new_form_data['data']['rrule'] =  $new_rrule;
+
+    $new_form_data['data']['duration'] =  $new_duration;
+
+    /*
+     * Sim, eu sei... Isso não é necessário. 
+     * Mas é medo de colocar mais de uma forma de sair com sucesso dessa função...
+     * Vou mudar re-escrever isso aqui quando o sistema de reservas já estiver bem testado.
+     * Na verdade essa função toda....
+     */
+    if ( $skip_check_overlap ) {
+
+        $existing_reservations = intranet_fafar_api_get_reservations_by_place( $new_form_data['data']['place'][0] );
+
+        /* 
+        * Gerar as datas dos reservas existentes
+        * Array ( [0] => 2024-02-05 00:00:00 [1] => 2024-02-02 00:00:00 [2] => ...
+        */ 
+        $new_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $new_form_data['data']['rrule'] );
+
+        // Aqui temos timestamps das reservas à ser registradas
+        foreach ( $new_reservation_timestamps as $new_reservation_timestamp ) {
+
+            foreach ( $existing_reservations as $existing_reservation ) { 
+
+                // Aqui estamos gerando as timestamps de cada evento registrado
+                $existing_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $existing_reservation['data']['rrule'] );
+
+                foreach ( $existing_reservation_timestamps as $existing_reservation_timestamp ) {
+
+                    $existing = intranet_fafar_api_get_event_start_and_end( $existing_reservation_timestamp, $existing_reservation['data']['duration'] );
+
+                    $new      = intranet_fafar_api_get_event_start_and_end( $new_reservation_timestamp, $new_form_data['data']['duration'] );
+
+                    if ( intranet_fafar_api_does_reservations_overlaps( $existing, $new ) )
+                        return array( 'error_msg' => '[423] Sala indisponível nesse horário!' );
+
+                }
+
+            }
+
+        }
+    }
+
+    // Se tudo deu certo, então devolve o objeto para ser inserido pelo plugin 'fafar-cf7crud'
+    $form_data['data'] = json_encode( $new_form_data['data'] );
+
+    return $form_data;
 
 }
 
 /**
  * 
- * @param String $rruleString
- * @return Array
- * 
- * Param example:
- * 'DTSTART:20241001T133000\nRRULE:TZID=America/Sao_Paulo;FREQ=WEEKLY;INTERVAL=1;UNTIL=20241031T183000;BYDAY=MO,WE'
- * 
- * Return example:
- *   Array
- *   (
- *       [0] => Array
- *           (
- *               [start] => 2024-10-01 13:30:00
- *               [end] => 2024-10-31 18:30:00
- *           )
- *
- *       [1] => Array
- *           (
- *               [start] => 2024-10-08 13:30:00
- *               [end] => 2024-10-31 18:30:00
- *           )
- * 
+ * @param String $timestamp    Normal DateTime str timestamp
+ * @param String $duration_str DateTime->format('%H:%I') string format
 */
-function intranet_fafar_api_generate_events_from_rrule( $rruleString ) {
-    $events = [];
-    
-    $lines = explode( '\n', $rruleString );
-    
-    if ( sizeof( $lines ) < 2 )
-        return 'RRule bad formatted';
-        
-    $dtstart_part = $lines[0];
-    $rrule_part = explode( ':', $lines[1] )[1];
+function intranet_fafar_api_get_event_start_and_end( $timestamp, $duration_str ) {
 
-    // Parse the RRULE string into an array
-    $rules = [];
-    $rruleParts = explode(';', $rrule_part);
-    foreach ($rruleParts as $rule) {
-        list($key, $value) = explode('=', $rule);
-        $rules[$key] = $value;
-    }
-    
-    $rules['DTSTART'] = explode( ':', $dtstart_part )[1];
+    if ( ! $timestamp )
+        return false;
 
-    $startDateTime = new DateTime($rules['DTSTART']);
-    
-    // Determine the frequency of recurrence
-    $frequency = isset($rules['FREQ']) ? $rules['FREQ'] : null;
-    $count = isset($rules['COUNT']) ? (int)$rules['COUNT'] : null;
-    $interval = isset($rules['INTERVAL']) ? (int)$rules['INTERVAL'] : 1;
-    $byday = isset($rules['BYDAY']) ? explode(',', $rules['BYDAY']) : [];
-    $until = isset($rules['UNTIL']) ? new DateTime($rules['UNTIL']) : null;
+    if ( ! $duration_str )
+        return false;
 
-    // Event generation loop
-    $i = 0;
-    while (true) {
-        // Stop if UNTIL is defined and we pass it
-        if ($until && $startDateTime > $until) {
-            break;
-        }
+    // Convert the start timestamp string into a DateTime object
+    $startDateTime = new DateTime();
 
-        // Stop if COUNT is defined and we've generated enough events
-        if ($count && $i >= $count) {
-            break;
-        }
+    $startDateTime->setTimestamp( (int) $timestamp );
 
-        // Add the current event date to the array
-        $events[] = $startDateTime->format('Y-m-d H:i:s');
-        $i++;
+    // Parse the duration string (e.g., "02:30")
+    list( $hours, $minutes ) = explode( ':', $duration_str );
 
-        // Generate the next occurrence based on frequency
-        switch ($frequency) {
-            case 'DAILY':
-                $startDateTime->modify("+$interval day");
-                break;
-            case 'WEEKLY':
-                if (!empty($byday)) {
-                    // Advance to the next day in BYDAY
-                    foreach ($byday as $day) {
-                        $currentDay = strtoupper($startDateTime->format('D'));
-                        if ($currentDay === substr($day, 0, 2)) {
-                            $startDateTime->modify("+$interval week");
-                            break;
-                        }
-                    }
-                } else {
-                    $startDateTime->modify("+$interval week");
-                }
-                break;
-            case 'MONTHLY':
-                $startDateTime->modify("+$interval month");
-                break;
-            default:
-                throw new Exception("Unsupported frequency: $frequency");
-        }
-    }
+    // Clone the start datetime to avoid modifying the original
+    $endDateTime = clone $startDateTime;
 
-    return $events;
-}
+    // Add the duration to the start time
+    $endDateTime->modify( "+{$hours} hours +{$minutes} minutes" );
 
-function intranet_fafar_api_generate_reservations( $data ) {
-
-    if ( ! $data ) return array();
-    if ( ! isset( $data['frequency'] ) ) return array();
-    
-    $frequency = ( is_array( $data['frequency'] ) ? $data['frequency'][0] : $data['frequency'] );
-
-    switch( $frequency ) {
-
-        case 'once':
-            return intranet_fafar_api_generate_single_reservation( $data['reservation_day'], $data['start_time'], $data['end_time'] );
-        
-        case 'weekly':
-            return intranet_fafar_api_generate_reservations_weekly( 
-                $data['start_period'], 
-                $data['end_period'], 
-                $data['start_time'], 
-                $data['end_time'], 
-                $data['weekday'], 
-            );
-
-        default:
-            return array();
-
-    }
-    
-}
-
-function intranet_fafar_api_generate_single_reservation( $reservation_day, $start_time, $end_time ) {
-
-    $reservation_day  = intranet_fafar_api_san( $reservation_day );
-    $start_time = intranet_fafar_api_san( $start_time );
-    $end_time   = intranet_fafar_api_san( $end_time );
-
-    $start = intranet_fafar_api_get_timestamp( $reservation_day . " " . $start_time );
-    $end = intranet_fafar_api_get_timestamp( $reservation_day . " " . $end_time );
-
-    return array( 0 => array( 'start' => $start, 'end' => $end ) );
-}
-
-function intranet_fafar_api_generate_reservations_weekly( $start_period, $end_period, $start_hours, $end_hours, $weekday ) {
-
-    $weekday           = ( is_array( $weekday ) ? $weekday[0] : $weekday );
-
-    $start_period      = intranet_fafar_api_san( $start_period );
-    $end_period        = intranet_fafar_api_san( $end_period );
-    $start_hours       = intranet_fafar_api_san( $start_hours );
-    $end_hours         = intranet_fafar_api_san( $end_hours );
-    $weekday           = intranet_fafar_api_san( $weekday );
-
-    $timezone          = new DateTimeZone('America/Sao_Paulo');
-    $start_period_date = new DateTime( $start_period, $timezone ); 
-    $end_period_date   = new DateTime( $end_period, $timezone );
-    $current_date      = $start_period_date;
-
-    $reservations            = array();
-    
-    while ( $current_date->getTimestamp() <= $end_period_date->getTimestamp() ) {
-    
-        // Sunday: 0, Monday: 1 ...
-        if ( date( "w", $current_date->getTimestamp() ) == $weekday ) {
-            
-            $start = intranet_get_reservation_timestamp( $current_date, $start_hours );
-            $end   = intranet_get_reservation_timestamp( $current_date, $end_hours );
-    
-            array_push( $reservations, array( 'start' => $start, 'end' => $end ) );
-    
-        }
-    
-        $current_date->modify( '+1 day' );
-    }
-        
-    return $reservations;
-    
-}
-
-function intranet_fafar_api_is_place_available_for_class_reservation( $new_reservations, $place_id ) {
-  
-    $reservations_saved = intranet_fafar_api_get_reservations_by_place( $place_id );
-    
-    foreach ( $new_reservations as $new_reservation ) {
-        foreach ( $reservations_saved as $reservation_saved ) {
-    
-          if ( intranet_fafar_api_does_reservations_overlaps( $new_reservation, $reservation_saved ) )
-            return array( "error_msg" => "[005] Horário/Data indisponível!" );
-    
-        }
-    }
-  
-    return $new_reservations;
-}
-
-function intranet_fafar_api_get_reservations_by_place( $place ) {
-    
-    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'reservation' AND JSON_CONTAINS(data, '[\"" . $place . "\"]', '$.place')";
-    
-    $submissions = intranet_fafar_api_read( $query );
-
-    return $submissions;
-
+    // Return the start and end times as timestamps
+    return array(
+        'start' => $startDateTime->getTimestamp(),
+        'end' => $endDateTime->getTimestamp(),
+    );
 }
 
 function intranet_fafar_api_does_reservations_overlaps( $reservation_a, $reservation_b ) {
@@ -691,6 +608,16 @@ function intranet_fafar_api_get_reservation_length_and_center( $reservation ) {
     $center = $length / 2 + (int) $reservation["start"];
 
     return array( "length" => $length, "center" => $center );
+}
+
+function intranet_fafar_api_get_reservations_by_place( $place ) {
+    
+    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'reservation' AND JSON_CONTAINS(data, '[\"" . $place . "\"]', '$.place')";
+
+    $submissions = intranet_fafar_api_read( $query );
+
+    return $submissions;
+
 }
 
 function intranet_get_reservation_timestamp( $date_obj, $time ) {
@@ -793,7 +720,6 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
     return rest_ensure_response( json_encode( $submissions ) );
 
 }
-
 
 /**
  * @param array $order_by ( 'orderby_column' => '', 'orderby_json' => '', 'order' => 'ASC' | 'DESC', 'inet_aton' => '1' )
@@ -930,13 +856,13 @@ function intranet_fafar_api_get_equipaments_handler() {
      */ 
     $submissions_joined = array_map( function ( $s ) {
 
-        $applicant      = get_userdata( $s['data']['applicant'][0] );
+        $applicant              = get_userdata( $s['data']['applicant'][0] );
 
         $s['data']['applicant'] = $applicant->get( 'display_name' );
 
-        $s['data']['place'] = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
+        $s['data']['place']     = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
 
-        $s['data']['ip'] = intranet_fafar_api_get_submission_by_id( $s['data']['ip'][0] );
+        $s['data']['ip']        = intranet_fafar_api_get_submission_by_id( $s['data']['ip'][0] );
 
         return $s;
         
@@ -963,10 +889,11 @@ function intranet_fafar_api_get_equipament_by_id( $id ) {
      * pelo objeto de mesmo ID
      */ 
 
-    $applicant = get_userdata( $equipmanet['data']['applicant'][0] );
+     if ( isset( $equipmanet['data']['applicant'] ) && is_numeric( $equipmanet['data']['applicant'][0] ) ) {
 
-    if ( isset( $applicant ) )
-        $equipmanet['data']['applicant'] = $applicant->get( 'display_name' );
+        $equipmanet['data']['applicant'] = intranet_fafar_api_get_user_by_id( $equipmanet['data']['applicant'][0] );
+
+    }
 
     if ( isset( $equipmanet['data']['place'][0] ) )
         $equipmanet['data']['place'] = intranet_fafar_api_get_submission_by_id( $equipmanet['data']['place'][0] );
@@ -1004,9 +931,21 @@ function intranet_fafar_api_get_reservation_by_id( $id ) {
 
     $reservation = $reservation[0];
 
-    if ( isset( $reservation['owner'] ) && $reservation['owner'] ) {
+    if ( isset( $reservation['owner'] ) && is_numeric( $reservation['owner'] ) ) {
 
         $reservation['owner'] = intranet_fafar_api_get_user_by_id( $reservation['owner'] );
+
+    }
+
+    if ( isset( $reservation['data']['applicant'][0] ) && is_numeric( $reservation['data']['applicant'][0] ) ) {
+
+        $reservation['data']['applicant'] = intranet_fafar_api_get_user_by_id( $reservation['data']['applicant'][0] );
+
+    }
+
+    if ( isset( $reservation['data']['discipline'][0] ) ) {
+
+        $reservation['data']['discipline'] = intranet_fafar_api_get_submission_by_id( $reservation['data']['discipline'][0] );
 
     }
 

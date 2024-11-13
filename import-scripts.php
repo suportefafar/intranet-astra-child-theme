@@ -44,29 +44,6 @@ function add_footer_custom_scripts_by_page() {
 		echo '<script type="module" src="' . get_stylesheet_directory_uri() . '/assets/js/logs.js"></script>';
 	}
 
-	if( false && is_page( "disciplinas" ) ){
-		echo '<script type="module" src="' . get_stylesheet_directory_uri() . '/assets/js/disciplinas.js"></script>';
-	}
-	
-	if( is_page( "salas" ) ){
-		echo '<script type="module" src="' . get_stylesheet_directory_uri() . '/assets/js/salas.js"></script>';
-	}
-
-	if( is_page( "reservas-por-sala" ) ) {
-		
-		echo '<script type="module" src="' . get_stylesheet_directory_uri() . '/assets/js/reservas-por-sala.js"></script>';
-	}
-
-	if( is_page( "reservas" ) ) {
-		
-		echo '<script type="module" src="' . get_stylesheet_directory_uri() . '/assets/js/reservas.js"></script>';
-	}
-
-	if( is_page( "reservas-por-disciplina" ) ) {
-		
-		echo '<script type="module" src="' . get_stylesheet_directory_uri() . '/assets/js/reservas-por-disciplina.js"></script>';
-	}
-
 	if( is_page( "assistente-de-reservas-de-salas" ) ) {
 		echo '<script type="module" src="' . get_stylesheet_directory_uri() . '/assets/js/assistente-de-reservas-de-salas.js"></script>';
 	}

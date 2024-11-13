@@ -6,23 +6,13 @@ add_shortcode( 'intranet_fafar_sidebar_menu', 'intranet_fafar_sidebar_menu' );
 
 add_shortcode( 'intranet_fafar_logs', 'intranet_fafar_logs' );
 
-add_shortcode( 'intranet_fafar_salas', 'intranet_fafar_salas' );
-
 add_shortcode( 'intranet_fafar_importar_json', 'intranet_fafar_importar_json' );
 
 add_shortcode( 'intranet_fafar_importar_reservas', 'intranet_fafar_importar_reservas' );
 
-add_shortcode( 'intranet_fafar_reservas', 'intranet_fafar_reservas' );
-
 add_shortcode( 'intranet_fafar_reservas_por_disciplina', 'intranet_fafar_reservas_por_disciplina' );
 
-add_shortcode( 'intranet_fafar_assistente_de_reservas', 'intranet_fafar_assistente_de_reservas' );
-
 add_shortcode( 'intranet_fafar_importar_disciplinas', 'intranet_fafar_importar_disciplinas' );
-
-add_shortcode( 'intranet_fafar_equipamentos', 'intranet_fafar_equipamentos' );
-
-add_shortcode( 'intranet_fafar_remove_object', 'intranet_fafar_remove_object' );
 
 function intranet_fafar_sidebar_profile() {
 
@@ -136,274 +126,6 @@ function intranet_fafar_logs() {
 
     ';
 
-}
-
-function intranet_fafar_salas() {
-
-
-    echo '
-    
-        <!-- HEADER BUTTONS -->
-
-        <div class="d-flex justify-content-start gap-2 mb-4">
-            <a href="/adicionar-sala" class="btn btn-outline-success text-decoration-none">
-                <i class="bi bi-plus-lg"></i>
-                Adicionar
-            </a>
-        </div>
-
-        <!-- CHARTS -->
-
-        <!--<div class="d-flex justify-content-around mb-4">
-            <div class="card" style="width: 18rem;">intranet_fafar_importar_json
-                <canvas id="myChart1"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Mês</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart2"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Ano</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart3"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Setor</h5>
-                </div>
-            </div>
-        </div>-->
-
-        <!-- TABS -->
-
-        <!--<ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#">Active</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-            </li>
-        </ul>-->
-
-        <!-- TABLES -->
-
-        <div id="table-wrapper"></div>
-
-    ';
-
-}
-
-function intranet_fafar_assistente_de_reservas() {
-
-    echo '
-        <form id="form-buscar-salas" class="mb-5">
-            <div class="form-group mb-3">
-                <label for="dia-do-evento">* Dia do Evento </label>
-                <input type="date" 
-                    class="form-control" 
-                    id="dia-do-evento" 
-                    name="dia_evento" 
-                    min="2024-09-10" 
-                    aria-required="true" 
-                    required />
-            </div>
-            <div class="form-group mb-3">
-                <label for="inicio-evento">* Início </label>
-                <input type="time" 
-                    class="form-control" 
-                    id="inicio-evento" 
-                    name="inicio_evento" 
-                    aria-required="true" 
-                    required />
-            </div>
-            <div class="form-group mb-3">
-                <label for="fim-evento">* Fim </label>
-                <input type="time" 
-                    class="form-control" 
-                    id="fim-evento" 
-                    name="fim_evento" 
-                    aria-required="true" 
-                    required />
-            </div>
-            <div class="form-group mb-3">
-                <label for="capacidade">* Capacidade </label>
-                <input type="number" 
-                    class="form-control" 
-                    id="capacidade" 
-                    name="capacidade" 
-                    min="1" 
-                    max="200" 
-                    placeholder="20" 
-                    aria-required="true" 
-                    required />
-            </div>
-            <button type="submit" class="btn btn-outline-secondary">Buscar Salas</button>
-        </form>
-
-        <!-- TABLES -->
-
-        <div id="table-wrapper" class="my-5 d-none"></div>
-    ';
-}
-
-function intranet_fafar_reservas() {
-
-    $places = intranet_fafar_api_get_submissions_by_object_name( 'place' );
-
-    if ( isset( $places['msg_error'] ) )
-        $places = array();
-
-    
-    usort($places, function($a, $b) {
-        return $a['number'] <=> $b['number']; // Ascending order
-    });
-
-    $tab_li_elements = '';
-    $first = true;
-    foreach ( $places as $place ) {
-
-        if ( $place['object_sub_type'] != 'classroom' ) continue;
-
-        $tab_li_elements .= '
-                <li class="nav-item">
-                    <a class="text-decoration-none nav-link ' . ($first ? 'active' : '') . '" ' . ($first ? 'aria-current="page"' : "") . ' href="#" data-place-id="' . $place['id'] . '">
-                    ' . $place['number'] . '
-                    </a>
-                </li>
-            ';
-
-        $first = false;
-    }
-
-    echo '
-    
-        <!---->
-
-        <div class="alert alert-warning d-none" role="alert" id="alert">Carregando....</div>
-
-        <!-- HEADER BUTTONS -->
-
-        <div class="d-flex justify-content-start gap-2 mb-4">
-            <a href="/adicionar-reserva" class="btn btn-outline-success text-decoration-none w-button">
-                <i class="bi bi-plus-lg"></i>
-                Adicionar
-            </a>
-            <a href="/assistente-de-reservas-de-salas" class="btn btn-outline-warning text-decoration-none">
-                <i class="bi bi-magic"></i>
-                Assistente
-            </a>
-            <a href="#" class="btn btn-outline-secondary text-decoration-none">
-                <i class="bi bi-printer"></i>
-                Imprimir
-            </a>
-        </div>
-
-        <!-- CHARTS -->
-
-        <!--<div class="d-flex justify-content-around mb-4">
-            <div class="card" style="width: 18rem;">intranet_fafar_importar_json
-                <canvas id="myChart1"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Mês</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart2"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Ano</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart3"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Setor</h5>
-                </div>
-            </div>
-        </div>-->
-
-        <!-- TABS -->
-
-        <ul class="nav nav-tabs" id="ul_place_tabs">
-            ' . $tab_li_elements . '
-        </ul>
-        
-        <!-- CALENDER -->
-
-         <div id="calendar"></div>
-
-         <br />
-
-        <!-- TABLES -->
-
-        <h4>Lista</h4>
-
-        <div id="table-wrapper"></div>
-
-        <!-- MODALS -->
-
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
-            Launch demo modal
-        </button>
-
-        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title m-0">Detalhes</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <table class="table table-borderless border-0">
-                            <tbody>
-                                <tr>
-                                    <td class="text-body">Título</td>
-                                    <td id="modal_event_title" class="text-body-emphasis">--</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-body">Início</td>
-                                    <td id="modal_event_start" class="text-body-emphasis">--</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-body">Fim</td>
-                                    <td id="modal_event_end" class="text-body-emphasis">--</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-body">Dono</td>
-                                    <td id="modal_event_owner" class="text-body-emphasis">--</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="modal-footer">
-                        <a class="btn btn-light text-decoration-none" href="/vizualizar-objeto/" target="_blank">
-                            <i class="bi bi-info-lg"></i>
-                            Mais
-                        </a>
-                        <button type="button" class="btn btn-primary">
-                            <i class="bi bi-pencil"></i>
-                            Editar
-                        </button>
-                        <button type="button" class="btn btn-danger">
-                            <i class="bi bi-trash"></i>
-                            Excluir
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    ';
 }
 
 function intranet_fafar_importar_json() {
@@ -763,254 +485,6 @@ function intranet_fafar_importar_disciplinas() {
     ';
 }
 
-function intranet_fafar_excluir_objeto() {
-
-    if ( is_admin() ) return;
-
-    if ( ! isset( $_GET['id'] ) ) {
-
-        echo '
-            <script>
-                alert("No ID passed!");
-                window.history.back();
-            </script>
-        ';
-
-        return;
-
-    }
-
-    if ( ! isset( $_GET['confirmed'] ) ) {
-
-        echo '<script>
-                const r = confirm("\nExcluir objeto?\n\nNão poderá ser desfeito!\n");
-
-                if(r){
-                    window.location.href = "./excluir-objeto/?id=' . $_GET['id'] . '&confirmed=1";
-                } else {
-                    window.history.back();
-                }
-            </script>';
-
-    return;
-
-    }
-
-    global $wpdb;
-
-    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
-
-    $id = sanitize_text_field( $_GET['id'] );
-
-    $res = $wpdb->delete(
-        $table_name,
-        array(
-            'id' => $id,
-        )
-    );
-
-    if ( ! $res ) {
-
-        echo '
-            <script>
-                alert("No object found!");
-                window.history.back();
-            </script>
-        ';
-
-        return;
-
-    }
-
-    echo '
-        <script> 
-            window.history.back();
-        </script>
-    ';
-
-}
-
-function intranet_fafar_equipamentos() {
-
-    echo '
-    
-        <!---->
-
-        <div class="alert alert-warning d-none" role="alert" id="alert">Carregando....</div>
-
-        <!-- HEADER BUTTONS -->
-
-        <div class="d-flex justify-content-start gap-2 mb-4">
-            <a href="/adicionar-equipamento" class="btn btn-outline-success text-decoration-none w-button">
-                <i class="bi bi-plus-lg"></i>
-                Adicionar
-            </a>
-        </div>
-
-        <!-- CHARTS -->
-
-        <!--<div class="d-flex justify-content-around mb-4">
-            <div class="card" style="width: 18rem;">intranet_fafar_importar_json
-                <canvas id="myChart1"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Mês</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart2"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Ano</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart3"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Setor</h5>
-                </div>
-            </div>
-        </div>-->
-
-        <!-- TABS -->
-
-        <ul class="nav nav-tabs" id="ul_place_tabs">
-            
-        </ul>
-        
-        <!-- CALENDER -->
-
-         <div id="calendar"></div>
-
-         <br />
-
-        <!-- TABLES -->
-
-        <h4>Lista</h4>
-
-        <div id="table-wrapper"></div>
-
-        <!-- MODALS -->
-
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
-            Launch demo modal
-        </button>
-
-        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title m-0">Detalhes</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <table class="table table-borderless border-0">
-                            <tbody>
-                                <tr>
-                                    <td class="text-body">Título</td>
-                                    <td id="modal_event_title" class="text-body-emphasis">--</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-body">Início</td>
-                                    <td id="modal_event_start" class="text-body-emphasis">--</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-body">Fim</td>
-                                    <td id="modal_event_end" class="text-body-emphasis">--</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-body">Dono</td>
-                                    <td id="modal_event_owner" class="text-body-emphasis">--</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="modal-footer">
-                        <a class="btn btn-light text-decoration-none" href="/vizualizar-objeto/" target="_blank">
-                            <i class="bi bi-info-lg"></i>
-                            Mais
-                        </a>
-                        <button type="button" class="btn btn-primary">
-                            <i class="bi bi-pencil"></i>
-                            Editar
-                        </button>
-                        <button type="button" class="btn btn-danger">
-                            <i class="bi bi-trash"></i>
-                            Excluir
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    ';
-}
-
-function intranet_fafar_remove_object() {
-
-    if ( is_admin() ) return;
-
-    if ( ! isset( $_GET['id'] ) ) {
-
-        echo '<script>
-                alert("Nenhum ID informado!");
-                window.history.back();
-            </script>';
-
-        return;
-
-    }
-
-    if ( ! isset( $_GET['confirmed'] ) ) {
-
-        echo '<script>
-                const r = confirm("\nExcluir objeto?\n\nNão poderá ser desfeito!\n");
-
-                if(r){
-                    window.location.href = "./?id=' . $_GET['id'] . '&confirmed=1";
-                } else {
-                    window.history.back();
-                }
-            </script>';
-
-        return;
-
-    }
-
-    global $wpdb;
-
-    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
-
-    $id = sanitize_text_field( $_GET['id'] );
-
-    $res = $wpdb->delete(
-        $table_name,
-        array(
-            'id' => $id,
-        )
-    );
-
-    if ( ! $res ) {
-
-        echo '
-            <script>
-                alert("No object found!");
-                window.history.back();
-            </script>
-        ';
-
-        return;
-
-    }
-
-    echo '
-        <script> 
-            window.history.back();
-        </script>
-    ';
-
-}
-
 /**
  * 
  * 
@@ -1024,6 +498,10 @@ add_shortcode( 'intranet_fafar_get_users_as_select_options', 'intranet_fafar_get
 add_shortcode( 'intranet_fafar_get_ips_as_select_options', 'intranet_fafar_get_ips_as_select_options' );
 
 add_shortcode( 'intranet_fafar_get_user_slug_role', 'intranet_fafar_get_user_slug_role' );
+
+add_shortcode( 'intranet_fafar_get_classrooms_as_select_options', 'intranet_fafar_get_classrooms_as_select_options' );
+
+add_shortcode( 'intranet_fafar_get_not_classrooms_as_select_options', 'intranet_fafar_get_not_classrooms_as_select_options' );
 
 function intranet_fafar_get_users_as_select_options_old() {
 
@@ -1097,7 +575,8 @@ function intranet_fafar_get_ips_as_select_options() {
              * equipamento sendo editado, esteja na lista de opções
              */
             if( $current_equipament &&
-            $current_equipament['data']['ip'][0] === $ip['id'] ) {
+                isset( $current_equipament['data']['ip'][0] ) &&
+                $current_equipament['data']['ip'][0] === $ip['id'] ) {
         
                 $is_available = true;
                 continue;
@@ -1116,6 +595,44 @@ function intranet_fafar_get_ips_as_select_options() {
 
         if ( $is_available )
             $options[esc_attr( $ip['id'] )] = esc_html( $ip['data']['address'] );
+
+    }
+
+    return json_encode( $options ); 
+
+}
+
+function intranet_fafar_get_classrooms_as_select_options() {
+
+    $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array(
+        'orderby_json' => 'number',
+    ) );
+
+    $options = array();
+
+    foreach ( $places as $place ) {
+
+        if ( $place['data']['object_sub_type'] === 'classroom' )
+            $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
+
+    }
+
+    return json_encode( $options ); 
+
+}
+
+function intranet_fafar_get_not_classrooms_as_select_options() {
+
+    $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array(
+        'orderby_json' => 'number',
+    ) );
+
+    $options = array();
+
+    foreach ( $places as $place ) {
+
+        if ( $place['data']['object_sub_type'] !== 'classroom' )
+            $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
 
     }
 

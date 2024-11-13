@@ -216,7 +216,7 @@ function actionColFormatter(current, row) {
 
   const html_content = `
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary" href="/vizualizar-equipamento/?id=${id}" title="Detalhes">
+      <a class="btn btn-outline-secondary" href="/visualizar-equipamento/?id=${id}" title="Detalhes">
         <i class="bi bi-info-lg"></i>
       </a>
       <button class="btn btn-outline-primary btn-loan-equipament" data-id="${id}" title="Emprestar">
@@ -244,7 +244,7 @@ function actionColFormatter(current, row) {
 function confirmDelete(id) {
   showConfirmModal(
     "Excluir Disciplina?",
-    "Essa ação não pode ser refeita.",
+    "Essa ação não pode ser desfeita.",
     "Excluir",
     "danger",
     () => deleteSubmission(id)

@@ -1,8 +1,30 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
 let EVENTS = [];
+let CURRENT_CLASSROOM_ID = null;
 
-document.addEventListener("DOMContentLoaded", () => loadUI());
+/*
+ * LISTENER'S
+ */
+
+/*
+ * Aguarda até que a DOM seja carregada para inserir os eventos no calendário
+ */
+document.addEventListener("DOMContentLoaded", () => {
+  loadUI();
+});
+
+/*
+ * Adiciona um evento de clique à DOM,
+ * e despara se o elemento que recebeu o clique tem
+ * a classe 'btn-loan-equipament' ou é filho de um elemento
+ * com essa classe
+ */
+document
+  .querySelector("#btn_event_details_delete")
+  .addEventListener("click", (event) => {
+    const id = event.target.dataset.id;
+    hideEventDetailsModal();
+    confirmDelete(id);
+  });
 
 async function loadUI(place_id = false) {
   const queryString = window.location.search;
@@ -10,23 +32,25 @@ async function loadUI(place_id = false) {
   const place = urlParams.get("place");
 
   if (place_id) {
-    place_id = place_id;
+    CURRENT_CLASSROOM_ID = place_id;
+  } else if (CURRENT_CLASSROOM_ID) {
+    // não faz nada
   } else if (place) {
-    place_id = place;
+    CURRENT_CLASSROOM_ID = place;
   } else {
-    place_id = document.querySelectorAll("#ul_place_tabs .nav-link")[0].dataset
-      .placeId;
+    CURRENT_CLASSROOM_ID = document.querySelectorAll(
+      "#ul_place_tabs .nav-link"
+    )[0].dataset.placeId;
   }
 
-  renderPlacesTabs(place_id);
+  renderPlacesTabs(CURRENT_CLASSROOM_ID);
 
-  const submissions = await getEventsByPlaceID(place_id);
+  const submissions = await getEventsByPlaceID(CURRENT_CLASSROOM_ID);
 
-  //renderCalendar(submissions);
-  updateTableData(submissions);
+  renderCalendar(submissions);
 }
 
-/**
+/*
  * GET EVENTS
  */
 async function getEventsByPlaceID(place_id) {
@@ -35,8 +59,11 @@ async function getEventsByPlaceID(place_id) {
     response = await axios.get(
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" +
         place_id +
-        "/events"
+        "/reservations"
     );
+    // response = await axios.get(
+    //   "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/reservation"
+    // );
     console.log({ response });
   } catch (error) {
     console.log(error.response.data.message);
@@ -90,6 +117,7 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
     center: "title",
     right: "multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay,listWeek", // user can switch between the two
   },
+  allDaySlot: false,
   initialView: "timeGridWeek",
   views: {
     week: {
@@ -103,31 +131,27 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
   },
   hiddenDays: [0],
   eventClick: viewEvent,
-  events: [
-    {
-      title: "my recurring STRING event",
-      rrule:
-        "DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201;BYDAY=MO,FR",
-    },
-  ],
+  events: EVENTS,
 });
 
-calendar.render();
+// {
+//   title: "my recurring STRING event",
+//   rrule:
+//     "DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201T;BYDAY=MO,FR",
+// },
 
 function renderCalendar(submissions) {
+  console.log(submissions);
+
   const arr = [];
   for (const submission of submissions) {
-    let title = "--";
-    if (submission["discipline"] && submission["discipline"].code)
-      title = submission["discipline"].code;
-    else if (submission["desc"]) title = submission["desc"];
+    const submission_data = submission["data"];
 
     arr.push({
       id: submission["id"],
-      title,
-      start: getTimestampAsDateJsPattern(submission["start"]),
-      end: getTimestampAsDateJsPattern(submission["end"]),
-      id: submission["id"],
+      title: submission_data["title"],
+      rrule: submission_data["rrule"].replace(/\\n/g, "\n"),
+      duration: submission_data["duration"],
       color: "#F2B600",
     });
   }
@@ -139,6 +163,8 @@ function renderCalendar(submissions) {
   calendar.addEventSource(arr);
 
   calendar.refetchEvents();
+
+  calendar.render();
 }
 
 async function viewEvent(info) {
@@ -149,153 +175,83 @@ async function viewEvent(info) {
   const event = await getEventByID(id);
 
   document.querySelector("#modal_event_title").innerHTML = title;
+
   document.querySelector("#modal_event_start").innerHTML = new Date(
     start
   ).toLocaleString();
+
   document.querySelector("#modal_event_end").innerHTML = new Date(
     end
   ).toLocaleString();
+
   document.querySelector("#modal_event_owner").innerHTML =
     event.owner.data.display_name;
 
-  const m = new bootstrap.Modal("#exampleModal", {
-    keyboard: false,
-  });
-  m.show();
+  document.querySelector("#modal_event_applicant").innerHTML = event.data
+    .applicant.data
+    ? event.data.applicant.data.display_name
+    : "--";
+
+  document
+    .querySelector("#btn_event_details_info")
+    .setAttribute("href", "/visualizar-reserva/?id=" + id);
+
+  document
+    .querySelector("#btn_event_details_edit")
+    .setAttribute("href", "/editar-reserva/?id=" + id);
+
+  document.querySelector("#btn_event_details_delete").dataset.id = id;
+
+  showEventDetailsModal();
 
   console.log(event);
 }
 
-/**
- * END
- */
+function confirmDelete(id) {
+  showConfirmModal(
+    "Excluir Disciplina?",
+    "Essa ação não pode ser desfeita.",
+    "Excluir",
+    "danger",
+    () => deleteSubmission(id)
+  );
+}
 
-/**
- * TABLE RENDER
- */
+async function deleteSubmission(id) {
+  hideConfirmModal();
 
-const ptBR = {
-  search: { placeholder: "Digite uma palavra-chave..." },
-  sort: {
-    sortAsc: "Coluna em ordem crescente",
-    sortDesc: "Coluna em ordem decrescente",
-  },
-  pagination: {
-    previous: "Anterior",
-    next: "Próxima",
-    navigate: function (e, r) {
-      return "Página " + e + " de " + r;
-    },
-    page: function (e) {
-      return "Página " + e;
-    },
-    showing: "Mostrando",
-    of: "de",
-    to: "até",
-    results: "resultados",
-  },
-  loading: "Carregando...",
-  noRecordsFound: "Nenhum registro encontrado",
-  error: "Ocorreu um erro ao buscar os dados",
-};
+  showAlert("Por favor, aguarde....", "warning");
 
-const grid = new gridjs.Grid({
-  columns: [
-    "ID",
-    "Descrição",
-    {
-      name: "Disciplina",
-      formatter: (current, row) => current,
-    },
-    {
-      name: "Dia",
-      formatter: (current, row) => getDateStr(current),
-    },
-    {
-      name: "De",
-      formatter: (current, row) => getHourStr(current),
-    },
-    {
-      name: "Até",
-      formatter: (current, row) => getHourStr(current),
-    },
-    "Operador",
-    "Solicitante",
-    {
-      name: "Ações",
-      formatter: formatterHandler,
-    },
-  ],
-  data: [],
-  pagination: {
-    limit: 20,
-    summary: true,
-  },
-  search: true,
-  sort: true,
-  resizable: true,
-  language: ptBR,
-}).render(document.getElementById("table-wrapper"));
+  try {
+    const response = await axios.delete(
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
+    );
 
-function updateTableData(submissions) {
-  let table_arr = [];
-  for (const submission of submissions) {
-    table_arr.push([
-      submission["id"],
-      submission["desc"],
-      submission["discipline"],
-      submission["start"],
-      submission["start"],
-      submission["end"],
-      submission["applicant"],
-      submission["owner"],
-    ]);
+    console.log(response);
+
+    showAlert("Excluído com sucesso!", "success", true, 3000);
+
+    loadUI();
+  } catch (error) {
+    let error_msg = "[1010]Unknow error on try catch";
+
+    if (error.response?.data?.message) {
+      console.log(error.response.data);
+      error_msg = error.response.data.message;
+    } else {
+      console.log(error);
+    }
+
+    showAlert(error_msg, "danger");
   }
-
-  renderGridJS(table_arr);
 }
-
-function renderGridJS(data = []) {
-  if (!data) data = [];
-
-  grid
-    .updateConfig({
-      data,
-    })
-    .forceRender();
-}
-
-function formatterHandler(_, row) {
-  const html_content = `
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href='/vizualizar-objeto/?id=${row.cells[0].data}' title='Detalhes'>
-      <i class="bi bi-info-lg"></i>
-    </a>
-    <a class="btn btn-outline-secondary" href='/editar-reserva-por-sala/?id=${row.cells[0].data}' title='Editar'>
-      <i class="bi bi-pencil"></i>
-    </a>
-    <a class="btn btn-outline-danger" href='/excluir-evento/?id=${row.cells[0].data}' title='Excluir'>
-      <i class="bi bi-trash"></i>
-    </a>
-  </div>  
-      `;
-
-  return html(html_content);
-}
-
-/**
- * END
- */
-
-/**
- * EXTRA
- */
 
 async function getEventByID(id) {
   let response;
   try {
     response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/events/" + id
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/reservations/" +
+        id
     );
     console.log({ response });
   } catch (error) {
@@ -305,32 +261,20 @@ async function getEventByID(id) {
   return JSON.parse(response.data);
 }
 
-function getFullDateStr(s) {
-  const d = new Date(getTimestampAsDateJsPattern(s));
+/*
+ * Controle dos Modal's de Empréstimo e Devolução
+ */
+function showEventDetailsModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarEventDetailsModal")
+  );
 
-  return d.toLocaleString();
+  modal.show();
 }
 
-function getDateStr(s) {
-  const d = new Date(getTimestampAsDateJsPattern(s));
-
-  return d.toLocaleString().split(",")[0];
-}
-
-function getHourStr(s) {
-  const d = new Date(getTimestampAsDateJsPattern(s));
-
-  return d.toLocaleString().split(",")[1].slice(0, 6);
-}
-
-function getTimestampAsDateJsPattern(timestamp) {
-  const d = new Date().getTime();
-
-  const current_timestamp_length = d.toString().length;
-
-  const in_timestamp_length = timestamp.toString().length;
-
-  const length_diff = current_timestamp_length - in_timestamp_length;
-
-  return parseInt(timestamp) * Math.pow(10, length_diff);
+function hideEventDetailsModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarEventDetailsModal")
+  );
+  modal.hide();
 }

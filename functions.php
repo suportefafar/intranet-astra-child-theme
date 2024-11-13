@@ -40,18 +40,37 @@ add_action( 'wp_enqueue_scripts', 'child_enqueue_styles', 15 );
 
 require_once 'class-wp-bootstrap-navwalker.php';
 
-require_once "import-scripts.php";
+require_once 'import-scripts.php';
 
-require_once "api.php";
+require_once 'rrule.php';
 
-require_once "shortcodes.php";
+require_once 'api.php';
 
-//require_once "logs.php";
+require_once 'shortcodes.php';
+
+//require_once 'logs.php';
+
+/*
+ * Isso é uma gambiarra para lidar com um problema no CF7:
+ * https://stackoverflow.com/questions/78101215/contact-form-undefined-value-was-submitted-through-this-field
+ * 
+ * Para mim, o problema no campo IP de um equipamento, no formulário de editar. 
+ * Dava erro ao concluir a edição com o mesmo IP que já estava.
+ * De tempos em tempos eu venho aqui para ver se já foi corrigido.
+ * 
+ * Re-visitado em: --/--/----
+ */
+remove_action( 'wpcf7_swv_create_schema', 'wpcf7_swv_add_select_enum_rules', 20, -1 );
 
 /*
  * Adicionando checagem para criação de reservas.
  */
-add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_new_event', 10, 2 );
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_or_update_reservation', 10, 2 );
+
+/*
+ * Adicionando checagem para criação de reservas.
+ */
+add_filter( 'fafar_cf7crud_before_update', 'intranet_fafar_api_create_or_update_reservation', 10, 2 );
 
 /*
  * Adicionando checagem para criação de empréstimos de equipamentos.
@@ -171,4 +190,3 @@ add_action( 'wp_enqueue_scripts', function () {
 	wp_enqueue_script( 'intranet-fafar-toast', get_stylesheet_directory_uri() . '/assets/js/toast.js', array( 'jquery' ), false, true );
 
 } );
-

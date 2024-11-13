@@ -77,7 +77,7 @@ document.addEventListener("onReturnLoanSuccess", () => {
 function confirmDelete(id) {
   showConfirmModal(
     "Excluir Disciplina?",
-    "Essa ação não pode ser refeita.",
+    "Essa ação não pode ser desfeita.",
     "Excluir",
     "danger",
     () => deleteSubmission(id)
@@ -98,7 +98,7 @@ async function deleteSubmission(id) {
 
     showAlert("Excluído com sucesso!", "success", true, 3000);
 
-    setTimeout(() => (window.location = "./equipamentos"), 2000);
+    setTimeout(() => (window.location = "./equipamentos"), 1000);
   } catch (error) {
     let error_msg = "[1010]Unknow error on try catch";
 
