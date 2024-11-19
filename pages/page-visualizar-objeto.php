@@ -29,7 +29,7 @@ $ID            = sanitize_text_field( wp_unslash( $_GET["id"] ) );
 
 $submission    = intranet_fafar_api_get_submission_by_id( $ID );
 
-$prevent_write = isset( $submission['prevent_write'] );
+$prevent_write = isset( $submission['data']['prevent_write'] );
 
 
 get_header(); ?>
@@ -105,12 +105,17 @@ get_header(); ?>
             </tbody>
         </table>
 
-        <br />
+        <?php
 
-        <h5>Objeto PHP</h5>
-        <pre>
-            <?php print_r($submission) ?>
-        </pre>
+            $user_role = intranet_fafar_get_user_slug_role();
+            if ( $user_role === 'ti' || $user_role === 'administrator' ) {
+                echo '<h5 class="mt-5">Objeto PHP</h5>';
+                echo '<pre>';
+                    print_r( $submission );
+                echo '</pre>';
+            }
+
+        ?>
         
 <!--
     * Conteúdo customizado da página

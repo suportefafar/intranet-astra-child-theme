@@ -11,22 +11,43 @@ add_action( 'rest_api_init', 'intranet_fafar_api_register_submission_routes' );
 function intranet_fafar_api_register_submission_routes() {
     // Here we are registering our route for a collection of submissions and creation of submissions.
     register_rest_route( 'intranet/v1', '/submissions', array(
-        array(
-            // By using this constant we ensure that when the WP_REST_Server changes, our readable endpoints will work as intended.
-            'methods'  => WP_REST_Server::READABLE,
-            // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-            'callback' => 'intranet_fafar_api_get_submissions',
-        ),
-        array(
             // By using this constant we ensure that when the WP_REST_Server changes, our create endpoints will work as intended.
             'methods'  => WP_REST_Server::CREATABLE,
             // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
             'callback' => 'intranet_fafar_api_create_submission',
-        ),
+            /* 
+             * Define permissions for access to this end point
+             * 'permission_callback' => '__return_true', // Allows all users to access for simplicity.
+             * Ensure only logged-in users can access:
+             */ 
+            'permission_callback' => function() {
+                return is_user_logged_in();
+            }
     ) );
 
 
     // READABLE
+
+    register_rest_route( 'intranet/v1', '/submissions/service_tickets/by_user', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_service_tickets_by_user_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/submissions/service_tickets/by_departament', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_service_tickets_by_departament_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/submissions/service_ticket_updates/by_service_ticket', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler',
+    ) );
 
     register_rest_route( 'intranet/v1', '/submissions/equipaments', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
@@ -76,10 +97,18 @@ function intranet_fafar_api_register_submission_routes() {
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_get_reservation_by_id_handler',
     ) );
+    
 
+    // EDITABLE
+
+    register_rest_route( 'intranet/v1', '/submissions/(?P<id>[\w]+)', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::EDITABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_update_submission_by_id_handler',
+    ) );
 
     // DELETABLE
-
 
     register_rest_route( 'intranet/v1', '/submissions/(?P<id>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
@@ -87,6 +116,27 @@ function intranet_fafar_api_register_submission_routes() {
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_delete_submission_by_id_handler',
     ) );
+
+}
+
+function intranet_fafar_api_update_submission_by_id_handler( $request ) {
+
+    $id = (string) $request['id'];
+
+    // Get data from the request
+    $submission = $request->get_json_params();
+
+    error_log( print_r( $submission, true ) );
+
+    $submission = intranet_fafar_api_update( $id, $submission );
+
+    if ( isset( $submission['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( json_encode( $submission ) );
 
 }
 
@@ -265,6 +315,41 @@ function intranet_fafar_api_register_loan_return( $form_data, $contact_form ) {
 
 }
 
+function intranet_fafar_api_insert_update_on_service_ticket( $form_data, $contact_form ) {
+   
+       // Verificações iniciais
+       if ( ! isset( $form_data['object_name'] ) ) return $form_data;
+
+       if ( $form_data['object_name'] !== 'service_ticket_update' ) return $form_data;
+   
+       error_log(print_r($form_data, true));
+   
+       // Atualizando a propriedade 'status' da ordem de serviço
+       $form_data['data'] = json_decode( $form_data['data'], true );
+   
+       if ( ! isset( $form_data['data']['status'][0] ) )
+           return array( 'error_msg' => '[001] Status não informado!' );
+   
+       $service_ticket = intranet_fafar_api_get_submission_by_id( $form_data['data']['service_ticket'] );
+   
+       if ( ! $service_ticket )
+           return array( 'error_msg' => '[002] Ordem de serviço não existe!' );
+   
+       $service_ticket['data']['status'] = $form_data['data']['status'][0];
+   
+       $service_ticket = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
+
+       if ( isset( $service_ticket['error_msg'] ) )
+           return array( 'error_msg' => $service_ticket['error_msg'] );
+
+       // Se tudo deu certo, então apenas retorna o objeto para ser inserido
+       $form_data['data'] = json_encode( $form_data['data'] );
+
+       // Retorna uma obj genérico para concluir a submissão com sucesso
+       return $form_data;
+    
+}
+
 function intranet_fafar_api_get_loans_by_equipament( $id ) {
 
     global $wpdb;
@@ -298,6 +383,268 @@ function intranet_fafar_api_get_loans_by_equipament( $id ) {
     }
 
     return $submissions;
+}
+
+function intranet_fafar_api_get_service_tickets_by_user_handler( $request ) {
+
+    $submissions = intranet_fafar_api_get_service_tickets_by_user();
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+
+    }
+
+    return rest_ensure_response( json_encode( $submissions ) );
+
+}
+
+function intranet_fafar_api_get_service_tickets_by_user() {
+
+    $user    = wp_get_current_user();
+    $user_id = $user->ID;
+
+    //$query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $new_code . "\"', '$.code')";
+
+    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND `owner` = '" . $user_id . "' ORDER BY created_at DESC";
+
+    // Se for Administrador, então acessa todas as ordens de serviço
+    if ( $user_id === 1 )
+        $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket'";
+
+
+    $service_tickets = intranet_fafar_api_read( $query );
+
+    if ( isset( $service_tickets['error_msg'] ) )
+        return array( 'error_msg' => $service_ticket['error_msg'] );
+
+    if ( empty( $service_tickets ) )
+        return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada do usuário atual!' );
+    
+    for ( $i = 0; $i < sizeof( $service_tickets ); $i++ ) {
+
+       /*
+        * Substituir os campos que tem ID de outro objeto,
+        * pelo objeto de mesmo ID
+        */ 
+        if ( isset( $service_tickets[$i]['owner'] ) && is_numeric( $service_tickets[$i]['owner'] ) )
+            $service_tickets[$i]['owner'] = intranet_fafar_api_get_user_by_id( $service_tickets[$i]['owner'] );
+
+        if ( isset( $service_tickets[$i]['data']['place'][0] ) )
+            $service_tickets[$i]['data']['place'] = intranet_fafar_api_get_submission_by_id( $service_tickets[$i]['data']['place'][0] );
+
+        if ( isset( $service_tickets[$i]['data']['departament_assigned_to'][0] ) ) {
+
+            // Get the display name of the role
+            $role_slug = $service_tickets[$i]['data']['departament_assigned_to'][0];
+                
+            $role_display_name = '--';
+                
+            if ( isset( wp_roles()->roles[ $role_slug ] ) )
+                $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
+
+            $service_tickets[$i]['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
+
+        }
+
+        
+        if ( isset( $service_tickets[$i]['data']['assigned_to'] ) ) {
+
+            $service_tickets[$i]['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $service_tickets[$i]['data']['assigned_to'] );
+
+        }
+
+    }
+
+    return $service_tickets;    
+
+}
+
+function intranet_fafar_api_get_service_tickets_by_departament_handler( $request ) {
+
+    // Get all query parameters
+    $query_params = $request->get_query_params();
+
+    if ( isset( $query_params['status'] ) ) {
+    
+        $status = $query_params['status'];
+
+        $submissions  = intranet_fafar_api_get_service_tickets_by_departament( null, $status );
+
+    } else {
+
+        $submissions  = intranet_fafar_api_get_service_tickets_by_departament();
+
+    }
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+
+    }
+
+    return rest_ensure_response( json_encode( $submissions ) );
+
+}
+
+function intranet_fafar_api_get_service_tickets_by_departament( $departament = null, $status = null ) {
+
+    if ( ! $departament ) {
+
+        $user        = wp_get_current_user();
+
+        $role_slug   = $user->roles[0];
+
+        $departament = $role_slug;
+
+    }
+
+    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $departament . "\"', '$.departament_assigned_to') ORDER BY created_at DESC";
+
+    $service_tickets = intranet_fafar_api_read( $query );
+
+    if ( isset( $service_tickets['error_msg'] ) )
+        return array( 'error_msg' => $service_ticket['error_msg'] );
+
+    if ( empty( $service_tickets ) )
+        return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada do usuário atual!' );
+    
+    for ( $i = 0; $i < sizeof( $service_tickets ); $i++ ) {
+
+        if ( 
+            $status && 
+            strtolower( $status ) !== strtolower( $service_tickets[$i]['data']['status'] ) 
+           ) {
+
+            continue;
+
+        }
+
+       /*
+        * Substituir os campos que tem ID de outro objeto,
+        * pelo objeto de mesmo ID
+        */ 
+        if ( isset( $service_tickets[$i]['owner'] ) && is_numeric( $service_tickets[$i]['owner'] ) )
+            $service_tickets[$i]['owner'] = intranet_fafar_api_get_user_by_id( $service_tickets[$i]['owner'] );
+
+        if ( isset( $service_tickets[$i]['data']['place'][0] ) )
+            $service_tickets[$i]['data']['place'] = intranet_fafar_api_get_submission_by_id( $service_tickets[$i]['data']['place'][0] );
+
+        if ( isset( $service_tickets[$i]['data']['departament_assigned_to'][0] ) ) {
+
+            // Get the display name of the role
+            $role_slug = $service_tickets[$i]['data']['departament_assigned_to'][0];
+                
+            $role_display_name = '--';
+                
+            if ( isset( wp_roles()->roles[ $role_slug ] ) )
+                $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
+
+            $service_tickets[$i]['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
+
+        }
+
+        if ( isset( $service_tickets[$i]['data']['assigned_to'] ) ) {
+
+            $service_tickets[$i]['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $service_tickets[$i]['data']['assigned_to'] );
+
+        }
+
+    }
+
+    return $service_tickets;      
+
+}
+
+function intranet_fafar_api_get_service_ticket_by_id( $id ) {
+
+    $service_ticket = intranet_fafar_api_get_submission_by_id( $id );
+
+    if ( isset( $service_ticket['error_msg'] ) )
+        return array( 'error_msg' => $service_ticket['error_msg'] );
+
+    if ( empty( $service_ticket ) )
+        return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada!' );
+    
+    /*
+     * Substituir os campos que tem ID de outro objeto,
+     * pelo objeto de mesmo ID
+     */ 
+    if ( isset( $service_ticket['owner'] ) && is_numeric( $service_ticket['owner'] ) )
+        $service_ticket['owner'] = intranet_fafar_api_get_user_by_id( $service_ticket['owner'] );
+
+    if ( isset( $service_ticket['data']['place'][0] ) )
+        $service_ticket['data']['place'] = intranet_fafar_api_get_submission_by_id( $service_ticket['data']['place'][0] );
+
+    if ( isset( $service_ticket['data']['departament_assigned_to'][0] ) ) {
+
+        // Get the display name of the role
+        $role_slug = $service_ticket['data']['departament_assigned_to'][0];
+                
+        $role_display_name = '--';
+                
+        if ( isset( wp_roles()->roles[ $role_slug ] ) )
+            $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
+
+        $service_ticket['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
+
+    }
+
+    if ( isset( $service_tickets['data']['assigned_to'] ) ) {
+
+        $service_tickets['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $service_tickets['data']['assigned_to'] );
+
+    }
+
+    return $service_ticket;    
+
+}
+
+function intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler( $request ) {
+
+    $service_ticket_id = (string) $request['id'];
+
+    $submissions = intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $service_ticket_id );
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+
+    }
+
+    return rest_ensure_response( json_encode( $submissions ) );
+
+}
+
+function intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $service_ticket_id ) {
+
+    if ( ! $service_ticket_id ) 
+        return array( 'error_msg' => '[645] ID não informado!' );
+
+    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket_update' AND JSON_CONTAINS(data, '\"" . $service_ticket_id . "\"', '$.service_ticket') ORDER BY created_at DESC";
+
+    $service_ticket_updates = intranet_fafar_api_read( $query );
+
+    if ( isset( $service_ticket_updates['error_msg'] ) )
+        return array( 'error_msg' => $service_ticket['error_msg'] );
+
+    if ( empty( $service_ticket_updates ) )
+        return array( 'error_msg' => '[323] Nenhuma atualização da ordem de serviço encontrada do usuário atual!' );
+    
+    for ( $i = 0; $i < sizeof( $service_ticket_updates ); $i++ ) {
+
+       /*
+        * Substituir os campos que tem ID de outro objeto,
+        * pelo objeto de mesmo ID
+        */ 
+        if ( isset( $service_ticket_updates[$i]['owner'] ) && is_numeric( $service_ticket_updates[$i]['owner'] ) )
+            $service_ticket_updates[$i]['owner'] = intranet_fafar_api_get_user_by_id( $service_ticket_updates[$i]['owner'] );
+
+
+    }
+
+    return $service_ticket_updates;      
+
 }
 
 /*
@@ -341,6 +688,8 @@ function intranet_fafar_api_get_loans_by_equipament( $id ) {
  * @return FromData | null
 */
 function intranet_fafar_api_create_or_update_reservation( $form_data, $contact_form ) {
+
+    error_log( print_r( $form_data, true ) );
 
     // Verificações iniciais
     if( ! isset( $form_data['object_name'] ) ) return $form_data;
@@ -399,7 +748,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $contact_f
 
         if ( $discipline ) {
 
-            $title = $discipline['data']['code'] . ' [' . $discipline['data']['group'] . ']';
+            $title = $discipline['data']['code'] . ' (' . $discipline['data']['group'] . ')';
 
         }
 
@@ -505,7 +854,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $contact_f
      * Vou mudar re-escrever isso aqui quando o sistema de reservas já estiver bem testado.
      * Na verdade essa função toda....
      */
-    if ( $skip_check_overlap ) {
+    if ( ! $skip_check_overlap ) {
 
         $existing_reservations = intranet_fafar_api_get_reservations_by_place( $new_form_data['data']['place'][0] );
 
@@ -547,6 +896,132 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $contact_f
 }
 
 /**
+ * This is the function that checks whitch classroom is available
+ * 
+*/
+function intranet_fafar_api_check_for_available_classrooms( ) {
+
+    if ( $new_form_data['data']['frequency'][0] === 'weekly' ) {
+
+        if ( ! isset( $new_form_data['data']['weekdays'] ) || 
+             ! isset( $new_form_data['data']['end_date'] ) 
+           ) {
+
+            return array( 'error_msg' => '[001] Dia de semana e/ou data de término não informado(s)!' );
+
+        }
+
+        // Gerando a prop 'dt_dstart' (Data início + Hora início) só com números
+        $date = new DateTime( $new_form_data['data']['date'] );
+
+        $time = DateTime::createFromFormat( 'H:i', $new_form_data['data']['start_time'] );
+
+        $dt_start = $date->format( 'Ymd' ) . 'T' . $time->format('His');
+
+        // Gerando a prop 'byday' com o array retornado pelos checkboxes do CF7
+        $byday = [];
+
+        foreach ( $new_form_data['data']['weekdays'] as $day ) {
+
+            $date = new DateTime();
+
+            $date->setISODate( 2024, 1, $day ); // Using week 1 of 2024
+
+            $byday[] = strtoupper( substr( $date->format('l'), 0, 2 ) ); // Get the first two letters and convert to uppercase
+            
+        }
+
+        // Gerando a prop 'until' só com números
+        $date = new DateTime( $new_form_data['data']['end_date'] );
+
+        $until = $date->format( 'Ymd' ) . 'T000000';
+
+        /*
+         * Gerando RRULE string com a: 
+         * 'DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201;BYDAY=MO,FR'
+         */
+        $new_rrule = 'DTSTART:' . $dt_start . '\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=' . $until . ';BYDAY=' . implode( ',', $byday );
+
+        // Gerando a prop 'duration'
+        $start = DateTime::createFromFormat('H:i', $new_form_data['data']['start_time']);
+        $end = DateTime::createFromFormat('H:i', $new_form_data['data']['end_time']);
+
+        // Calculate the difference between the two times
+        $interval = $start->diff($end);
+
+        // 'duration' é uma prop independente de 'rrule'
+        $new_duration = $interval->format('%H:%I');
+
+    } else {
+
+        // Gerando a prop 'dt_dstart' (Data início + Hora início) só com números
+        $date = new DateTime( $new_form_data['data']['date'] );
+
+        $time = DateTime::createFromFormat( 'H:i', $new_form_data['data']['start_time'] );
+
+        $dt_start = $date->format( 'Ymd' ) . 'T' . $time->format('His');
+
+        /*
+         * Gerando RRULE string com a: 
+         * 'DTSTART:20241107T113000\nRRULE:FREQ=DAILY;COUNT=1'
+         */
+        $new_rrule = 'DTSTART:' . $dt_start . '\nRRULE:FREQ=DAILY;COUNT=1';
+
+        // Gerando a prop 'duration'
+        $start = DateTime::createFromFormat('H:i', $new_form_data['data']['start_time']);
+        $end = DateTime::createFromFormat('H:i', $new_form_data['data']['end_time']);
+
+        // Calculate the difference between the two times
+        $interval = $start->diff($end);
+
+        // 'duration' é uma prop independente de 'rrule'
+        $new_duration = $interval->format('%H:%I');
+
+    }
+
+
+    $skip_check_overlap = false;
+    if ( isset( $new_form_data['data']['rrule'] ) && $new_form_data['data']['rrule'] == $new_rrule ) {
+    
+        $skip_check_overlap = true;
+
+    }
+
+    // É, pois é.... Medo....
+    $new_form_data['data']['rrule'] =  $new_rrule;
+
+    $new_form_data['data']['duration'] =  $new_duration;
+
+    /*
+     * Sim, eu sei... Isso não é necessário. 
+     * Mas é medo de colocar mais de uma forma de sair com sucesso dessa função...
+     * Vou mudar re-escrever isso aqui quando o sistema de reservas já estiver bem testado.
+     * Na verdade essa função toda....
+     */
+
+    $existing_reservations = intranet_fafar_api_get_reservations_by_place( $new_form_data['data']['place'][0] );
+    /* 
+    * Gerar as datas dos reservas existentes
+    * Array ( [0] => 2024-02-05 00:00:00 [1] => 2024-02-02 00:00:00 [2] => ...
+    */ 
+    $new_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $new_form_data['data']['rrule'] );
+    // Aqui temos timestamps das reservas à ser registradas
+    foreach ( $new_reservation_timestamps as $new_reservation_timestamp ) {
+        foreach ( $existing_reservations as $existing_reservation ) { 
+            // Aqui estamos gerando as timestamps de cada evento registrado
+            $existing_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $existing_reservation['data']['rrule'] );
+            foreach ( $existing_reservation_timestamps as $existing_reservation_timestamp ) {
+                $existing = intranet_fafar_api_get_event_start_and_end( $existing_reservation_timestamp, $existing_reservation['data']['duration'] );
+                $new      = intranet_fafar_api_get_event_start_and_end( $new_reservation_timestamp, $new_form_data['data']['duration'] );
+                if ( intranet_fafar_api_does_reservations_overlaps( $existing, $new ) )
+                    return array( 'error_msg' => '[423] Sala indisponível nesse horário!' );
+            }
+        }
+    }
+
+}
+
+/**
  * 
  * @param String $timestamp    Normal DateTime str timestamp
  * @param String $duration_str DateTime->format('%H:%I') string format
@@ -578,6 +1053,7 @@ function intranet_fafar_api_get_event_start_and_end( $timestamp, $duration_str )
         'start' => $startDateTime->getTimestamp(),
         'end' => $endDateTime->getTimestamp(),
     );
+
 }
 
 function intranet_fafar_api_does_reservations_overlaps( $reservation_a, $reservation_b ) {
@@ -721,10 +1197,10 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
 
 }
 
-/**
+/*
  * @param array $order_by ( 'orderby_column' => '', 'orderby_json' => '', 'order' => 'ASC' | 'DESC', 'inet_aton' => '1' )
  * @return array $submissions 
-*/
+ */
 function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order_by = array() ) {
     
     global $wpdb;
@@ -801,13 +1277,15 @@ function intranet_fafar_api_get_user_by_id_handler( $request ) {
 
 function intranet_fafar_api_get_user_by_id( $id ) {
 
+    error_log(print_r($id, true));
+
     if( ! $id ) {
 
         return array( 'error_msg' => '[0101]No "id" found.', 'http_status' => 400 );
 
     }
 
-    $user = (array) get_userdata( $id );
+    $user = (array) get_userdata( intval( $id ) );
 
     if ( ! $user ) {
 
@@ -888,12 +1366,8 @@ function intranet_fafar_api_get_equipament_by_id( $id ) {
      * Substituir os campos que tem ID de outro objeto,
      * pelo objeto de mesmo ID
      */ 
-
-     if ( isset( $equipmanet['data']['applicant'] ) && is_numeric( $equipmanet['data']['applicant'][0] ) ) {
-
+    if ( isset( $equipmanet['data']['applicant'] ) && is_numeric( $equipmanet['data']['applicant'][0] ) )
         $equipmanet['data']['applicant'] = intranet_fafar_api_get_user_by_id( $equipmanet['data']['applicant'][0] );
-
-    }
 
     if ( isset( $equipmanet['data']['place'][0] ) )
         $equipmanet['data']['place'] = intranet_fafar_api_get_submission_by_id( $equipmanet['data']['place'][0] );
@@ -950,6 +1424,32 @@ function intranet_fafar_api_get_reservation_by_id( $id ) {
     }
 
     return $reservation;
+}
+
+function intranet_fafar_get_user_by_departament( $role_slug = null ) {
+
+    if ( ! $role_slug )
+        return array();
+
+    $users = get_users( 
+        array ( 
+                'role__not_in' => 'Administrator', 
+                'orderby' => 'display_name', 
+                'order' => 'ASC', 
+                'role' => $role_slug
+            ) 
+        );
+
+    $options = array();
+
+    foreach ( $users as $user ) {
+        $options[esc_attr( $user->ID )] = esc_html( $user->display_name );
+    }
+
+    error_log(print_r($options, true));
+
+    return $options;
+
 }
 
 /**
@@ -1054,6 +1554,15 @@ function intranet_fafar_api_update( $id, $submission, $check_permissions = true 
     if ( ! is_string( $submission['data'] ) )
         $submission['data'] = json_encode( $submission['data'] );
 
+    // Excluir 'updated_at', se existir
+    if ( isset( $submission['updated_at'] ) )
+        unset( $submission['updated_at'] );
+
+    // Excluir 'created_at', se existir
+    if ( isset( $submission['created_at'] ) )
+        unset( $submission['created_at'] );
+
+    error_log(print_r("========================================================", true));
     error_log(print_r($submission, true));
   
     $wpdb->update( $table_name, $submission, array( 'id' => $id ) );

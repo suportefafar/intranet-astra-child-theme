@@ -13,6 +13,16 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /*
+ * Adicionando redirecionamento dinâmico para impressão do mapa de salas
+ */
+document
+  .querySelector("#btn_print_classroom_map")
+  .addEventListener("click", () => {
+    const url = "/imprimir-mapa-de-sala/?id=" + CURRENT_CLASSROOM_ID;
+    window.open(url, "_blank").focus();
+  });
+
+/*
  * Adiciona um evento de clique à DOM,
  * e despara se o elemento que recebeu o clique tem
  * a classe 'btn-loan-equipament' ou é filho de um elemento
@@ -61,9 +71,7 @@ async function getEventsByPlaceID(place_id) {
         place_id +
         "/reservations"
     );
-    // response = await axios.get(
-    //   "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/reservation"
-    // );
+
     console.log({ response });
   } catch (error) {
     console.log(error.response.data.message);
@@ -201,6 +209,11 @@ async function viewEvent(info) {
     .setAttribute("href", "/editar-reserva/?id=" + id);
 
   document.querySelector("#btn_event_details_delete").dataset.id = id;
+
+  if (event.data.prevent_write) {
+    document.querySelector("#btn_event_details_edit").style.display = "none";
+    document.querySelector("#btn_event_details_delete").style.display = "none";
+  }
 
   showEventDetailsModal();
 

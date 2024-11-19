@@ -60,10 +60,10 @@ get_header(); ?>
                 <i class="bi bi-magic"></i>
                 Assistente
             </a>
-            <a href="#" class="btn btn-outline-secondary text-decoration-none">
+            <button id="btn_print_classroom_map" class="btn btn-outline-secondary">
                 <i class="bi bi-printer"></i>
                 Imprimir
-            </a>
+            </button>
         </div>
         
         <!-- CHARTS -->

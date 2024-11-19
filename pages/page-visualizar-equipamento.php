@@ -63,7 +63,7 @@ $equipament    = intranet_fafar_api_get_equipament_by_id( $ID );
 
 $loans         = intranet_fafar_api_get_loans_by_equipament( $ID );
 
-$prevent_write = isset( $equipament['prevent_write'] );
+$prevent_write = isset( $equipament['data']['prevent_write'] );
 
 if ( isset( $loans['error_msg'] ) )
     $loans = array();
@@ -152,7 +152,7 @@ get_header(); ?>
         <div class="container-fluid p-0">
             <div class="row">
                 <div class="col-lg-8">
-                    <div class="px-2 py-2 text-bg-dark">
+                    <div class="px-2 py-2 border-bottom border-dark">
                         <h5 class="fw-bold p-0 m-0"> Informações </h5>
                     </div>
                     <table class="table table-borderless border border-0">
@@ -339,7 +339,7 @@ get_header(); ?>
                     </table>
                 </div>
                 <div class="col-lg-4">
-                    <div class="px-2 py-2 text-bg-dark">
+                    <div class="px-2 py-2 border-bottom border-dark">
                         <h5 class="fw-bold p-0 m-0"> Histório de Empréstimos </h5>
                     </div>
                     <table class="table table-borderless border border-0">
@@ -389,16 +389,21 @@ get_header(); ?>
             </div>
         </div>
 
-        <br />
+        <?php
 
-        <h5>Objeto PHP</h5>
-        <pre>
-            <?php print_r( $equipament ) ?>
-        </pre>
-        <br />
-        <pre>
-            <?php print_r( $loans ) ?>
-        </pre>
+            $user_role = intranet_fafar_get_user_slug_role();
+            if ( $user_role === 'ti' || $user_role === 'administrator' ) {
+                echo '<h5 class="mt-5">Objeto PHP</h5>';
+                echo '<pre>';
+                    print_r( $equipament );
+                echo '</pre>';
+                echo '<br />';
+                echo '<pre>';
+                    print_r( $loans );
+                echo '</pre>';
+            }
+
+        ?>
 
 
         <!-- Modal para empréstimo de equipamentos -->

@@ -501,7 +501,11 @@ add_shortcode( 'intranet_fafar_get_user_slug_role', 'intranet_fafar_get_user_slu
 
 add_shortcode( 'intranet_fafar_get_classrooms_as_select_options', 'intranet_fafar_get_classrooms_as_select_options' );
 
+add_shortcode( 'intranet_fafar_generate_service_ticket_code', 'intranet_fafar_generate_service_ticket_code' );
+
 add_shortcode( 'intranet_fafar_get_not_classrooms_as_select_options', 'intranet_fafar_get_not_classrooms_as_select_options' );
+
+
 
 function intranet_fafar_get_users_as_select_options_old() {
 
@@ -637,6 +641,50 @@ function intranet_fafar_get_not_classrooms_as_select_options() {
     }
 
     return json_encode( $options ); 
+
+}
+
+function intranet_fafar_generate_service_ticket_code() {
+    
+    $number_of_letters = 3;
+    $number_of_digits = 3;
+
+    $code_used = true;
+    $new_code = '------';
+    do{
+
+        $new_code = intranet_fafar_generate_code( $number_of_letters, $number_of_digits );
+
+        $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $new_code . "\"', '$.code')";
+
+        // Obtém todas as ordens de serviços, mesmo que ativas
+        $submissions = intranet_fafar_api_read( $query, false, false );
+
+        if ( empty( $submissions ) || isset( $submissions['error_msg'] ) ) $code_used = false;
+
+    } while( $code_used );
+    
+    // Concatenate letters and numbers
+    return $new_code;
+
+}
+
+function intranet_fafar_generate_code( $n_letters, $n_digits ) {
+
+    // Generate three random uppercase letters
+    $letters = '';
+    for ($i = 0; $i < $n_letters; $i++) {
+        $letters .= chr(rand(65, 90)); // ASCII values for A-Z are 65-90
+    }
+            
+    // Generate three random digits
+    $numbers = '';
+    for ($i = 0; $i < $n_digits; $i++) {
+        $numbers .= rand(0, 9);
+    }
+
+    // Concatenate letters and numbers
+    return $letters . $numbers;
 
 }
 

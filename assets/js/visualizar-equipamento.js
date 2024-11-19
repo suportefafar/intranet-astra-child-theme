@@ -59,16 +59,16 @@ document
   });
 
 /*
- * Adiciona um evento de clique no botão
- * de submit dentro do modal de empréstimo
+ * Adiciona um evento criado no CF7,
+ * quando uma submissão é feita com sucesso
  */
 document.addEventListener("onLoanSuccess", () => {
   window.location.reload();
 });
 
 /*
- * Adiciona um evento de clique no botão
- * de submit dentro do modal de devolução
+ * Adiciona um evento criado no CF7,
+ * quando uma submissão é feita com sucesso
  */
 document.addEventListener("onReturnLoanSuccess", () => {
   window.location.reload();

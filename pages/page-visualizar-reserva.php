@@ -70,7 +70,7 @@ $ID            = sanitize_text_field( wp_unslash( $_GET["id"] ) );
 
 $reservation   = intranet_fafar_api_get_reservation_by_id( $ID );
 
-$prevent_write = isset( $reservation['prevent_write'] );
+$prevent_write = isset( $reservation['data']['prevent_write'] );
 
 
 get_header(); ?>
@@ -129,7 +129,7 @@ get_header(); ?>
         <div class="container-fluid p-0">
             <div class="row">
                 <div class="col-12">
-                    <div class="px-2 py-2 text-bg-dark">
+                    <div class="px-2 py-2 border-bottom border-dark">
                         <h5 class="fw-bold p-0 m-0"> Informações </h5>
                     </div>
                     <table class="table table-borderless border border-0">
@@ -229,7 +229,7 @@ get_header(); ?>
                                 <td class="fw-medium">
                                 <?php 
                                 echo ( 
-                                    ( $reservation['owner']['data'] ) ?
+                                    isset( $reservation['owner']['data'] ) ?
                                     '<a href="/membros/' . $reservation['owner']['data']->user_login . '" target="_blank" title="Perfil de ' . $reservation['owner']['data']->display_name . '">' .
                                        $reservation['owner']['data']->display_name .
                                     '</a>' : 
@@ -243,7 +243,7 @@ get_header(); ?>
                                 <td class="fw-medium">
                                 <?php 
                                 echo ( 
-                                    ( $reservation['data']['applicant']['data'] ) ?
+                                    isset( $reservation['data']['applicant']['data'] ) ?
                                     '<a href="/membros/' . $reservation['data']['applicant']['data']->user_login . '" target="_blank" title="Perfil de ' . $reservation['data']['applicant']['data']->display_name . '">' .
                                        $reservation['data']['applicant']['data']->display_name .
                                     '</a>' : 
@@ -257,17 +257,22 @@ get_header(); ?>
                 </div>
             </div>
         </div>
+        
+        <?php
 
-        <br />
+            $user_role = intranet_fafar_get_user_slug_role();
+            if ( $user_role === 'ti' || $user_role === 'administrator' ) {
+                echo '<h5 class="mt-5">Objeto PHP</h5>';
+                echo '<pre>';
+                    print_r( $reservation );
+                echo '</pre>';
+                echo '<br />';
+                echo '<pre>';
+                    print_r( $loans );
+                echo '</pre>';
+            }
 
-        <h5>Objeto PHP</h5>
-        <pre>
-            <?php print_r( $reservation ) ?>
-        </pre>
-        <br />
-        <pre>
-            <?php print_r( $loans ) ?>
-        </pre>
+        ?>
 
 
         <!-- Modal para empréstimo de equipamentos -->
