@@ -557,7 +557,13 @@ function intranet_fafar_get_ips_as_select_options() {
         'inet_aton' => '1',
     ) ); 
 
+    if ( isset( $ips['error_msg'] ) )
+        $ips = array();
+
     $equipaments = intranet_fafar_api_get_submissions_by_object_name( 'equipament' );
+
+    if ( isset( $equipaments['error_msg'] ) )
+        $equipaments = array();
 
     $current_equipament = null;
     if ( isset( $_GET['id'] ) ) {
