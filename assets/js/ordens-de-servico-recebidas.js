@@ -1,26 +1,110 @@
 import { Grid, html } from "https://unpkg.com/gridjs?module";
 
+let EVENTS = [];
+
 /*
  * LISTENER'S
  */
-/*
- * Adiciona um evento de clique à DOM,
- * e despara se o elemento que recebeu o clique tem
- * a classe 'btn-loan-equipament' ou é filho de um elemento
- * com essa classe
- */
-document.addEventListener("click", (event) => {
-  const deleteButton = event.target.closest(".btn-delete-submission");
 
-  if (deleteButton) {
-    const id = deleteButton.dataset.id;
-    confirmDelete(id);
-  }
+/*
+ * Aguarda até que a DOM seja carregada para inserir os eventos no calendário
+ */
+document.addEventListener("DOMContentLoaded", () => {
+  loadUI();
 });
 
+async function loadUI(osStatus = false) {
+  let CURRENT_OS_STATUS = null;
+
+  if (osStatus) {
+    CURRENT_OS_STATUS = osStatus;
+  } else {
+    CURRENT_OS_STATUS = document.querySelectorAll(
+      "#ul_os_status_tabs .nav-link"
+    )[0].dataset.osStatus;
+  }
+
+  renderOsStatusTabs(CURRENT_OS_STATUS);
+
+  let submissions = null;
+  if (CURRENT_OS_STATUS === "minha") {
+    submissions = await getEventsByAssignedTo();
+  } else {
+    if (CURRENT_OS_STATUS === "todas")
+      submissions = await getEventsByOsStatus("");
+    else submissions = await getEventsByOsStatus(CURRENT_OS_STATUS);
+  }
+
+  renderGridJS(submissions);
+}
+
 /*
- * CHARTS RENDER
+ * GET EVENTS
  */
+async function getEventsByOsStatus(osStatus) {
+  let response;
+  let status_param = osStatus ?? "";
+  try {
+    response = await axios.get(
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/service_tickets/by_departament?status=" +
+        status_param
+    );
+
+    //console.log({ response });
+  } catch (error) {
+    //console.log(error.response.data.message);
+    return [];
+  }
+
+  return JSON.parse(response.data);
+}
+
+async function getEventsByAssignedTo() {
+  let response;
+  try {
+    response = await axios.get(
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/service_tickets/by_departament?assigned_to=-1"
+    );
+
+    //console.log({ response });
+  } catch (error) {
+    //console.log(error.response.data.message);
+    return [];
+  }
+
+  return JSON.parse(response.data);
+}
+
+/**
+ * UL TABS RENDER
+ */
+
+function renderOsStatusTabs(os_status = null) {
+  const tabs = document.querySelectorAll("#ul_os_status_tabs .nav-link");
+
+  tabs.forEach((el) => {
+    el.addEventListener("click", onClickPlaceTabHanlder);
+  });
+
+  if (os_status) {
+    changeActiveTab(os_status);
+  }
+}
+
+function onClickPlaceTabHanlder(e) {
+  const { osStatus } = e.target.dataset;
+
+  loadUI(osStatus);
+}
+
+function changeActiveTab(osStatus) {
+  const tabs = document.querySelectorAll("#ul_os_status_tabs .nav-link");
+
+  tabs.forEach((el) => {
+    el.classList.remove("active");
+    if (el.dataset.osStatus === osStatus) el.classList.add("active");
+  });
+}
 
 /*
  * TABLE RENDER
@@ -71,7 +155,9 @@ const grid = new gridjs.Grid({
     {
       name: "Sala",
       formatter: (current) =>
-        current.length !== 0 ? current.data.number : "--",
+        Array.isArray(current) && current.length !== 0
+          ? current.data.number
+          : "--",
     },
     {
       name: "Status",
@@ -87,7 +173,7 @@ const grid = new gridjs.Grid({
       formatter: actionColFormatter,
     },
   ],
-  data: fetchDataHandler,
+  data: [],
   pagination: {
     limit: 20,
     summary: true,
@@ -98,21 +184,20 @@ const grid = new gridjs.Grid({
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-async function fetchDataHandler() {
-  let response;
+function renderGridJS(data = []) {
+  if (!data) data = [];
 
-  try {
-    response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/service_tickets/by_departament"
-    );
-  } catch (error) {
-    console.log(error.response.data.message);
-    return [];
-  }
+  if (Array.isArray(data) && data.length === 0) data = [];
 
-  const submissions = JSON.parse(response.data);
+  grid
+    .updateConfig({
+      data: fetchDataHandler(data),
+    })
+    .forceRender();
+}
 
-  console.log(submissions);
+function fetchDataHandler(submissions) {
+  //console.log(submissions);
 
   let table_arr = [];
   for (const submission of submissions) {
@@ -149,18 +234,6 @@ async function fetchDataHandler() {
   return table_arr;
 }
 
-async function renderGridJS(data = []) {
-  if (!data) data = [];
-
-  if (data.length === 0) data = await fetchDataHandler();
-
-  grid
-    .updateConfig({
-      data,
-    })
-    .forceRender();
-}
-
 function codeColFormatter(current, row) {
   const { id, permissions, code } = JSON.parse(current);
 
@@ -179,7 +252,7 @@ function codeColFormatter(current, row) {
 }
 
 function assignedToColFormatter(current, row) {
-  console.log(current);
+  //console.log(current);
   if (!current.data) {
     return "--";
   }
@@ -234,4 +307,22 @@ function parseToLocalDateTime(dateString) {
   const gmtMinus3Date = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
 
   return gmtMinus3Date.toLocaleString();
+}
+
+/*
+ * Controle dos Modal's de Empréstimo e Devolução
+ */
+function showEventDetailsModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarEventDetailsModal")
+  );
+
+  modal.show();
+}
+
+function hideEventDetailsModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarEventDetailsModal")
+  );
+  modal.hide();
 }

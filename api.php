@@ -49,6 +49,13 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/submissions/access_building_request/mines', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_access_building_request_by_owner_handler',
+    ) );
+
     register_rest_route( 'intranet/v1', '/submissions/equipaments', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
@@ -465,11 +472,41 @@ function intranet_fafar_api_get_service_tickets_by_departament_handler( $request
     // Get all query parameters
     $query_params = $request->get_query_params();
 
-    if ( isset( $query_params['status'] ) ) {
+    if( isset( $query_params['status'] ) && 
+        isset( $query_params['assigned_to'] ) && 
+        is_numeric( $query_params['assigned_to'] ) ) {
+
+        $status = $query_params['status'];
+
+        $assigned_to = $query_params['assigned_to'];
+
+        if ( $query_params['assigned_to'] == '-1' ) {
+            
+            $assigned_to = get_current_user_id();
+
+        }
+
+        $submissions  = intranet_fafar_api_get_service_tickets_by_departament( null, $status, $assigned_to );
+
+    } else if ( isset( $query_params['status'] ) ) {
     
         $status = $query_params['status'];
 
-        $submissions  = intranet_fafar_api_get_service_tickets_by_departament( null, $status );
+        $submissions  = intranet_fafar_api_get_service_tickets_by_departament( null, $status, null );
+
+    } else if ( isset( $query_params['assigned_to'] ) &&
+                is_numeric( $query_params['assigned_to'] ) ) {
+
+        $assigned_to = $query_params['assigned_to'];
+
+        if ( $query_params['assigned_to'] == '-1' ) {
+            
+            $assigned_to = strval( get_current_user_id() );
+
+        }
+
+        // For > PHP 8.0 intranet_fafar_api_get_service_tickets_by_departament( departament: null, status: null, assigned_to: $assigned_to );
+        $submissions  = intranet_fafar_api_get_service_tickets_by_departament( null, null, $assigned_to );
 
     } else {
 
@@ -487,7 +524,9 @@ function intranet_fafar_api_get_service_tickets_by_departament_handler( $request
 
 }
 
-function intranet_fafar_api_get_service_tickets_by_departament( $departament = null, $status = null ) {
+function intranet_fafar_api_get_service_tickets_by_departament( $departament = null, $status = null, $assigned_to = null ) {
+
+    error_log( print_r("-------------> " . $assigned_to, true ) );
 
     if ( ! $departament ) {
 
@@ -501,19 +540,31 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
 
     $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $departament . "\"', '$.departament_assigned_to') ORDER BY created_at DESC";
 
-    $service_tickets = intranet_fafar_api_read( $query );
+    $all_service_tickets = intranet_fafar_api_read( $query );
 
-    if ( isset( $service_tickets['error_msg'] ) )
+    if ( isset( $all_service_tickets['error_msg'] ) )
         return array( 'error_msg' => $service_ticket['error_msg'] );
 
-    if ( empty( $service_tickets ) )
+    if ( empty( $all_service_tickets ) )
         return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada do usuário atual!' );
+
+    $service_tickets = array();
     
-    for ( $i = 0; $i < sizeof( $service_tickets ); $i++ ) {
+    for ( $i = 0; $i < sizeof( $all_service_tickets ); $i++ ) {
 
         if ( 
             $status && 
-            strtolower( $status ) !== strtolower( $service_tickets[$i]['data']['status'] ) 
+            strtolower( $status ) !== strtolower( $all_service_tickets[$i]['data']['status'] ) 
+           ) {
+
+            continue;
+
+        }
+
+        if ( 
+            $assigned_to && 
+            $assigned_to !== $all_service_tickets[$i]['data']['assigned_to'] || 
+            ( ! $all_service_tickets[$i]['data']['assigned_to'] )
            ) {
 
             continue;
@@ -524,31 +575,33 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
         * Substituir os campos que tem ID de outro objeto,
         * pelo objeto de mesmo ID
         */ 
-        if ( isset( $service_tickets[$i]['owner'] ) && is_numeric( $service_tickets[$i]['owner'] ) )
-            $service_tickets[$i]['owner'] = intranet_fafar_api_get_user_by_id( $service_tickets[$i]['owner'] );
+        if ( isset( $all_service_tickets[$i]['owner'] ) && is_numeric( $all_service_tickets[$i]['owner'] ) )
+            $all_service_tickets[$i]['owner'] = intranet_fafar_api_get_user_by_id( $all_service_tickets[$i]['owner'] );
 
-        if ( isset( $service_tickets[$i]['data']['place'][0] ) )
-            $service_tickets[$i]['data']['place'] = intranet_fafar_api_get_submission_by_id( $service_tickets[$i]['data']['place'][0] );
+        if ( isset( $all_service_tickets[$i]['data']['place'][0] ) )
+            $all_service_tickets[$i]['data']['place'] = intranet_fafar_api_get_submission_by_id( $all_service_tickets[$i]['data']['place'][0] );
 
-        if ( isset( $service_tickets[$i]['data']['departament_assigned_to'][0] ) ) {
+        if ( isset( $all_service_tickets[$i]['data']['departament_assigned_to'][0] ) ) {
 
             // Get the display name of the role
-            $role_slug = $service_tickets[$i]['data']['departament_assigned_to'][0];
+            $role_slug = $all_service_tickets[$i]['data']['departament_assigned_to'][0];
                 
             $role_display_name = '--';
                 
             if ( isset( wp_roles()->roles[ $role_slug ] ) )
                 $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
 
-            $service_tickets[$i]['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
+            $all_service_tickets[$i]['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
 
         }
 
-        if ( isset( $service_tickets[$i]['data']['assigned_to'] ) ) {
+        if ( isset( $all_service_tickets[$i]['data']['assigned_to'] ) ) {
 
-            $service_tickets[$i]['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $service_tickets[$i]['data']['assigned_to'] );
+            $all_service_tickets[$i]['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $all_service_tickets[$i]['data']['assigned_to'] );
 
         }
+
+        array_push( $service_tickets, $all_service_tickets[$i] );
 
     }
 
@@ -646,6 +699,46 @@ function intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $servi
     return $service_ticket_updates;      
 
 }
+
+function intranet_fafar_api_get_access_building_request_by_owner_handler( $request ) {
+
+    $submissions = intranet_fafar_api_get_access_building_request_by_owner();
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+
+    }
+
+    return rest_ensure_response( json_encode( $submissions ) );
+
+}
+
+function intranet_fafar_api_get_access_building_request_by_owner() {
+
+    $submissions = intranet_fafar_api_get_submissions_by_object_name( 'access_building_request' );
+
+    $submissions_filtered = array_filter( $submissions, function ( $submission ) {
+        
+        return ( $submission['owner'] && strval( $submission['owner'] ) === strval( get_current_user_id() ) );
+
+    });
+
+    /*
+     * Substituir os campos que tem ID de outro objeto,
+     * pelo objeto de mesmo ID
+     */ 
+    $submissions_joined = array_map( function ( $s ) {
+
+        $s['data']['place'] = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
+
+        return $s;
+        
+    }, $submissions_filtered );
+
+    return $submissions_joined;
+
+} 
 
 /*
  * {
@@ -852,7 +945,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $contact_f
      * Sim, eu sei... Isso não é necessário. 
      * Mas é medo de colocar mais de uma forma de sair com sucesso dessa função...
      * Vou mudar re-escrever isso aqui quando o sistema de reservas já estiver bem testado.
-     * Na verdade essa função toda....
+     * Na verdade, essa função toda....
      */
     if ( ! $skip_check_overlap ) {
 
@@ -895,10 +988,9 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $contact_f
 
 }
 
-/**
+/*
  * This is the function that checks whitch classroom is available
- * 
-*/
+ */
 function intranet_fafar_api_check_for_available_classrooms( ) {
 
     if ( $new_form_data['data']['frequency'][0] === 'weekly' ) {
@@ -1252,7 +1344,7 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order
 
     if( ! $submissions || count( $submissions ) == 0 ) {
 
-        return array( 'error_msg' => '[0202]No submission found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
+        return array( 'error_msg' => '[0202]No submission found with object_name "' . ( $object_name ?? 'UNKNOW_OBJECT_NAME') . '"', 'http_status' => 400 );
 
     }
 
