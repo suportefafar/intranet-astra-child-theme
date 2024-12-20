@@ -1,10 +1,69 @@
 import { Grid, html } from "https://unpkg.com/gridjs?module";
 
-/**
+/*
+ * LISTENER's
+ */
+
+/*
+ * Adiciona um evento de clique à DOM,
+ * e despara se o elemento que recebeu o clique tem
+ * a classe 'btn-submission-details' ou é filho de um elemento
+ * com essa classe
+ */
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".btn-submission-details");
+  const id = button.dataset.id;
+
+  if (id) {
+    showAccessRequestDetailsModal();
+  }
+});
+
+/*
+ * Adiciona um evento de clique à DOM,
+ * e despara se o elemento que recebeu o clique tem
+ * a classe 'btn-register-entry' ou é filho de um elemento
+ * com essa classe
+ */
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".btn-register-entry");
+  const id = button.dataset.id;
+
+  if (id) {
+    confirmRegister(
+      "Registrar Entrada?",
+      "Essa ação não pode ser desfeita.",
+      id,
+      "entry"
+    );
+  }
+});
+
+/*
+ * Adiciona um evento de clique à DOM,
+ * e despara se o elemento que recebeu o clique tem
+ * a classe 'btn-register-exit' ou é filho de um elemento
+ * com essa classe
+ */
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".btn-register-exit");
+  const id = button.dataset.id;
+
+  if (id) {
+    confirmRegister(
+      "Registrar Saída?",
+      "Essa ação não pode ser desfeita.",
+      id,
+      "exit"
+    );
+  }
+});
+
+/*
  * CHARTS RENDER
  */
 
-/**
+/*
  * TABLE RENDER
  */
 const ptBR = {
@@ -50,6 +109,8 @@ const grid = new gridjs.Grid({
       name: "Fim",
       formatter: (current) => new Date(current).toLocaleDateString(),
     },
+    { name: "Últ. Status", formatter: lastRegisterStatusFormatter },
+    { name: "Últ. Registro", formatter: lastRegisterFormatter },
     {
       name: "Ações",
       formatter: actionColFormatter,
@@ -106,6 +167,8 @@ async function fetchDataHandler() {
       submission_data["lab"],
       submission_data["start_date"],
       submission_data["end_date"],
+      new Date().toLocaleString(),
+      new Date().toLocaleString(),
       action_column_data,
     ]);
   }
@@ -125,7 +188,21 @@ async function renderGridJS(data = []) {
     .forceRender();
 }
 
-function actionColFormatter(current, row) {
+function lastRegisterStatusFormatter(current) {
+  let type = "text-bg-info";
+  const current_lower = current.toLowerCase();
+
+  if (current_lower === "nova") type = "text-bg-success";
+  else type = "text-bg-danger";
+
+  return html(`<span class="badge ${type}">Saída</span>`);
+}
+
+function lastRegisterFormatter(current) {
+  return current;
+}
+
+function actionColFormatter(current) {
   //console.log(current);
   const { id, permissions, object_sub_type } = JSON.parse(current);
 
@@ -140,10 +217,18 @@ function actionColFormatter(current, row) {
         prevent_write
           ? ""
           : `
+      
+          <button class="btn btn-outline-secondary btn-submission-details" data-id="${id}" title="Detalhes">
+            <i class="bi bi-info-lg"></i>
+          </button>
 
-      <button class="btn btn-outline-danger btn-delete-submission" data-id="${id}" title="Excluir">
-        <i class="bi bi-trash"></i>
-      </button> 
+          <button class="btn btn-outline-success btn-register-entry" data-id="${id}" title="Registrar entrada">
+            <i class="bi bi-building-up"></i>
+          </button>
+
+          <button class="btn btn-outline-danger btn-register-exit" data-id="${id}" title="Registrar saída">
+            <i class="bi bi-building-down"></i>
+          </button>
       `
       }
     </div>`;
@@ -168,32 +253,25 @@ function parseToLocalDateTime(dateString) {
   return gmtMinus3Date.toLocaleString();
 }
 
-/*
- * Adiciona um evento de clique à DOM,
- * e despara se o elemento que recebeu o clique tem
- * a classe 'btn-loan-equipament' ou é filho de um elemento
- * com essa classe
- */
-document.addEventListener("click", (event) => {
-  const deleteButton = event.target.closest(".btn-delete-submission");
-
-  if (deleteButton) {
-    const id = deleteButton.dataset.id;
-    confirmDelete(id);
+function confirmRegister(title = "", text = "", id = null, type = null) {
+  if (id === null || type === null) {
+    alert("Nenhum ID ou tipo de registro informado! Contacte o administrador.");
+    return;
   }
-});
 
-function confirmDelete(id) {
-  showConfirmModal(
-    "Excluir Disciplina?",
-    "Essa ação não pode ser desfeita.",
-    "Excluir",
-    "danger",
-    () => deleteSubmission(id)
+  let style_class = "primary";
+  if (type === "entry") {
+    style_class = "success";
+  } else if (type === "exit") {
+    style_class = "danger";
+  }
+
+  showConfirmModal(title, text, "Registrar", style_class, () =>
+    registerEntryOrExit(id, type)
   );
 }
 
-async function deleteSubmission(id) {
+async function registerEntryOrExit(id, type) {
   hideConfirmModal();
 
   showAlert("Por favor, aguarde....", "warning");
@@ -203,21 +281,39 @@ async function deleteSubmission(id) {
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
     );
 
-    //console.log(response);
+    console.log(response);
 
-    showAlert("Excluído com sucesso!", "success", true, 3000);
+    showAlert("Registrado com sucesso!", "success", true, 3000);
 
     renderGridJS();
   } catch (error) {
     let error_msg = "[1010]Unknow error on try catch";
 
     if (error.response?.data?.message) {
-      //console.log(error.response.data);
+      console.log(error.response.data);
       error_msg = error.response.data.message;
     } else {
-      //console.log(error);
+      console.log(error);
     }
 
     showAlert(error_msg, "danger");
   }
+}
+
+/*
+ * Controle do modal de Detalhes
+ */
+function showAccessRequestDetailsModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarAccessRequestDetailsModal")
+  );
+
+  modal.show();
+}
+
+function hideAccessRequestDetailsModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarAccessRequestDetailsModal")
+  );
+  modal.hide();
 }

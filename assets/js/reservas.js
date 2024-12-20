@@ -275,7 +275,7 @@ async function getEventByID(id) {
 }
 
 /*
- * Controle dos Modal's de Empréstimo e Devolução
+ * Controle do modal de Detalhes
  */
 function showEventDetailsModal() {
   const modal = bootstrap.Modal.getOrCreateInstance(
