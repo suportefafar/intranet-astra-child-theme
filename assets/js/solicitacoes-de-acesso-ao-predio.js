@@ -12,10 +12,13 @@ import { Grid, html } from "https://unpkg.com/gridjs?module";
  */
 document.addEventListener("click", (event) => {
   const button = event.target.closest(".btn-submission-details");
-  const id = button.dataset.id;
+  if (button) {
+    const id = button.dataset?.id;
 
-  if (id) {
-    showAccessRequestDetailsModal();
+    if (id) {
+      renderAccessBuildingRequestDetailsModal(id);
+      showAccessBuildingRequestDetailsModal();
+    }
   }
 });
 
@@ -27,15 +30,17 @@ document.addEventListener("click", (event) => {
  */
 document.addEventListener("click", (event) => {
   const button = event.target.closest(".btn-register-entry");
-  const id = button.dataset.id;
+  if (button) {
+    const id = button.dataset?.id;
 
-  if (id) {
-    confirmRegister(
-      "Registrar Entrada?",
-      "Essa ação não pode ser desfeita.",
-      id,
-      "entry"
-    );
+    if (id) {
+      confirmRegister(
+        "Registrar Entrada?",
+        "Essa ação não pode ser desfeita.",
+        id,
+        "entry"
+      );
+    }
   }
 });
 
@@ -47,15 +52,18 @@ document.addEventListener("click", (event) => {
  */
 document.addEventListener("click", (event) => {
   const button = event.target.closest(".btn-register-exit");
-  const id = button.dataset.id;
 
-  if (id) {
-    confirmRegister(
-      "Registrar Saída?",
-      "Essa ação não pode ser desfeita.",
-      id,
-      "exit"
-    );
+  if (button) {
+    const id = button.dataset?.id;
+
+    if (id) {
+      confirmRegister(
+        "Registrar Saída?",
+        "Essa ação não pode ser desfeita.",
+        id,
+        "exit"
+      );
+    }
   }
 });
 
@@ -132,7 +140,7 @@ async function fetchDataHandler() {
 
   try {
     response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/access_building_request/"
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request/"
     );
   } catch (error) {
     //console.log(error.response.data.message);
@@ -161,14 +169,14 @@ async function fetchDataHandler() {
 
     table_arr.push([
       submission_data["access_building_request_type"],
-      submission_data["owner"],
+      submission["owner"]["data"]["display_name"],
       submission_data["third_party_name"],
       submission_data["place"],
       submission_data["lab"],
       submission_data["start_date"],
       submission_data["end_date"],
-      new Date().toLocaleString(),
-      new Date().toLocaleString(),
+      submission_data["logs"],
+      submission_data["logs"],
       action_column_data,
     ]);
   }
@@ -190,16 +198,33 @@ async function renderGridJS(data = []) {
 
 function lastRegisterStatusFormatter(current) {
   let type = "text-bg-info";
-  const current_lower = current.toLowerCase();
+  let text = "Não utilizado";
 
-  if (current_lower === "nova") type = "text-bg-success";
-  else type = "text-bg-danger";
+  if (current && current.length > 0) {
+    const last_update = current[current.length - 1];
 
-  return html(`<span class="badge ${type}">Saída</span>`);
+    if (last_update.type == "entry") {
+      type = "text-bg-success";
+      text = "Entrada";
+    } else if (last_update.type == "exit") {
+      type = "text-bg-danger";
+      text = "Saída";
+    }
+  }
+
+  return html(`<span class="badge ${type}">${text}</span>`);
 }
 
 function lastRegisterFormatter(current) {
-  return current;
+  let last_register = "--";
+
+  if (current && current.length > 0) {
+    const last_update = current[current.length - 1];
+
+    last_register = new Date(last_update.registered_at * 1000).toLocaleString();
+  }
+
+  return last_register;
 }
 
 function actionColFormatter(current) {
@@ -277,8 +302,11 @@ async function registerEntryOrExit(id, type) {
   showAlert("Por favor, aguarde....", "warning");
 
   try {
-    const response = await axios.delete(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
+    const response = await axios.put(
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request/" +
+        id +
+        "/register/",
+      { type }
     );
 
     console.log(response);
@@ -300,20 +328,119 @@ async function registerEntryOrExit(id, type) {
   }
 }
 
+async function getAccessBuildingRequestByID(id) {
+  showAlert("Por favor, aguarde....", "warning");
+
+  try {
+    const response = await axios.get(
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
+    );
+
+    console.log(response);
+
+    hideAlert();
+
+    return response;
+  } catch (error) {
+    let error_msg = "[1010] Unknow error on try catch";
+
+    if (error.response?.data?.message) {
+      console.log(error.response.data);
+      error_msg = error.response.data.message;
+    } else {
+      console.log(error);
+    }
+
+    showAlert(error_msg, "danger");
+
+    return null;
+  }
+}
+
+async function renderAccessBuildingRequestDetailsModal(id) {
+  const response = await getAccessBuildingRequestByID(id);
+
+  if (!response) {
+    hideAccessBuildingRequestDetailsModal();
+  }
+
+  const access_building_request = JSON.parse(response.data);
+
+  document.querySelector("#access_building_request_created_at").innerHTML =
+    new Date(access_building_request["created_at"]).toLocaleString();
+
+  document.querySelector("#access_building_request_start_date").innerHTML =
+    new Date(
+      access_building_request["data"]["start_date"]
+    ).toLocaleDateString();
+
+  document.querySelector("#access_building_request_end_date").innerHTML =
+    new Date(access_building_request["data"]["end_date"]).toLocaleDateString();
+
+  document.querySelector("#access_building_request_owner").innerHTML =
+    access_building_request["owner"]["data"]["display_name"];
+
+  document.querySelector("#access_building_request_type").innerHTML =
+    access_building_request["data"]["access_building_request_type"];
+
+  document.querySelector(
+    "#access_building_request_third_party_name"
+  ).innerHTML = access_building_request["data"]["third_party_name"];
+
+  document.querySelector(
+    "#access_building_request_third_party_sector"
+  ).innerHTML = access_building_request["data"]["third_party_sector"];
+
+  document.querySelector("#access_building_request_place").innerHTML =
+    access_building_request["data"]["place"]["data"]["number"];
+
+  document.querySelector("#access_building_request_justification").innerHTML =
+    access_building_request["data"]["justification_for_request"];
+
+  let logs_html = "";
+
+  for (const log of access_building_request["data"]["logs"]) {
+    let type = "";
+    let text = "";
+
+    if (log["type"] == "entry") {
+      type = "text-bg-success";
+      text = "Entrada";
+    } else if (log["type"] == "exit") {
+      type = "text-bg-danger";
+      text = "Saída";
+    } else {
+      type = "text-bg-info";
+      text = log["type"];
+    }
+
+    logs_html += `
+    <tr>
+      <td class="text-body">${new Date(
+        log["registered_at"] * 1000
+      ).toLocaleString()}</td>
+      <td id="access_building_request_type" class="text-body-emphasis"><span class="badge ${type}">${text}</span></td>
+    </tr>`;
+  }
+
+  document.querySelector("#access_building_request_logs tbody").innerHTML =
+    logs_html ?? "Sem registro";
+}
+
 /*
  * Controle do modal de Detalhes
  */
-function showAccessRequestDetailsModal() {
+function showAccessBuildingRequestDetailsModal() {
   const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarAccessRequestDetailsModal")
+    document.getElementById("intranetFafarAccessBuildingRequestDetailsModal")
   );
 
   modal.show();
 }
 
-function hideAccessRequestDetailsModal() {
+function hideAccessBuildingRequestDetailsModal() {
   const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarAccessRequestDetailsModal")
+    document.getElementById("intranetFafarAccessBuildingRequestDetailsModal")
   );
   modal.hide();
 }

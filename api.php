@@ -25,7 +25,6 @@ function intranet_fafar_api_register_submission_routes() {
             }
     ) );
 
-
     // READABLE
 
     register_rest_route( 'intranet/v1', '/submissions/service_tickets/by_user', array(
@@ -49,6 +48,13 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/submissions/access_building_request', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_access_building_request_handler',
+    ) );
+
     register_rest_route( 'intranet/v1', '/submissions/access_building_request/mines', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
@@ -70,18 +76,18 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_places_available',
     ) );
 
-    register_rest_route( 'intranet/v1', '/submissions/(?P<id>[\w]+)', array(
-        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
-        'methods'  => WP_REST_Server::READABLE,
-        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_submission_by_id_handler',
-    ) );
-
     register_rest_route( 'intranet/v1', '/users/(?P<id>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_get_user_by_id_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/submissions/(?P<id>[\w]+)', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_submission_by_id_handler',
     ) );
 
     register_rest_route( 'intranet/v1', '/submissions/object/(?P<object>[\w]+)', array(
@@ -104,22 +110,21 @@ function intranet_fafar_api_register_submission_routes() {
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_get_reservation_by_id_handler',
     ) );
-    
 
     // EDITABLE
+
+    register_rest_route( 'intranet/v1', '/submissions/access_building_request/(?P<id>[\w]+)/register', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::EDITABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_access_building_request_register_handler',
+    ) );
 
     register_rest_route( 'intranet/v1', '/submissions/(?P<id>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::EDITABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_update_submission_by_id_handler',
-    ) );
-
-    register_rest_route( 'intranet/v1', '/submissions/access_building_request/register', array(
-        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
-        'methods'  => WP_REST_Server::READABLE,
-        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_access_building_request_by_owner_handler',
     ) );
 
     // DELETABLE
@@ -130,6 +135,54 @@ function intranet_fafar_api_register_submission_routes() {
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_delete_submission_by_id_handler',
     ) );
+
+}
+
+function intranet_fafar_api_get_access_building_request_register_handler( $request ) {
+
+    $id = (string) $request['id'];
+
+    // Get data from the request
+    $data = $request->get_json_params();
+
+    error_log( print_r( $data, true ) );
+
+    $submission = intranet_fafar_api_register_entry_and_exit( $id, $data['type'] );
+
+    if ( isset( $submission['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( json_encode( $submission ) );
+
+}
+
+function intranet_fafar_api_register_entry_and_exit( $id, $type ) {
+
+    if ( ! isset( $id ) )
+        return array( 'error_msg' => '[001] ID não informado!' );
+
+    if ( ! isset( $type ) )
+        return array( 'error_msg' => '[002] Tipo não informado!' );
+
+    $submission = intranet_fafar_api_get_submission_by_id( $id );
+
+    if ( isset( $submission['error_msg'] ) )
+        return $submission;
+
+    if( ! isset( $submission['data']['logs'] ) || sizeof( $submission['data']['logs'] ) === 0 ) {
+        
+        $submission['data']['logs'] = array( array( 'type' => $type, 'registered_at' => time() ) );
+
+    } else {
+        
+        array_push( $submission['data']['logs'], array( 'type' => $type, 'registered_at' => time() ) );
+
+    }
+
+    return intranet_fafar_api_update( $id, $submission );
 
 }
 
@@ -173,7 +226,7 @@ function intranet_fafar_api_delete_submission_by_id_handler( $request ) {
 function intranet_fafar_api_delete_submission_by_id( $id ) {
 
     if( ! $id ) 
-        return array( 'error_msg' => '[0101]No id informed.', 'http_status' => 400 );
+        return array( 'error_msg' => '[0101] ID não informado', 'http_status' => 400 );
 
     $submission = intranet_fafar_api_get_submission_by_id( $id );
 
@@ -196,15 +249,6 @@ function intranet_fafar_api_get_place_reservations( $request ) {
         return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
 
     }
-
-    // return rest_ensure_response( 
-    //         json_encode( 
-    //             intranet_fafar_api_bff_reservations_prepare( 
-    //                 $submissions,
-    //                 array( 'id', 'rrule', 'duration', 'desc', 'discipline', 'owner', 'applicant', 'place' )
-    //             ) 
-    //         ) 
-    //     );
 
     return rest_ensure_response( json_encode( $submissions ) );
 
@@ -397,6 +441,7 @@ function intranet_fafar_api_get_loans_by_equipament( $id ) {
     }
 
     return $submissions;
+
 }
 
 function intranet_fafar_api_get_service_tickets_by_user_handler( $request ) {
@@ -707,9 +752,9 @@ function intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $servi
 
 }
 
-function intranet_fafar_api_get_access_building_request_by_owner_handler( $request ) {
+function intranet_fafar_api_get_access_building_request_handler( $request ) {
 
-    $submissions = intranet_fafar_api_get_access_building_request_by_owner();
+    $submissions = intranet_fafar_api_get_access_building_request();
 
     if ( isset( $submissions['error_msg'] ) ) {
 
@@ -721,15 +766,29 @@ function intranet_fafar_api_get_access_building_request_by_owner_handler( $reque
 
 }
 
-function intranet_fafar_api_get_access_building_request_by_owner() {
+function intranet_fafar_api_get_access_building_request_by_owner_handler( $request ) {
+
+    $submissions = intranet_fafar_api_get_access_building_request( true );
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+
+    }
+
+    return rest_ensure_response( json_encode( $submissions ) );
+
+}
+
+function intranet_fafar_api_get_access_building_request( $by_owner = false ) {
 
     $submissions = intranet_fafar_api_get_submissions_by_object_name( 'access_building_request' );
 
-    $submissions_filtered = array_filter( $submissions, function ( $submission ) {
+    $submissions_filtered = array_filter( $submissions, function ( $submission ) use ( $by_owner ) {
         
-        return ( $submission['owner'] && strval( $submission['owner'] ) === strval( get_current_user_id() ) );
+        return ( $submission['owner'] && strval( $submission['owner']['ID'] ) === strval( get_current_user_id() ) || ! $by_owner );
 
-    });
+    } );
 
     /*
      * Substituir os campos que tem ID de outro objeto,
@@ -1277,6 +1336,18 @@ function intranet_fafar_api_get_submission_by_id( $id ) {
 
     }
 
+    if ( isset( $submissions[0]['owner'] ) && is_numeric( $submissions[0]['owner'] ) ) {
+
+        $submissions[0]['owner'] = intranet_fafar_api_get_user_by_id( $submissions[0]['owner'] );
+
+    }
+
+    if ( isset( $submissions[0]['data']['place'] ) ) {
+
+        $submissions[0]['data']['place'] = intranet_fafar_api_get_submission_by_id( $submissions[0]['data']['place'][0] );
+
+    }
+
     return $submissions[0];
 }
 
@@ -1355,7 +1426,24 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order
 
     }
 
-    return $submissions;
+    /*
+     * Substituir os campos que tem ID de outro objeto,
+     * pelo objeto de mesmo ID
+     */ 
+    $submissions_joined = array_map( function ( $s ) {
+
+        if ( isset( $s['owner'] ) && is_numeric( $s['owner'] ) ) {
+
+            $s['owner'] = intranet_fafar_api_get_user_by_id( $s['owner'] );
+    
+        }
+
+        return $s;
+        
+    }, $submissions );
+
+    return $submissions_joined;
+
 }
 
 function intranet_fafar_api_get_user_by_id_handler( $request ) {
@@ -1444,8 +1532,6 @@ function intranet_fafar_api_get_equipaments_handler() {
         return $s;
         
     }, $submissions );
-
-
 
     return rest_ensure_response( json_encode( $submissions_joined ) );
 
