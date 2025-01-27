@@ -1,8 +1,10 @@
 <?php
+// Prevent direct access to the file.
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
 add_filter( 'rest_authentication_errors', '__return_true' );
-
-
 add_action( 'rest_api_init', 'intranet_fafar_api_register_submission_routes' );
 
 /**
@@ -81,6 +83,13 @@ function intranet_fafar_api_register_submission_routes() {
         'methods'  => WP_REST_Server::READABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_get_user_by_id_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/users', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_users_handler',
     ) );
 
     register_rest_route( 'intranet/v1', '/submissions/(?P<id>[\w]+)', array(
@@ -172,7 +181,7 @@ function intranet_fafar_api_register_entry_and_exit( $id, $type ) {
     if ( isset( $submission['error_msg'] ) )
         return $submission;
 
-    if( ! isset( $submission['data']['logs'] ) || sizeof( $submission['data']['logs'] ) === 0 ) {
+    if( ! isset( $submission['data']['logs'] ) || count( $submission['data']['logs'] ) === 0 ) {
         
         $submission['data']['logs'] = array( array( 'type' => $type, 'registered_at' => time() ) );
 
@@ -246,7 +255,7 @@ function intranet_fafar_api_get_place_reservations( $request ) {
 
     if ( isset( $submissions['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
 
     }
 
@@ -450,7 +459,7 @@ function intranet_fafar_api_get_service_tickets_by_user_handler( $request ) {
 
     if ( isset( $submissions['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
 
     }
 
@@ -480,7 +489,7 @@ function intranet_fafar_api_get_service_tickets_by_user() {
     if ( empty( $service_tickets ) )
         return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada do usuário atual!' );
     
-    for ( $i = 0; $i < sizeof( $service_tickets ); $i++ ) {
+    for ( $i = 0; $i < count( $service_tickets ); $i++ ) {
 
        /*
         * Substituir os campos que tem ID de outro objeto,
@@ -568,7 +577,7 @@ function intranet_fafar_api_get_service_tickets_by_departament_handler( $request
 
     if ( isset( $submissions['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
 
     }
 
@@ -602,7 +611,7 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
 
     $service_tickets = array();
     
-    for ( $i = 0; $i < sizeof( $all_service_tickets ); $i++ ) {
+    for ( $i = 0; $i < count( $all_service_tickets ); $i++ ) {
 
         if ( 
             $status && 
@@ -713,7 +722,7 @@ function intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler
 
     if ( isset( $submissions['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
 
     }
 
@@ -736,7 +745,7 @@ function intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $servi
     if ( empty( $service_ticket_updates ) )
         return array( 'error_msg' => '[323] Nenhuma atualização da ordem de serviço encontrada do usuário atual!' );
     
-    for ( $i = 0; $i < sizeof( $service_ticket_updates ); $i++ ) {
+    for ( $i = 0; $i < count( $service_ticket_updates ); $i++ ) {
 
        /*
         * Substituir os campos que tem ID de outro objeto,
@@ -758,7 +767,7 @@ function intranet_fafar_api_get_access_building_request_handler( $request ) {
 
     if ( isset( $submissions['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
 
     }
 
@@ -772,7 +781,7 @@ function intranet_fafar_api_get_access_building_request_by_owner_handler( $reque
 
     if ( isset( $submissions['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
 
     }
 
@@ -1292,7 +1301,7 @@ function intranet_fafar_api_get_submission_by_id_handler( $request ) {
 
     if ( isset( $submission['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), $submission['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
 
     }
 
@@ -1359,7 +1368,7 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
 
     if ( isset( $submissions['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), $submissions['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
 
     }
 
@@ -1454,7 +1463,7 @@ function intranet_fafar_api_get_user_by_id_handler( $request ) {
 
     if ( isset( $submission['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), $submission['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
 
     }
 
@@ -1483,6 +1492,116 @@ function intranet_fafar_api_get_user_by_id( $id ) {
     return $user;
 }
 
+function intranet_fafar_api_get_users_handler() {
+
+    $submission = intranet_fafar_api_get_users();
+
+    if ( isset( $submission['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( json_encode( $submission ) );
+
+}
+/*
+ * get_users() return:
+ * Array ( [0] => WP_User Object ( 
+ *              [data] => stdClass Object ( 
+ *                  [ID] => 4 
+ *                  [user_login] => gabrielrotsen 
+ *                  [user_pass] => $P$B2LLFfBJZalSWEYuuydE/5chv6u83O. 
+ *                  [user_nicename] => gabrielrotsen 
+ *                  [user_email] => gabrielrotsen@gmail.com 
+ *                  [user_url] => 
+ *                  [user_registered] => 2024-07-23 14:57:44 
+ *                  [user_activation_key] => 
+ *                  [user_status] => 0 
+ *                  [display_name] => Gabriel Rotsen 
+ *              ) 
+ *              [ID] => 4 
+ *              [caps] => Array ( [subscriber] => 1 ) 
+ *              [cap_key] => wp_capabilities 
+ *              [roles] => Array ( [0] => subscriber ) 
+ *              [allcaps] => Array ( 
+ *                  [read] => 1 
+ *                  [level_0] => 1 
+ *                  [subscriber] => 1 
+ *              ) 
+ *              [filter] => [site_id:WP_User:private] => 1 
+ *          ),
+ *          ...
+ * )
+ */
+function intranet_fafar_api_get_users() {
+
+    $users = get_users();
+
+    if( ! $users || count( $users ) === 0 ) {
+
+        return array( 'error_msg' => '[0101]No user found.', 'http_status' => 400 );
+
+    }
+
+    $users = array_map( function ( $user ) {
+
+        $user_data = (array) $user->data;
+
+        $user_data['avatar_url'] = get_avatar_url( $user->ID );
+
+        $user_data['personal_phone']             = esc_attr( get_the_author_meta( 'personal_phone', $user->ID ) );
+        $user_data['personal_birthday']          = esc_attr( get_the_author_meta( 'personal_birthday', $user->ID ) );
+        $user_data['personal_cpf']               = esc_attr( get_the_author_meta( 'personal_cpf', $user->ID ) );
+        $user_data['personal_ufmg_registration'] = esc_attr( get_the_author_meta( 'personal_ufmg_registration', $user->ID ) );
+        $user_data['personal_siape']             = esc_attr( get_the_author_meta( 'personal_siape', $user->ID ) );
+
+        $user_data['address_cep_code']     = esc_attr( get_the_author_meta( 'address_cep_code', $user->ID ) );
+        $user_data['address_uf']           = esc_attr( get_the_author_meta( 'address_uf', $user->ID ) );
+        $user_data['address_city']         = esc_attr( get_the_author_meta( 'address_city', $user->ID ) );
+        $user_data['address_neighborhood'] = esc_attr( get_the_author_meta( 'address_neighborhood', $user->ID ) );
+        $user_data['address_public_place'] = esc_attr( get_the_author_meta( 'address_public_place', $user->ID ) );
+        $user_data['address_number']       = esc_attr( get_the_author_meta( 'address_number', $user->ID ) );
+        $user_data['address_complement']   = esc_attr( get_the_author_meta( 'address_complement', $user->ID ) );
+        
+        $user_data['public_servant_bond_type']     = esc_attr( get_the_author_meta( 'public_servant_bond_type', $user->ID ) );
+        $user_data['public_servant_bond_category'] = esc_attr( get_the_author_meta( 'public_servant_bond_category', $user->ID ) );
+        $user_data['public_servant_bond_position'] = esc_attr( get_the_author_meta( 'public_servant_bond_position', $user->ID ) );
+        $user_data['public_servant_bond_class']    = esc_attr( get_the_author_meta( 'public_servant_bond_class', $user->ID ) );
+        $user_data['public_servant_bond_level']    = esc_attr( get_the_author_meta( 'public_servant_bond_level', $user->ID ) );
+        $user_data['role']                         = intranet_fafar_api_get_roles( esc_attr( ! empty( $user->roles ) ? $user->roles[0] : '' ) );
+        $user_data['bond_status']                  = esc_attr( get_the_author_meta( 'bond_status', $user->ID ) );
+        
+        $user_data['workplace_place']     = intranet_fafar_api_get_submission_by_id( esc_attr( get_the_author_meta( 'workplace_place', $user->ID ) ) );
+        $user_data['workplace_extension'] = esc_attr( get_the_author_meta( 'workplace_extension', $user->ID ) );
+
+        return $user_data;
+
+    }, $users );
+    
+    return $users;
+}
+
+function intranet_fafar_api_get_roles( $slug = null ) {
+
+    global $wp_roles;
+
+    // Ensure the $wp_roles object is loaded.
+    if ( empty( $wp_roles ) ) {
+        $wp_roles = new WP_Roles();
+    }
+
+    if( $slug ) {
+        $role = $wp_roles->roles[$slug];
+        $role['slug'] = $slug; 
+        return $role;
+    }
+
+    // Return an array of all roles.
+    return $wp_roles->roles;
+
+}
+
 function intranet_fafar_api_get_reservation_by_id_handler( $request ) {
 
     $id = (string) $request['id'];
@@ -1491,7 +1610,7 @@ function intranet_fafar_api_get_reservation_by_id_handler( $request ) {
 
     if ( isset( $reservation['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $reservation['error_msg'], 'intranet-fafar-api' ), $reservation['http_status'] );
+        return new WP_Error( 'rest_api_sad', esc_html__( $reservation['error_msg'], 'intranet-fafar-api' ), ( ( $reservation['http_status'] ) ?? 400 ) );
 
     }
 

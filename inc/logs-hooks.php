@@ -1,4 +1,8 @@
 <?php
+// Prevent direct access to the file.
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
 add_action( 'wp_login', 'intranet_fafar_logs_login', 10, 2 );
 

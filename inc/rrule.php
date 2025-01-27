@@ -1,10 +1,14 @@
-<?php 
+<?php
+// Prevent direct access to the file.
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
-require_once get_stylesheet_directory() . '/php-rrule/src/RRuleInterface.php';
-require_once get_stylesheet_directory() . '/php-rrule/src/RRuleTrait.php';
-require_once get_stylesheet_directory() . '/php-rrule/src/RfcParser.php';
-require_once get_stylesheet_directory() . '/php-rrule/src/RSet.php';
-require_once get_stylesheet_directory() . '/php-rrule/src/RRule.php';
+require_once get_stylesheet_directory() . '/lib/php-rrule/src/RRuleInterface.php';
+require_once get_stylesheet_directory() . '/lib/php-rrule/src/RRuleTrait.php';
+require_once get_stylesheet_directory() . '/lib/php-rrule/src/RfcParser.php';
+require_once get_stylesheet_directory() . '/lib/php-rrule/src/RSet.php';
+require_once get_stylesheet_directory() . '/lib/php-rrule/src/RRule.php';
 
 use RRule\RfcParser; // If you have namespace declarations in your code
 use RRule\RRule; // If you have namespace declarations in your code
@@ -51,14 +55,14 @@ function intranet_fafar_rrule_get_dt_start( $rrule_str ) {
     if ( str_contains( $rrule_str, '\n' ) )
         $lines = explode( '\n', $rrule_str );
 
-    if ( sizeof( $lines ) !== 2 )
+    if ( count( $lines ) !== 2 )
         return false;
     
     $dt_start_line = array_shift( $lines );
 
     preg_match( '/DTSTART:(\d{8}T\d{6})/', $dt_start_line, $matches );
 
-    if ( sizeof( $matches ) !== 2 )
+    if ( count( $matches ) !== 2 )
         return false;
 
     return $matches[1];
@@ -72,7 +76,7 @@ function intranet_fafar_rrule_get_rules( $rrule_str ) {
     if ( str_contains( $rrule_str, '\n' ) )
         $lines = explode( '\n', $rrule_str );
 
-    if ( sizeof( $lines ) !== 2 )
+    if ( count( $lines ) !== 2 )
         return false;
 
     return $lines[1];

@@ -1,4 +1,8 @@
 <?php
+// Prevent direct access to the file.
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
 add_shortcode( 'intranet_fafar_sidebar_profile', 'intranet_fafar_sidebar_profile' );
 
@@ -13,6 +17,24 @@ add_shortcode( 'intranet_fafar_importar_reservas', 'intranet_fafar_importar_rese
 add_shortcode( 'intranet_fafar_reservas_por_disciplina', 'intranet_fafar_reservas_por_disciplina' );
 
 add_shortcode( 'intranet_fafar_importar_disciplinas', 'intranet_fafar_importar_disciplinas' );
+
+/* 
+ * 
+ * Shortcodes that returns html for forms, used on 
+ * Contact Form 7 - Dynamic Text Extension plugin
+ */
+add_shortcode( 'intranet_fafar_get_users_as_select_options', 'intranet_fafar_get_users_as_select_options' );
+
+add_shortcode( 'intranet_fafar_get_ips_as_select_options', 'intranet_fafar_get_ips_as_select_options' );
+
+add_shortcode( 'intranet_fafar_get_user_slug_role', 'intranet_fafar_get_user_slug_role' );
+
+add_shortcode( 'intranet_fafar_get_classrooms_as_select_options', 'intranet_fafar_get_classrooms_as_select_options' );
+
+add_shortcode( 'intranet_fafar_generate_service_ticket_code', 'intranet_fafar_generate_service_ticket_code' );
+
+add_shortcode( 'intranet_fafar_get_not_classrooms_as_select_options', 'intranet_fafar_get_not_classrooms_as_select_options' );
+
 
 function intranet_fafar_sidebar_profile() {
 
@@ -29,7 +51,7 @@ function intranet_fafar_sidebar_profile() {
     }
 
     $has_more_then_one_role = false;
-    if( sizeof( $user->roles ) > 1 )
+    if( count( $user->roles ) > 1 )
         $has_more_then_one_role = true;
 
     echo '
@@ -484,28 +506,6 @@ function intranet_fafar_importar_disciplinas() {
 
     ';
 }
-
-/**
- * 
- * 
- * 
- * Shortcodes that returns html for forms, used on 
- * Contact Form 7 - Dynamic Text Extension plugin
-*/
-
-add_shortcode( 'intranet_fafar_get_users_as_select_options', 'intranet_fafar_get_users_as_select_options' );
-
-add_shortcode( 'intranet_fafar_get_ips_as_select_options', 'intranet_fafar_get_ips_as_select_options' );
-
-add_shortcode( 'intranet_fafar_get_user_slug_role', 'intranet_fafar_get_user_slug_role' );
-
-add_shortcode( 'intranet_fafar_get_classrooms_as_select_options', 'intranet_fafar_get_classrooms_as_select_options' );
-
-add_shortcode( 'intranet_fafar_generate_service_ticket_code', 'intranet_fafar_generate_service_ticket_code' );
-
-add_shortcode( 'intranet_fafar_get_not_classrooms_as_select_options', 'intranet_fafar_get_not_classrooms_as_select_options' );
-
-
 
 function intranet_fafar_get_users_as_select_options_old() {
 

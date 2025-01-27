@@ -11,8 +11,19 @@
  * GitHub Theme URI: https://github.com/suportefafar/intranet-astra-child-theme
 */
 
+/*
+ * Styles for buttons on top of CRUD pages like 'Adicionar' or 'Imprimir'
+ */
 .w-button {
   width: 8rem !important;
+}
+
+.w-lg-button {
+  width: 10rem !important;
+}
+
+.w-xl-button {
+  width: 12rem !important;
 }
 
 /*
@@ -102,4 +113,18 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/*
+ * Inputs of a plugin for Grid.JS Tables
+ */
+.intranet-plugin-grid-js-container {
+  display: flex;
+  gap: 2rem;
+  padding-left: 2rem;
+}
+
+.intranet-plugin-grid-js-container select {
+  width: 15rem;
+  font-size: 0.875rem;
 }
