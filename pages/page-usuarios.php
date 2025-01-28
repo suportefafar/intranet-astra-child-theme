@@ -54,49 +54,57 @@ get_header(); ?>
             </a>
         </div>
 
-        <!-- CHARTS -->
+        <div id="filters_container" class="d-flex gap-3 mb-2">
+            <input type="text" id="input_user_name" class="form-control" placeholder="Pesquise pelo nome" aria-label="Nome" aria-describedby="Campo para busca pelo nome">
+            <?php
+                $bond_status = get_option('bond_status', []);
+            
+                echo intranet_fafar_utils_render_dropdown_menu( 
+                    array( 
+                        'options'        => $bond_status,
+                        'options_values' => $bond_status,
+                        'name'           => 'select_bond_status',
+                        'id'             => 'select_bond_status',
+                        'placeholder'    => 'Selecione um status'
+                    ) 
+                );
+            ?>
+            <?php
+                $bond_categories = get_option('bond_categories', []);
+            
+                echo intranet_fafar_utils_render_dropdown_menu( 
+                    array( 
+                        'options'        => $bond_categories,
+                        'options_values' => $bond_categories,
+                        'name'           => 'select_bond_categories',
+                        'id'             => 'select_bond_categories',
+                        'placeholder'    => 'Selecione uma categoria'
+                    ) 
+                );
+            ?>
+            <?php
+                $roles = intranet_fafar_get_all_roles();
+                    
+                $roles_display_names = array_map( function ( $role ) {
+                    return $role['name'];
+                }, $roles );
+                $roles_display_names = array_values( $roles_display_names );
 
-        <!--<div class="d-flex justify-content-around mb-4">
-            <div class="card" style="width: 18rem;">intranet_fafar_importar_json
-                <canvas id="myChart1"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Mês</h5>
-                </div>
-            </div>
+                $roles_slugs = array_map( function ( $slug ) {
+                    return $slug;
+                }, array_keys( $roles ) );
 
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart2"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Ano</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart3"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Setor</h5>
-                </div>
-            </div>
-        </div>-->
-
-        <!-- TABS -->
-
-        <!--<ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#">Active</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-            </li>
-        </ul>-->
-
-        <!-- TABLES -->
+                echo intranet_fafar_utils_render_dropdown_menu( 
+                    array( 
+                        'options'        => $roles_display_names,
+                        'options_values' => $roles_slugs,
+                        'name'           => 'select_public_servant_role',
+                        'id'             => 'select_public_servant_role',
+                        'placeholder'    => 'Selecione um setor',
+                    ) 
+                );
+            ?>
+        </div>
 
         <div id="table-wrapper"></div>
 

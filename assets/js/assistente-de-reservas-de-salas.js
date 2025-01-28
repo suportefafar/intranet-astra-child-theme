@@ -62,18 +62,6 @@ function formatterHandler(_, row) {
   return html(html_content);
 }
 
-function getTimestampAsDateJsPattern(timestamp) {
-  const d = new Date().getTime();
-
-  const current_timestamp_length = d.toString().length;
-
-  const in_timestamp_length = timestamp.toString().length;
-
-  const length_diff = current_timestamp_length - in_timestamp_length;
-
-  return parseInt(timestamp) * Math.pow(10, length_diff);
-}
-
 /**
  * 'Buscar Salas' FORM HANDLER
  */

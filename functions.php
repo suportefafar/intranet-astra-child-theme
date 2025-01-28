@@ -32,6 +32,8 @@ add_action( 'wp_enqueue_scripts', 'child_enqueue_styles', 15 );
 
 // Carregar funções customizadas
 
+require_once get_stylesheet_directory() . '/inc/utils.php';
+
 require_once get_stylesheet_directory() . '/inc/setup-on-activation.php';
 
 require_once get_stylesheet_directory() . '/inc/filters.php';
@@ -47,6 +49,8 @@ require_once get_stylesheet_directory() . '/inc/api-functions.php';
 require_once get_stylesheet_directory() . '/inc/shortcodes.php';
 
 require_once get_stylesheet_directory() . '/inc/custom-user-fields.php';
+
+require_once get_stylesheet_directory() . '/inc/template-tags.php';
 
 //require_once get_stylesheet_directory() . '/inc/logs-hooks.php.php';
 

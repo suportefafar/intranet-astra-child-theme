@@ -114,7 +114,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                 <?php
                     $bond_types = get_option('bond_types', []);
 
-                    echo intranet_fafar_render_dropdown_menu( 
+                    echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $bond_types,
                             'options_values' => $bond_types,
@@ -134,7 +134,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                 <?php
                     $bond_categories = get_option('bond_categories', []);
 
-                    echo intranet_fafar_render_dropdown_menu( 
+                    echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $bond_categories,
                             'options_values' => $bond_categories,
@@ -154,7 +154,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                 <?php
                     $professor_bond_positions = get_option('professor_bond_positions', []);
 
-                    echo intranet_fafar_render_dropdown_menu( 
+                    echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $professor_bond_positions,
                             'options_values' => $professor_bond_positions,
@@ -174,7 +174,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                 <?php
                     $tae_bond_positions = get_option('tae_bond_positions', []);
 
-                    echo intranet_fafar_render_dropdown_menu( 
+                    echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $tae_bond_positions,
                             'options_values' => $tae_bond_positions,
@@ -194,7 +194,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                 <?php
                     $professor_bond_classes = get_option('professor_bond_classes', []);
 
-                    echo intranet_fafar_render_dropdown_menu( 
+                    echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $professor_bond_classes,
                             'options_values' => $professor_bond_classes,
@@ -214,7 +214,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                 <?php
                     $professor_bond_class_levels = get_option('professor_bond_class_levels', []);
 
-                    echo intranet_fafar_render_dropdown_menu( 
+                    echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $professor_bond_class_levels,
                             'options_values' => $professor_bond_class_levels,
@@ -235,7 +235,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                 <?php
                     $tae_bond_classes = get_option('tae_bond_classes', []);
 
-                    echo intranet_fafar_render_dropdown_menu( 
+                    echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $tae_bond_classes,
                             'options_values' => $tae_bond_classes,
@@ -266,7 +266,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
 
                     $user_roles = get_userdata( $user->ID )->roles;
 
-                    echo intranet_fafar_render_dropdown_menu( 
+                    echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $roles_display_names,
                             'options_values' => $roles_slugs,
@@ -287,7 +287,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                 <?php
                     $bond_status = get_option('bond_status', []);
 
-                    echo intranet_fafar_render_dropdown_menu( 
+                    echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $bond_status,
                             'options_values' => $bond_status,
@@ -330,7 +330,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                         return $room['id'];
                     }, $rooms );
 
-                    echo intranet_fafar_render_dropdown_menu( 
+                    echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $rooms_numbers,
                             'options_values' => $rooms_ids,
@@ -391,67 +391,6 @@ function intranet_fafar_save_extra_user_profile_fields( $user_id ) {
     
     update_user_meta( $user_id, 'workplace_extension', sanitize_text_field( $_POST['workplace_extension'] ) );
     update_user_meta( $user_id, 'workplace_place', sanitize_text_field( $_POST['workplace_place'] ) );
-}
-
-function intranet_fafar_render_dropdown_menu($args = []) {
-    // Default arguments (following WordPress pattern)
-    $defaults = [
-        'name'           => '', // Prop da tag. Ex.: <select name="..."
-        'id'             => '', // Prop da tag. Ex.: <select id="..."
-        'selected'       => '', // Valor selecionado por padrão
-        'class'          => '', // Prop da tag. Ex.: <select class="..."
-        'options'        => [], // Dados para <options>
-        'options_values' => [], // Dados para <options value"...">
-        'placeholder'    => '', // Como padrão, não tem uma opção inicial com placeholder
-    ];
-    $args = wp_parse_args($args, $defaults); // Merge defaults with provided args
-
-    // Apply filters to allow modifications
-    $args = apply_filters('intranet_fafar_render_dropdown_menu_args', $args);
-
-    // Begin output buffering
-    ob_start();
-
-    // Start the select element
-    printf(
-        '<select name="%s" id="%s" class="%s">',
-        esc_attr($args['name']),
-        esc_attr($args['id']),
-        esc_attr($args['class'])
-    );
-
-    // Add a placeholder option if provided
-    if (!empty($args['placeholder'])) {
-        echo '<option value="">' . esc_html($args['placeholder']) . '</option>';
-    }
-
-    // Checking for options custom values
-    $values_passed_correctly = !empty( $args['options_values'] ) 
-                               && is_array( $args['options_values'] ) 
-                               && is_array( $args['options'] ) 
-                               && count( $args['options_values'] ) === count( $args['options'] );
-
-    if( ! $values_passed_correctly ) {
-        // End the select element
-        echo '</select>';
-
-        return ob_get_clean(); // Return the output
-    }
-
-    // Add options
-    foreach ( $args['options'] as $key => $option ) {
-        printf(
-            '<option value="%s" %s>%s</option>',
-            esc_attr( $args['options_values'][$key] ),
-            selected( $args['options_values'][$key], $args['selected'], false ), // Add "selected" attribute
-            esc_html( $option )
-        );
-    }
-
-    // End the select element
-    echo '</select>';
-
-    return ob_get_clean(); // Return the output
 }
 
 function intranet_fafar_load_admin_scripts($hook_suffix) {
