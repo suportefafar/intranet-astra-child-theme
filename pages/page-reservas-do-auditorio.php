@@ -44,33 +44,33 @@ get_header(); ?>
 
         <!-- TABS -->
 
-        <ul id="ul_os_status_tabs" class="nav nav-tabs ms-0">
+        <ul id="ul_reservation_status_tabs" class="nav nav-tabs ms-0">
             <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#" data-os-status="badge_aguardando_aprovacao">
+                <a class="nav-link active" aria-current="page" href="#" data-reservation-status="Aguardando aprovação">
                     Aguardando aprovação
                     <span class="badge text-bg-light" id="badge_aguardando_aprovacao"></span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#" data-os-status="em badge_aguardando_tecnicos">
-                    Aguardando técnicos
-                    <span class="badge text-bg-light" id="badge_aguardando_tecnicos"></span>
+                <a class="nav-link" href="#" data-reservation-status="Aguardando técnico">
+                    Aguardando técnico
+                    <span class="badge text-bg-light" id="badge_aguardando_tecnico"></span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#" data-os-status="badge_aguardando_inicio">
+                <a class="nav-link" href="#" data-reservation-status="Aguardando início">
                     Aguardando início
                     <span class="badge text-bg-light" id="badge_aguardando_inicio"></span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#" data-os-status="badge_finalizadas">
+                <a class="nav-link" href="#" data-reservation-status="Finalizada">
                     Finalizadas
-                    <span class="badge text-bg-light" id="badge_finalizadas"></span>
+                    <span class="badge text-bg-light" id="badge_finalizada"></span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#" data-os-status="todas">
+                <a class="nav-link" href="#" data-reservation-status="Todas">
                     Todas
                     <span class="badge text-bg-light" id="badge_todas"></span>
                 </a>

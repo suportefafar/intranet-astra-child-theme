@@ -85,6 +85,37 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_ips_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/submissions/reservations/(?P<id>[\w]+)', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_reservation_by_id_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/submissions/auditorium/reservations/', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_auditorium_reservations_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/submissions/(?P<place>[\w]+)/reservations', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_place_reservations',
+    ) );
+
+
+    register_rest_route( 'intranet/v1', '/submissions/object/(?P<object>[\w]+)', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_submissions_by_object_name_handler',
+    ) );
+
+
+
     register_rest_route( 'intranet/v1', '/users/(?P<id>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
@@ -104,34 +135,6 @@ function intranet_fafar_api_register_submission_routes() {
         'methods'  => WP_REST_Server::READABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_get_submission_by_id_handler',
-    ) );
-
-    register_rest_route( 'intranet/v1', '/submissions/object/(?P<object>[\w]+)', array(
-        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
-        'methods'  => WP_REST_Server::READABLE,
-        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_submissions_by_object_name_handler',
-    ) );
-
-    register_rest_route( 'intranet/v1', '/submissions/(?P<place>[\w]+)/reservations', array(
-        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
-        'methods'  => WP_REST_Server::READABLE,
-        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_place_reservations',
-    ) );
-
-    register_rest_route( 'intranet/v1', '/submissions/reservations/(?P<id>[\w]+)', array(
-        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
-        'methods'  => WP_REST_Server::READABLE,
-        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_reservation_by_id_handler',
-    ) );
-
-    register_rest_route( 'intranet/v1', '/submissions/auditorium/reservations/', array(
-        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
-        'methods'  => WP_REST_Server::READABLE,
-        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_auditorium_reservations_handler',
     ) );
 
     // EDITABLE
@@ -823,20 +826,6 @@ function intranet_fafar_api_get_access_building_request( $by_owner = false ) {
 
 }
 
-function intranet_fafar_api_get_auditorium_reservations_handler() {
-
-    $submissions = intranet_fafar_api_get_access_building_request( true );
-
-    if ( isset( $submissions['error_msg'] ) ) {
-
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
-
-    }
-
-    return rest_ensure_response( json_encode( $submissions ) );
-
-}
-
 /*
 Array
 (
@@ -904,53 +893,42 @@ function intranet_fafar_api_create_auditorium_reservation( $auditorium_reservati
 
 }
 
-// function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
+function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
 
-//     // Get all query parameters
-//     $query_params = $request->get_query_params();
+    // Get all query parameters
+    $query_params = $request->get_query_params();
 
-//     intranet_fafar_api_get_auditorium_reservations( $query_params['status'] );
+    error_log(print_r($query_params, true));
 
-// }
+    $submissions = intranet_fafar_api_get_auditorium_reservations( ( $query_params['status'] ?? null ) );
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( $submissions );
+
+}
 
 
-// function intranet_fafar_api_get_auditorium_reservations( $status = null ) {
+function intranet_fafar_api_get_auditorium_reservations( $status = null ) {
 
+    $auditorium_reservations = intranet_fafar_api_get_submissions_by_object_name( 'auditorium_reservation' );
+
+    if ( isset( $auditorium_reservations['error_msg'] ) )
+        return array( 'error_msg' => $service_ticket['error_msg'] );
     
+    if ( ! $status ) {
+        return $auditorium_reservations;
+    }
 
-//     if ( ! $departament ) {
+    return array_values( array_filter( $auditorium_reservations, function ( $auditorium_reservation ) use ( $status ) {
+        return ( $auditorium_reservation['data']['status'] === $status );
+    } ) );
 
-//         $user        = wp_get_current_user();
-
-//         $role_slug   = $user->roles[0];
-
-//         $departament = $role_slug;
-
-//     }
-
-//     $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $departament . "\"', '$.departament_assigned_to') ORDER BY created_at DESC";
-
-//     $all_service_tickets = intranet_fafar_api_read( $query );
-
-//     if ( isset( $all_service_tickets['error_msg'] ) )
-//         return array( 'error_msg' => $service_ticket['error_msg'] );
-
-//     if ( empty( $all_service_tickets ) )
-//         return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada do usuário atual!' );
-
-//     $service_tickets = array();
-    
-//     for ( $i = 0; $i < count( $all_service_tickets ); $i++ ) {
-
-//         if ( 
-//             $status && 
-//             strtolower( $status ) !== strtolower( $all_service_tickets[$i]['data']['status'] ) 
-//            ) {
-
-//             continue;
-
-//         }
-
+}
 
 
 /*
