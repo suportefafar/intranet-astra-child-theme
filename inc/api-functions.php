@@ -27,6 +27,13 @@ function intranet_fafar_api_register_submission_routes() {
             }
     ) );
 
+    register_rest_route( 'intranet/v1', '/submissions/auditorium/reservation/', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::CREATABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_create_auditorium_reservation_handler',
+    ) );
+
     // READABLE
 
     register_rest_route( 'intranet/v1', '/submissions/service_tickets/by_user', array(
@@ -71,11 +78,11 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_equipaments_handler',
     ) );
 
-    register_rest_route( 'intranet/v1', '/submissions/place/available', array(
+    register_rest_route( 'intranet/v1', '/submissions/ips', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_places_available',
+        'callback' => 'intranet_fafar_api_get_ips_handler',
     ) );
 
     register_rest_route( 'intranet/v1', '/users/(?P<id>[\w]+)', array(
@@ -120,6 +127,13 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_reservation_by_id_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/submissions/auditorium/reservations/', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_auditorium_reservations_handler',
+    ) );
+
     // EDITABLE
 
     register_rest_route( 'intranet/v1', '/submissions/access_building_request/(?P<id>[\w]+)/register', array(
@@ -153,8 +167,6 @@ function intranet_fafar_api_get_access_building_request_register_handler( $reque
 
     // Get data from the request
     $data = $request->get_json_params();
-
-    error_log( print_r( $data, true ) );
 
     $submission = intranet_fafar_api_register_entry_and_exit( $id, $data['type'] );
 
@@ -201,8 +213,6 @@ function intranet_fafar_api_update_submission_by_id_handler( $request ) {
 
     // Get data from the request
     $submission = $request->get_json_params();
-
-    error_log( print_r( $submission, true ) );
 
     $submission = intranet_fafar_api_update( $id, $submission );
 
@@ -306,8 +316,6 @@ function intranet_fafar_api_create_new_loan( $form_data, $contact_form ) {
 
     if ( $form_data['object_name'] !== 'equipament_loan' ) return $form_data;
 
-    //error_log(print_r($form_data, true));
-
     $form_data['data'] = json_decode( $form_data['data'], true );
 
     if ( ! isset( $form_data['data']['loan_date'] ) )
@@ -340,7 +348,7 @@ function intranet_fafar_api_register_loan_return( $form_data, $contact_form ) {
 
     if ( $form_data['object_name'] !== 'equipament_loan_return' ) return $form_data;
 
-    //error_log(print_r($form_data, true));
+    
 
     // Atualizando a propriedade 'on_loan' do equipamento
     $form_data['data'] = json_decode( $form_data['data'], true );
@@ -389,7 +397,7 @@ function intranet_fafar_api_insert_update_on_service_ticket( $form_data, $contac
 
        if ( $form_data['object_name'] !== 'service_ticket_update' ) return $form_data;
    
-       error_log(print_r($form_data, true));
+       
    
        // Atualizando a propriedade 'status' da ordem de serviço
        $form_data['data'] = json_decode( $form_data['data'], true );
@@ -587,7 +595,7 @@ function intranet_fafar_api_get_service_tickets_by_departament_handler( $request
 
 function intranet_fafar_api_get_service_tickets_by_departament( $departament = null, $status = null, $assigned_to = null ) {
 
-    error_log( print_r("-------------> " . $assigned_to, true ) );
+    
 
     if ( ! $departament ) {
 
@@ -813,7 +821,137 @@ function intranet_fafar_api_get_access_building_request( $by_owner = false ) {
 
     return $submissions_joined;
 
-} 
+}
+
+function intranet_fafar_api_get_auditorium_reservations_handler() {
+
+    $submissions = intranet_fafar_api_get_access_building_request( true );
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( json_encode( $submissions ) );
+
+}
+
+/*
+Array
+(
+    [status] => Aguardando aprova\xc3\xa7\xc3\xa3o
+    [technical] => 
+    [applicant_name] => asdf
+    [applicant_email] => asdf@asdf.com
+    [applicant_phone] => (12) 34123-4123
+    [desc] => 12341
+    [public_prediction] => 123
+    [use_musical_instruments] => Array
+        (
+            [0] => Sim
+        )
+    [use_fafar_notebook] => Array
+        (
+            [0] => N\xc3\xa3o
+        )
+    [use_own_notebook] => Array
+        (
+            [0] => Sim
+        )
+    [use_internet_access] => Array
+        (
+            [0] => N\xc3\xa3o
+        )
+    [event_date__1] => 2025-01-31
+    [start_time__1] => 18:00
+    [end_time__1] => 22:00
+)
+*/
+
+function intranet_fafar_api_create_auditorium_reservation_handler( $request ) {
+
+    // Get data from the request
+    $data = $request->get_json_params();
+
+    error_log( print_r( '======================================================>', true ) );
+    error_log( print_r( $data, true ) );
+
+    $submission = intranet_fafar_api_create_auditorium_reservation( $data );
+
+    if ( isset( $submission['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( json_encode( $submission ) );
+
+}
+
+function intranet_fafar_api_create_auditorium_reservation( $auditorium_reservation ) {
+
+    if( ! $auditorium_reservation ) {
+        return array( 'error_msg' => 'Sem reserva de auditório informada' );
+    }
+
+    $submission = array( 
+        'object_name' => 'auditorium_reservation', 
+        'data'        => $auditorium_reservation,
+    );
+
+    return intranet_fafar_api_create( $submission );
+
+}
+
+function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
+
+    // Get all query parameters
+    $query_params = $request->get_query_params();
+
+    intranet_fafar_api_get_auditorium_reservations( $query_params['status'] );
+    
+}
+
+
+function intranet_fafar_api_get_auditorium_reservations( $status = null ) {
+
+    
+
+    if ( ! $departament ) {
+
+        $user        = wp_get_current_user();
+
+        $role_slug   = $user->roles[0];
+
+        $departament = $role_slug;
+
+    }
+
+    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $departament . "\"', '$.departament_assigned_to') ORDER BY created_at DESC";
+
+    $all_service_tickets = intranet_fafar_api_read( $query );
+
+    if ( isset( $all_service_tickets['error_msg'] ) )
+        return array( 'error_msg' => $service_ticket['error_msg'] );
+
+    if ( empty( $all_service_tickets ) )
+        return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada do usuário atual!' );
+
+    $service_tickets = array();
+    
+    for ( $i = 0; $i < count( $all_service_tickets ); $i++ ) {
+
+        if ( 
+            $status && 
+            strtolower( $status ) !== strtolower( $all_service_tickets[$i]['data']['status'] ) 
+           ) {
+
+            continue;
+
+        }
+
+
 
 /*
  * {
@@ -846,7 +984,7 @@ function intranet_fafar_api_get_access_building_request( $by_owner = false ) {
  *     [submission_url] => 
  * )
  * 
- *  {
+    {
        title: "my recurring STRING event",
        rrule:
          "DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201;BYDAY=MO,FR",
@@ -856,8 +994,6 @@ function intranet_fafar_api_get_access_building_request( $by_owner = false ) {
  * @return FromData | null
 */
 function intranet_fafar_api_create_or_update_reservation( $form_data, $contact_form ) {
-
-    error_log( print_r( $form_data, true ) );
 
     // Verificações iniciais
     if( ! isset( $form_data['object_name'] ) ) return $form_data;
@@ -1473,7 +1609,7 @@ function intranet_fafar_api_get_user_by_id_handler( $request ) {
 
 function intranet_fafar_api_get_user_by_id( $id ) {
 
-    error_log(print_r($id, true));
+    
 
     if( ! $id ) {
 
@@ -1750,18 +1886,71 @@ function intranet_fafar_get_user_by_departament( $role_slug = null ) {
         $options[esc_attr( $user->ID )] = esc_html( $user->display_name );
     }
 
-    error_log(print_r($options, true));
+    
 
     return $options;
 
 }
 
-/**
+function intranet_fafar_api_get_ips_handler( $request ) {
+
+    $submissions = intranet_fafar_api_get_ips();
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( json_encode( $submissions ) );
+
+}
+
+function intranet_fafar_api_get_ips() {
+
+    $ips = intranet_fafar_api_get_submissions_by_object_name( 'ip', array( 'orderby_json' => 'address' ) );
+
+    if( ! $ips || count( $ips ) == 0 ) {
+        return array( 'error_msg' => '[0202]Nenhum ip encontrado', 'http_status' => 400 );
+    }
+
+    $equipaments = intranet_fafar_api_get_submissions_by_object_name( 'equipament' );
+
+    /*
+     * Substituir os campos que tem ID de outro objeto,
+     * pelo objeto de mesmo ID
+     */
+    $ips_joined = array_map( function ( $ip ) use ( $equipaments ) {
+
+        $ip['data']['equipament_id'] = null;
+
+        foreach ( $equipaments as $equipament ) {
+
+            if( 
+                isset( $equipament['data']['ip'] ) && 
+                is_array( $equipament['data']['ip'] ) && 
+                count( $equipament['data']['ip'] ) > 0 && 
+                ( $ip['id'] === $equipament['data']['ip'][0] ) 
+              ) {
+                $ip['data']['equipament_id'] = $equipament['id'];
+                break;
+            }
+    
+        }
+
+        return $ip;
+        
+    }, $ips );
+
+    return $ips_joined;
+}
+
+/*
  * SIMPLE CREATE, READ, UPDATE and DELETE FUNCS
  * 
-*/
+ */
 
-function intranet_fafar_api_create( $submission, $check_permissions = true ) {
+function intranet_fafar_api_create( $submission, $check_ermissions = true ) {
 
     if ( ! isset( $submission['data'] ) )
         return array( 'error_msg' => 'No "data" column informed!' );
@@ -1770,13 +1959,14 @@ function intranet_fafar_api_create( $submission, $check_permissions = true ) {
   
     $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
 
-    $bytes              = random_bytes( 5 );
-    $unique_hash        = time().bin2hex( $bytes ); 
+    $bytes       = random_bytes( 5 );
+    $unique_hash = time().bin2hex( $bytes ); 
 
     $submission['id']      = $unique_hash;
     $submission['form_id'] = $submission['form_id'] ?? '-2';
-    $submission['data']    = json_encode( json_decode( $submission['data'] ) );
-  
+    $submission['data']    = intranet_fafar_utils_is_json( $submission['data'] ) ? 
+                                $submission['data'] : json_encode( $submission['data'] );
+
     $wpdb->insert( $table_name, $submission );
 
     do_action( 'intranet_fafar_api_after_create', $submission['id'] );
@@ -1806,8 +1996,6 @@ function intranet_fafar_api_read( $query, $check_permissions = true, $check_is_a
     foreach( $submissions as $submission ) {
     
         $submission['data'] = json_decode( $submission['data'], true );
-
-        //error_log( print_r( $submission, true ) );
 
         // Check if 'is active'
         if( $check_is_active && 
@@ -1855,8 +2043,8 @@ function intranet_fafar_api_update( $id, $submission, $check_permissions = true 
   
     $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
 
-    if ( ! is_string( $submission['data'] ) )
-        $submission['data'] = json_encode( $submission['data'] );
+    $submission['data'] = intranet_fafar_utils_is_json( $submission['data'] ) ? 
+                                $submission['data'] : json_encode( $submission['data'] );
 
     // Excluir 'updated_at', se existir
     if ( isset( $submission['updated_at'] ) )
@@ -1865,9 +2053,6 @@ function intranet_fafar_api_update( $id, $submission, $check_permissions = true 
     // Excluir 'created_at', se existir
     if ( isset( $submission['created_at'] ) )
         unset( $submission['created_at'] );
-
-    error_log(print_r("========================================================", true));
-    error_log(print_r($submission, true));
   
     $wpdb->update( $table_name, $submission, array( 'id' => $id ) );
 
@@ -2064,3 +2249,4 @@ function intranet_fafar_api_san_arr( $arr ) {
     return $arr;
 
 }
+

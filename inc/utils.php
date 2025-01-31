@@ -64,3 +64,13 @@ function intranet_fafar_utils_render_dropdown_menu($args = []) {
 
     return ob_get_clean(); // Return the output
 }
+
+function intranet_fafar_utils_is_json( $data ) {
+    if ( ! is_string( $data ) ) {
+        return false;
+    }
+
+    json_decode( $data );
+    
+    return json_last_error() === JSON_ERROR_NONE;
+}

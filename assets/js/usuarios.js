@@ -7,7 +7,7 @@ let USERS = [];
 
 // Export listed users
 document.querySelector("#btn_export_users").addEventListener("click", () => {
-  console.log("Exportando usuários!");
+  exportUsers();
 });
 
 // Copy emails of listed users
@@ -103,8 +103,6 @@ async function filterUsers() {
       .value,
   };
 
-  console.log("Filters:", filters);
-
   const users = await getUsers();
 
   const filtered_users = users.filter((user) => {
@@ -119,8 +117,6 @@ async function filterUsers() {
         filters.public_servant_role === user.role.slug)
     );
   });
-
-  console.log(filtered_users);
 
   prepareToRenderDataOnTable(filtered_users);
 }
@@ -300,163 +296,126 @@ function actionColFormatter(current) {
 /*
  * Função para exportar os usuários
  */
+function exportUsers() {
+  showAlert("Por favor, aguarde...", "info");
 
-function downloadCSV(csv) {
-  //TRANSFORMAR EM .CSV E DOWNLOAD
-  const atual = new Date(Date.now());
+  if (!Array.isArray(USERS) || USERS.length === 0)
+    return showAlert("Sem usuários para exportar!", "danger");
 
-  const csvBlob = new Blob([csv], { type: "text/csv" });
-  const blobUrl = URL.createObjectURL(csvBlob);
-  const anchorElement = document.createElement("a");
+  // Gerar as linhas de CSV pelo objeto
+  const csvLines = getCsvLinesFromItems(USERS);
 
-  anchorElement.href = blobUrl;
-  anchorElement.download = "USUARIOS_" + atual.getTime() + ".csv";
-  anchorElement.click();
+  makeAndDownloadCSV(csvLines);
 
-  setTimeout(() => {
-    URL.revokeObjectURL(blobUrl);
-  }, 500);
+  showAlert("Usuários exportados com sucesso!", "success", true);
 }
 
-function exibirProblemas(problemas) {
-  if (problemas.length > 0) {
-    let content =
-      "Ops, tivemos algum(s) problemas. Mas não se preocupe, seu arquivo foi gerado. Segue o que aconteceu:<br/>";
+function criarLinhaCSV(arr) {
+  return Object.keys(arr)
+    .map((attr) => arr[attr])
+    .join(",");
+}
 
-    problemas.forEach((element) => {
-      let erro = "Erro não identificado para usuario: " + element.usuario.nome;
-      if (element.cod_erro == 001) {
-        erro =
-          "Endereço não encontrado ou inválido para o usuario: " +
-          element.usuario.nome;
-      } else if (element.cod_erro == 002) {
-        erro = "Propriedade não encontrada no usuário: " + element.usuario.nome;
-      }
+function getAttrDisplayName(attr) {
+  return (
+    {
+      ID: "ID",
+      user_login: "Usuário",
+      user_pass: "Senha",
+      user_nicename: "Apelido",
+      user_email: "Email",
+      user_url: "URL",
+      user_registered: "Registrado em",
+      user_activation_key: "Chave de ativação",
+      user_status: "Status",
+      display_name: "Nome",
+      avatar_url: "Foto",
+      personal_phone: "Telefone",
+      personal_birthday: "Aniversário",
+      personal_cpf: "CPF",
+      personal_ufmg_registration: "Inscrição UFMG",
+      personal_siape: "SIAPE",
+      address_cep_code: "CEP",
+      address_uf: "UF",
+      address_city: "Cidade",
+      address_neighborhood: "Bairro",
+      address_public_place: "Logradouro",
+      address_number: "Número",
+      address_complement: "Complemento",
+      public_servant_bond_type: "Tipo de vínculo",
+      public_servant_bond_category: "Categoria de vínculo",
+      public_servant_bond_position: "Cargo de vínculo",
+      public_servant_bond_class: "Classe de vínculo",
+      public_servant_bond_level: "Nível de vínculo",
+      role: "Setor de vínculo",
+      bond_status: "Status de vínculo",
+      workplace_place: "Sala de trabalho",
+      workplace_extension: "Ramal de trabalho",
+    }[attr] || "Desconhecido"
+  );
+}
 
-      content += erro + "<br>";
-    });
-
-    $.alert({
-      title:
-        "<span class='text-primary'><i class='bi bi-exclamation-triangle-fill'></i></span> Atenção",
-      content,
-      buttons: {
-        voltar: {
-          text: "Ok!",
-          action: function () {},
-        },
-      },
-    });
+function getValuesFromAttr(attr, item) {
+  if (attr === "role") {
+    return item.role.name ?? "--";
+  } else if (attr === "workplace_place") {
+    return item.workplace_place.data ? item.workplace_place.data.number : "--";
+  } else {
+    return item[attr] || "--";
   }
 }
 
-function exportarParaCSV(atributos) {
-  /*
-  códigos problemas:
-    001: endereco não cadastrado;
-    */
-  let problemas = [];
-  let usuarios_completos = [];
-  let usuarios_filtrados = [];
-  let enderecos_filtrados = [];
-  let promises_usuarios = [];
-  let promises_enderecos = [];
+function getCsvLinesFromItems(items) {
+  if (!Array.isArray(items) || items.length === 0) return "";
 
-  let ids_filtrados = $(".td-nome")
-    .toArray()
-    .filter((element) => $(element).is(":visible"));
+  const raw_attributes = Object.keys(items[0]);
 
-  ids_filtrados.forEach((element) => {
-    promises_usuarios.push(
-      Promise.resolve(
-        obterUsuarioPorID($(element).find("input[type=hidden]").val())
-      )
-    );
-  });
+  const attributes = raw_attributes.map((attr) => getAttrDisplayName(attr));
 
-  ids_filtrados.forEach((element) => {
-    promises_enderecos.push(
-      Promise.resolve(
-        obterUsuarioEnderecoPorIdUsuario(
-          $(element).find("input[type=hidden]").val()
-        )
-      )
-    );
-  });
+  const csvLines = [criarLinhaCSV(attributes)];
 
-  Promise.all(promises_usuarios)
-    .then((res) => {
-      usuarios_filtrados = res;
-
-      return Promise.all(promises_enderecos);
-    })
-    .then((res) => {
-      enderecos_filtrados = res;
-
-      for (const usuario of usuarios_filtrados) {
-        let ENDERECO_VALIDO = false;
-        let USUARIO_VALIDO = false;
-
-        if (usuario) {
-          USUARIO_VALIDO = true;
-          for (const endereco of enderecos_filtrados) {
-            if (usuario && endereco && usuario.id == endereco.idusuario) {
-              usuarios_completos.push({ ...usuario, ...endereco });
-              ENDERECO_VALIDO = true;
-            }
-          }
-        }
-
-        if (!ENDERECO_VALIDO) {
-          problemas.push({
-            cod_erro: 001,
-            usuario: {
-              id: usuario.id ? usuario.id : "--",
-              nome: usuario.nome ? usuario.nome : "--",
-            },
-          });
-        }
-
-        if (!USUARIO_VALIDO) {
-          problemas.push({
-            cod_erro: 002,
-            usuario: {
-              id: usuario.id ? usuario.id : "--",
-              nome: usuario.nome ? usuario.nome : "--",
-            },
-          });
-        }
-      }
-
-      usuarios_filtrados = filtrarAtributos(atributos, usuarios_completos);
-
-      let csv =
-        criarLinhaCSV(Object.keys(usuarios_filtrados[0])).toUpperCase() + "\n";
-
-      for (const usuario of usuarios_filtrados) {
-        let linha = criarLinhaCSV(usuario);
-        csv += linha + "\n";
-      }
-
-      downloadCSV(csv);
-
-      exibirProblemas(problemas);
+  for (const item of items) {
+    const obj = Object.keys(item).map((attr) => {
+      return getValuesFromAttr(attr, item);
     });
+
+    csvLines.push(criarLinhaCSV(obj));
+  }
+
+  return csvLines.join("\n");
+}
+
+function makeAndDownloadCSV(csvContent, filenamePrefix = "usuarios") {
+  const blob = new Blob([csvContent], { type: "text/csv" });
+
+  const url = URL.createObjectURL(blob);
+
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+
+  anchor.download = `${filenamePrefix}_${Date.now()}.csv`;
+
+  document.body.appendChild(anchor); // Ensure the anchor is in the DOM before triggering the click
+
+  anchor.click();
+
+  document.body.removeChild(anchor); // Clean up after download
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000); // Give more time to ensure revocation doesn't interfere
 }
 
 /*
  * Função para copiar os emails
  */
 function copyEmailsToClipboard() {
-  console.log(USERS);
-
   showAlert("Por favor, aguarde...", "info");
 
+  if (!Array.isArray(USERS) || USERS.length === 0)
+    return showAlert("Sem usuários para copiar.", "danger");
+
   if (!navigator.clipboard) {
-    showAlert(
-      "Sem navigator.clipboard. Por favor, informe ao setor de Informática.",
-      "danger"
-    );
+    showAlert("Funcionalidade não encontrada em seu navegador.", "danger");
     return;
   }
 
@@ -464,11 +423,11 @@ function copyEmailsToClipboard() {
 
   navigator.clipboard.writeText(emails).then(
     function () {
-      showAlert("Email(s) copiado(s) com sucesso!");
+      showAlert("Email(s) copiado(s) com sucesso!", "success", true);
     },
     function (err) {
       console.error("Async: Could not copy text: ", err);
-      showAlert("Não foi possível copiar os emails!");
+      showAlert("Não foi possível copiar os emails!", "danger");
     }
   );
 }
