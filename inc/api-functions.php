@@ -904,52 +904,52 @@ function intranet_fafar_api_create_auditorium_reservation( $auditorium_reservati
 
 }
 
-function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
+// function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
 
-    // Get all query parameters
-    $query_params = $request->get_query_params();
+//     // Get all query parameters
+//     $query_params = $request->get_query_params();
 
-    intranet_fafar_api_get_auditorium_reservations( $query_params['status'] );
+//     intranet_fafar_api_get_auditorium_reservations( $query_params['status'] );
+
+// }
+
+
+// function intranet_fafar_api_get_auditorium_reservations( $status = null ) {
+
     
-}
 
+//     if ( ! $departament ) {
 
-function intranet_fafar_api_get_auditorium_reservations( $status = null ) {
+//         $user        = wp_get_current_user();
 
+//         $role_slug   = $user->roles[0];
+
+//         $departament = $role_slug;
+
+//     }
+
+//     $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $departament . "\"', '$.departament_assigned_to') ORDER BY created_at DESC";
+
+//     $all_service_tickets = intranet_fafar_api_read( $query );
+
+//     if ( isset( $all_service_tickets['error_msg'] ) )
+//         return array( 'error_msg' => $service_ticket['error_msg'] );
+
+//     if ( empty( $all_service_tickets ) )
+//         return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada do usuário atual!' );
+
+//     $service_tickets = array();
     
+//     for ( $i = 0; $i < count( $all_service_tickets ); $i++ ) {
 
-    if ( ! $departament ) {
+//         if ( 
+//             $status && 
+//             strtolower( $status ) !== strtolower( $all_service_tickets[$i]['data']['status'] ) 
+//            ) {
 
-        $user        = wp_get_current_user();
+//             continue;
 
-        $role_slug   = $user->roles[0];
-
-        $departament = $role_slug;
-
-    }
-
-    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $departament . "\"', '$.departament_assigned_to') ORDER BY created_at DESC";
-
-    $all_service_tickets = intranet_fafar_api_read( $query );
-
-    if ( isset( $all_service_tickets['error_msg'] ) )
-        return array( 'error_msg' => $service_ticket['error_msg'] );
-
-    if ( empty( $all_service_tickets ) )
-        return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada do usuário atual!' );
-
-    $service_tickets = array();
-    
-    for ( $i = 0; $i < count( $all_service_tickets ); $i++ ) {
-
-        if ( 
-            $status && 
-            strtolower( $status ) !== strtolower( $all_service_tickets[$i]['data']['status'] ) 
-           ) {
-
-            continue;
-
-        }
+//         }
 
 
 
