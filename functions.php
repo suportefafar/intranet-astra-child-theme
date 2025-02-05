@@ -48,6 +48,8 @@ require_once get_stylesheet_directory() . '/inc/api-functions.php';
 
 require_once get_stylesheet_directory() . '/inc/shortcodes.php';
 
+require_once get_stylesheet_directory() . '/inc/sidebar.php';
+
 require_once get_stylesheet_directory() . '/inc/custom-user-fields.php';
 
 require_once get_stylesheet_directory() . '/inc/template-tags.php';

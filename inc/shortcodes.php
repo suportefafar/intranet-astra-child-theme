@@ -4,10 +4,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-add_shortcode( 'intranet_fafar_sidebar_profile', 'intranet_fafar_sidebar_profile' );
-
-add_shortcode( 'intranet_fafar_sidebar_menu', 'intranet_fafar_sidebar_menu' );
-
 add_shortcode( 'intranet_fafar_logs', 'intranet_fafar_logs' );
 
 add_shortcode( 'intranet_fafar_importar_json', 'intranet_fafar_importar_json' );
@@ -35,64 +31,6 @@ add_shortcode( 'intranet_fafar_generate_service_ticket_code', 'intranet_fafar_ge
 
 add_shortcode( 'intranet_fafar_get_not_classrooms_as_select_options', 'intranet_fafar_get_not_classrooms_as_select_options' );
 
-
-function intranet_fafar_sidebar_profile() {
-
-    $user       = wp_get_current_user();
-    $avatar_url = get_avatar_url( $user->get( 'ID' ) );
-    $role_slug  = $user->roles[0];
-
-    // Get the display name of the role
-    $role_display_name = '--';
-    if ( isset( wp_roles()->roles[ $role_slug ] ) ) {
-
-        $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
-
-    }
-
-    $has_more_then_one_role = false;
-    if( count( $user->roles ) > 1 )
-        $has_more_then_one_role = true;
-
-    echo '
-        <div class="d-flex gap-4 mb-5">
-            <a href="https://intranet.farmacia.ufmg.br/membros/' . $user->get( 'user_login' ) . '/profile/change-avatar/">
-                <img src="' . $avatar_url . '" width="80" alt="User profile avatar" />
-            </a>
-
-            <div class="d-flex flex-column justify-content-center gap-1">
-                <h6 class="p-0 m-0">
-                    <a href="https://intranet.farmacia.ufmg.br/membros/' . $user->get( 'user_login' ) . '/" class="text-decoration-none">' . 
-                    $user->get( 'display_name' ) . 
-                    '</a>
-                </h6>
-                <small class="p-0 m-0 text-muted lh-base font-monospace">' . $role_display_name . ' ' . ( ( $has_more_then_one_role ) ? '+' : '') . '</small>
-            </div>
-        </div>
-        ';
-}
-
-function intranet_fafar_sidebar_menu() {
-
-    // add_filter( 'nav_menu_css_class', function ( $classes ) {
-
-    //     array_push( $classes, 'border-bottom' );
-    //     return $classes;
-
-    // });
-
-    echo '<div style="min-height:16em">';
-        echo wp_nav_menu(array(
-            'menu' => 'Lateral',
-            'container' => false,
-            'menu_class' => '',
-            'fallback_cb' => '__return_false',
-            'items_wrap' => '<ul id="%1$s" class="navbar-nav me-auto mb-2 mb-md-0 %2$s">%3$s</ul>',
-            'depth' => 2,
-            'walker' => new bootstrap_5_wp_nav_menu_walker()
-        ));
-    echo '</div>';
-}
 
 function intranet_fafar_logs() {
 

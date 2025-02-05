@@ -114,7 +114,12 @@ function intranet_fafar_initial_setup() {
              * Grava os setores de trabalho possíveis, como 
              * 'roles' do WordPress
              */
-            intranet_fafar_add_custom_roles();
+            $work_sectors = intranet_fafar_add_custom_roles();
+
+            /*
+             * Cria menus para cada setor 
+             */
+            intranet_fafar_add_custom_roles_menus( $work_sectors );
             
             /* 
              * Cria uma option para não passar para garantir 
@@ -135,7 +140,7 @@ function intranet_fafar_add_custom_roles() {
      */
     $work_sectors = [
         array(
-            'display_name' => 'Arquivo',
+            'display_name' => 'ARQUIVO',
             'slug'         => 'arquivo',
             'capabilities' => array(
                 'read' => true,
@@ -403,6 +408,27 @@ function intranet_fafar_add_custom_roles() {
             $work_sector['capabilities'],
         );
 
+    }
+
+    return $work_sectors;
+
+}
+
+function intranet_fafar_add_custom_roles_menus( $sectors = null ) {
+
+    if( ! $sectors ) return;
+
+    foreach( $sectors as $sector ) {
+        /* 
+         * Registra um menu para cada setor 
+         */
+        $menu_exists = wp_get_nav_menu_object( $sector['display_name'] );
+        
+        if ( ! $menu_exists ) {
+ 
+            $menu_id = wp_create_nav_menu( $sector['display_name'] );
+            
+        }
     }
 
 }
