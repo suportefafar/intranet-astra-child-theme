@@ -36,6 +36,17 @@ document
     confirmDelete(id);
   });
 
+/*
+ * Adiciona um listener para um evento despachado no formulário
+ * de adição de reservas, no CF7, quando a submissão é feita com sucesso
+ */
+document.addEventListener("onAddEventSuccess", () => {
+  // console.log("Evento disparado!");
+  hideAddEventModal();
+  loadUI();
+  showAlert("Reserva adicionada com sucesso!", "success", true);
+});
+
 async function loadUI(place_id = false) {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
@@ -72,9 +83,9 @@ async function getEventsByPlaceID(place_id) {
         "/reservations"
     );
 
-    console.log({ response });
+    // console.log({ response });
   } catch (error) {
-    console.log(error.response.data.message);
+    // console.log(error.response.data.message);
     return [];
   }
 
@@ -139,17 +150,12 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
   },
   hiddenDays: [0],
   eventClick: viewEvent,
+  dateClick: dateClickHandler,
   events: EVENTS,
 });
 
-// {
-//   title: "my recurring STRING event",
-//   rrule:
-//     "DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201T;BYDAY=MO,FR",
-// },
-
 function renderCalendar(submissions) {
-  console.log(submissions);
+  // console.log(submissions);
 
   const arr = [];
   for (const submission of submissions) {
@@ -173,6 +179,27 @@ function renderCalendar(submissions) {
   calendar.refetchEvents();
 
   calendar.render();
+}
+
+function dateClickHandler(info) {
+  const { dateStr } = info;
+
+  // console.log("Clicked on: " + dateStr);
+
+  const date_selected = new Date(dateStr);
+
+  document.querySelector("#date").value = parseToDateInputFormat(date_selected);
+
+  document.querySelector("#start_time").value =
+    parseToTimeInputFormat(date_selected);
+
+  // Avança os 50 minutos de uma aula padrão
+  date_selected.setTime(date_selected.getTime() + 1000 * 60 * 50);
+
+  document.querySelector("#end_time").value =
+    parseToTimeInputFormat(date_selected);
+
+  showAddEventModal();
 }
 
 async function viewEvent(info) {
@@ -217,7 +244,7 @@ async function viewEvent(info) {
 
   showEventDetailsModal();
 
-  console.log(event);
+  // console.log(event);
 }
 
 function confirmDelete(id) {
@@ -240,7 +267,7 @@ async function deleteSubmission(id) {
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
     );
 
-    console.log(response);
+    // console.log(response);
 
     showAlert("Excluído com sucesso!", "success", true, 3000);
 
@@ -249,10 +276,10 @@ async function deleteSubmission(id) {
     let error_msg = "[1010]Unknow error on try catch";
 
     if (error.response?.data?.message) {
-      console.log(error.response.data);
+      // console.log(error.response.data);
       error_msg = error.response.data.message;
     } else {
-      console.log(error);
+      // console.log(error);
     }
 
     showAlert(error_msg, "danger");
@@ -266,9 +293,9 @@ async function getEventByID(id) {
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/reservations/" +
         id
     );
-    console.log({ response });
+    // console.log({ response });
   } catch (error) {
-    console.log(error.response.data.message);
+    // console.log(error.response.data.message);
     return false;
   }
   return JSON.parse(response.data);
@@ -289,5 +316,39 @@ function hideEventDetailsModal() {
   const modal = bootstrap.Modal.getOrCreateInstance(
     document.getElementById("intranetFafarEventDetailsModal")
   );
+
   modal.hide();
+}
+
+function showAddEventModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarAddEvent")
+  );
+
+  modal.show();
+}
+
+function hideAddEventModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarAddEvent")
+  );
+
+  modal.hide();
+}
+
+function parseToDateInputFormat(date) {
+  if (!(date instanceof Date)) return null;
+
+  return date.toISOString().split("T")[0];
+}
+
+function parseToTimeInputFormat(date) {
+  if (!(date instanceof Date)) return null;
+
+  // Extract hours and minutes
+  const hours = date.getHours().toString().padStart(2, "0"); // Ensure two digits
+  const minutes = date.getMinutes().toString().padStart(2, "0"); // Ensure two digits
+
+  // Format as 'HH:MM'
+  return `${hours}:${minutes}`;
 }

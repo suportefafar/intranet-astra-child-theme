@@ -191,6 +191,23 @@ get_header(); ?>
                 </div>
             </div>
         </div>
+
+        <!-- Modal adicionar reserva -->
+        <div class="modal fade" id="intranetFafarAddEvent" tabindex="-1" aria-labelledby="intranetFafarAddEventLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="intranetFafarAddEventLabel">Adicionar Reserva</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <?php 
+                            echo do_shortcode( '[contact-form-7 id="3b3fab8" title="Adicionar Reserva"]' );
+                        ?>
+                    </div>
+                </div>
+            </div>
+        </div>
         
 <!--
     * Conteúdo customizado da página
