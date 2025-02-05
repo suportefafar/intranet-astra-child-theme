@@ -7,46 +7,125 @@ let EVENTS = [];
  */
 
 /*
+ * Adiciona um listener para cada aba
+ */
+document
+  .querySelectorAll("#ul_reservation_status_tabs .nav-link")
+  .forEach((el) => {
+    el.addEventListener("click", onClickTabHandler);
+  });
+
+/*
+ * Adiciona um evento de clique à DOM e verifica se o elemento clicado
+ * ou um de seus ancestrais possui uma das classes de interesse.
+ */
+document.addEventListener("click", (event) => {
+  const target = event.target.closest(
+    ".change-status, .show-details, .set-technical"
+  );
+
+  if (!target) return;
+
+  const { id, status } = target.dataset;
+
+  const actions = {
+    "change-status": changeStatus,
+    "show-details": showDetails,
+    "set-technical": prepareToShowSetTechnicalModal,
+  };
+
+  for (const className in actions) {
+    if (target.classList.contains(className)) {
+      actions[className](id, status);
+      break;
+    }
+  }
+});
+
+document
+  .querySelector("#btn_set_technical")
+  .addEventListener("click", setTechnicalHandler);
+
+/*
  * Aguarda até que a DOM seja carregada para inserir os eventos no calendário
  */
 document.addEventListener("DOMContentLoaded", () => {
-  loadUI();
+  preLoadTable();
 });
 
-async function loadUI(reservationStatus = false) {
-  let CURRENT_RESERVATION_STATUS = null;
+/*
+ * UL TABS
+ */
 
-  if (reservationStatus) {
-    CURRENT_RESERVATION_STATUS = reservationStatus;
-  } else {
-    CURRENT_RESERVATION_STATUS = document.querySelectorAll(
-      "#ul_reservation_status_tabs .nav-link"
-    )[0].dataset.reservationStatus;
+function onClickTabHandler(e) {
+  const { dataset } = e.target;
+
+  preLoadTable(dataset);
+}
+
+function changeActiveTab(reservationStatus) {
+  const tabs = document.querySelectorAll(
+    "#ul_reservation_status_tabs .nav-link"
+  );
+
+  tabs.forEach((el) => {
+    el.classList.remove("active");
+    if (el.dataset.reservationStatus === reservationStatus)
+      el.classList.add("active");
+  });
+}
+
+function getActivedTab() {
+  const tabs = document.querySelectorAll(
+    "#ul_reservation_status_tabs .nav-link"
+  );
+
+  for (const tab of tabs) {
+    if (tab.classList.contains("active")) return tab;
   }
 
-  console.log(CURRENT_RESERVATION_STATUS);
+  return null;
+}
 
-  renderReservationStatusTabs(CURRENT_RESERVATION_STATUS);
+async function preLoadTable(tab_dataset = null) {
+  showAlert("Por favor, aguarde...", "warning");
 
-  if (CURRENT_RESERVATION_STATUS === "Todas") CURRENT_RESERVATION_STATUS = "";
+  if (!tab_dataset) {
+    tab_dataset = document.querySelectorAll(
+      "#ul_reservation_status_tabs .nav-link"
+    )[0].dataset;
+  }
+
+  console.log(tab_dataset);
+
+  changeActiveTab(tab_dataset.reservationStatus);
 
   const submissions = await getEventsByReservationStatus(
-    CURRENT_RESERVATION_STATUS
+    tab_dataset.reservationStatusSlug,
+    tab_dataset.reservationOrderBy,
+    tab_dataset.reservationOrderHow
   );
 
   renderGridJS(submissions);
+
+  hideAlert();
 }
 
 /*
  * GET EVENTS
  */
-async function getEventsByReservationStatus(reservationStatus) {
+async function getEventsByReservationStatus(
+  reservationStatus,
+  order_by = null,
+  order_how = "asc"
+) {
   let status_param = reservationStatus ?? "";
 
   try {
     const response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/auditorium/reservations?status=" +
-        status_param
+      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/auditorium/reservations?status=${status_param}&${
+        order_by ? "order=" + order_by + "-" + order_how : ""
+      }`
     );
 
     console.log(response);
@@ -62,50 +141,14 @@ async function getEventsByReservationStatus(reservationStatus) {
   }
 }
 
-/**
- * UL TABS RENDER
- */
-
-function renderReservationStatusTabs(reservation_status = null) {
-  const tabs = document.querySelectorAll(
-    "#ul_reservation_status_tabs .nav-link"
-  );
-
-  tabs.forEach((el) => {
-    el.addEventListener("click", onClickPlaceTabHanlder);
-  });
-
-  if (reservation_status) {
-    changeActiveTab(reservation_status);
-  }
-}
-
-function onClickPlaceTabHanlder(e) {
-  const { reservationStatus } = e.target.dataset;
-
-  loadUI(reservationStatus);
-}
-
-function changeActiveTab(reservationStatus) {
-  const tabs = document.querySelectorAll(
-    "#ul_reservation_status_tabs .nav-link"
-  );
-
-  tabs.forEach((el) => {
-    el.classList.remove("active");
-    if (el.dataset.reservationStatus === reservationStatus)
-      el.classList.add("active");
-  });
-}
-
 /*
  * TABLE RENDER
  */
 const ptBR = {
   search: { placeholder: "Digite uma palavra-chave..." },
-  sort: {
-    sortAsc: "Coluna em ordem crescente",
-    sortDesc: "Coluna em ordem decrescente",
+  order: {
+    orderAsc: "Coluna em ordem crescente",
+    orderDesc: "Coluna em ordem decrescente",
   },
   pagination: {
     previous: "Anterior",
@@ -139,7 +182,7 @@ const grid = new gridjs.Grid({
     summary: true,
   },
   search: true,
-  sort: true,
+  order: true,
   resizable: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
@@ -170,9 +213,10 @@ function fetchDataHandler(submissions) {
       applicant_phone,
       technical,
       status,
-      event_date__1,
-      start_time__1,
-      end_time__1,
+      actions,
+      event_date,
+      start_time,
+      end_time,
     } = data;
 
     const prevent_write = data.prevent_write ? "1" : "0";
@@ -192,15 +236,16 @@ function fetchDataHandler(submissions) {
     });
 
     const execution_column_data = JSON.stringify({
-      event_date: event_date__1,
-      start_time: start_time__1,
-      end_time: end_time__1,
+      event_date,
+      start_time,
+      end_time,
       technical,
     });
 
     const action_column_data = JSON.stringify({
       id,
       permissions,
+      actions,
     });
 
     table_arr.push([
@@ -217,24 +262,24 @@ function fetchDataHandler(submissions) {
 function aboutEventColFormatter(current) {
   const { desc, public_prediction, status } = JSON.parse(current);
 
-  let type = "info";
-  if (status === "Aguardando aprovação") type = "warning";
-  else if (status === "Aguardando técnico") type = "info";
-  else if (status === "Aguardando início") type = "primary";
-  else if (status === "Finalizada") type = "success";
-  else if (status === "Desaprovada") type = "danger";
-  else if (status === "Cancelada") type = "secondary";
+  const type = getStatusStyle(status);
 
   return html(`
-    <div>
-      <strong>${desc}</strong>
-      <br />
-      <small class="mt-1 text-secondary">
-        <i class="bi bi-people"></i>
-        <span>${public_prediction}</span>
-      </small>
-      <br />
-      <small class="mt-1 badge text-bg-${type}">${status}</small>
+    <div class="d-flex flex-column gap-1">
+      <div>
+        <strong>${desc}</strong>
+      </div>
+
+      <div>
+        <small class="mt-1 text-secondary">
+          <i class="bi bi-people"></i>
+          <span>${public_prediction}</span>
+        </small>
+      </div>
+
+      <div>
+        <small class="mt-1 badge text-bg-${type}">${status}</small>
+      </div>
     </div>
     `);
 }
@@ -244,27 +289,31 @@ function applicantColFormatter(current) {
     JSON.parse(current);
 
   return html(`
-    <div>
-      <strong>
-        <span class="me-1"><i class="bi bi-person"></i></span>
-        <span>${applicant_name}</span>
-      </strong>
+    <div class="d-flex flex-column gap-1">
+      <div>
+        <strong>
+          <span class="me-1"><i class="bi bi-person"></i></span>
+          <span>${applicant_name}</span>
+        </strong>
+      </div>
 
-      <br />
-      <span class="me-1"><i class="bi bi-telephone"></i></span>
-      <span>
-        <a href="tel:${applicant_phone}" class="text-decoration-none" target="blank" title="Ligar para ${applicant_phone}">
-          ${applicant_phone}
-        </a>
-      </span>
+      <div>
+        <span class="me-1"><i class="bi bi-telephone"></i></span>
+        <span>
+          <a href="tel:${applicant_phone}" class="text-decoration-none" target="blank" title="Ligar para ${applicant_phone}">
+            ${applicant_phone}
+          </a>
+        </span>
+      </div>
 
-      <br />
-      <span class="me-1"><i class="bi bi-envelope"></i></span>
-      <span class="text-secondary">
-        <a href="mailto:${applicant_email}" class="text-decoration-none" target="blank" title="Envie email para ${applicant_email}">
-          ${applicant_email}
-        </a>
-      </span>
+      <div>
+        <span class="me-1"><i class="bi bi-envelope"></i></span>
+        <span class="text-secondary">
+          <a href="mailto:${applicant_email}" class="text-decoration-none" target="blank" title="Envie email para ${applicant_email}">
+            ${applicant_email}
+          </a>
+        </span>
+      </div>
     </div>
     `);
 }
@@ -275,70 +324,297 @@ function executionColFormatter(current) {
   const event_date_locale = new Date(event_date).toLocaleDateString();
 
   return html(`
-    <div>
-      <strong>
-        <span class="me-1"><i class="bi bi-calendar3"></i></span>
-        <span>${event_date_locale}</span>
-      </strong>
-      
-      <br />
-      <span class="me-1"><i class="bi bi-clock"></i></span>
-      <span>${start_time} - ${end_time}</span>
-      
-      <br />
-      <span class="me-1"><i class="bi bi-person-gear"></i></span>
-      <span>Técnico: ${technical ?? ""}</span>
+    <div class="d-flex flex-column gap-1">
+      <div>
+        <strong>
+          <span class="me-1"><i class="bi bi-calendar3"></i></span>
+          <span>${event_date_locale}</span>
+        </strong>
+      </div>
+
+      <div>
+        <span class="me-1"><i class="bi bi-clock"></i></span>
+        <span>${start_time} - ${end_time}</span>
+      </div>
+
+      <div>
+        <span class="me-1"><i class="bi bi-person-gear"></i></span>
+        <span>Técnico: ${technical ? technical.data.display_name : ""}</span>
+      </div>
     </div>
     `);
 }
 
 function actionColFormatter(current) {
-  const { id, permissions } = JSON.parse(current);
+  const { id, actions } = JSON.parse(current);
 
-  const prevent_write = parseInt(permissions.split("")[0]);
+  const buttonStyles = {
+    show_details: {
+      btnClass: "btn-outline-secondary show-details",
+      icon: "bi bi-info-lg",
+      title: "Detalhes",
+      status: "",
+    },
+    approve: {
+      btnClass: "btn-outline-success change-status",
+      icon: "bi bi-hand-thumbs-up",
+      title: "Aprovar",
+      status: "Aguardando técnico",
+    },
+    disapprove: {
+      btnClass: "btn-outline-danger change-status",
+      icon: "bi bi-hand-thumbs-down",
+      title: "Desaprovar",
+      status: "Desaprovada",
+    },
+    cancel: {
+      btnClass: "btn-outline-danger change-status",
+      icon: "bi bi-x-octagon",
+      title: "Cancelar",
+      status: "Cancelada",
+    },
+    set_technical: {
+      btnClass: "btn-outline-warning set-technical",
+      icon: "bi bi-person-gear",
+      title: "Escalar técnico",
+      status: "Aguardando início",
+    },
+    finish: {
+      btnClass: "btn-outline-success change-status",
+      icon: "bi bi-check-lg",
+      title: "Finalizar",
+      status: "Finalizada",
+    },
+  };
 
-  //console.log(current);
-
-  const html_content = `
+  return html(`
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary" href="#" title="Detalhes">
-        <i class="bi bi-info-lg"></i>
-      </a>
-      <a class="btn btn-outline-success" href="#" title="Aprovar">
-        <i class="bi bi-hand-thumbs-up"></i>
-      </a>
-      <a class="btn btn-outline-danger" href="#" title="Desaprovar">
-        <i class="bi bi-hand-thumbs-down"></i>
-      </a>
-      <a class="btn btn-outline-danger" href="#" title="Cancelar">
-        <i class="bi bi-x-octagon"></i>
-      </a>
-      <a class="btn btn-outline-warning" href="#" title="Escalar técnico">
-        <i class="bi bi-person-gear"></i>
-      </a>
-      <a class="btn btn-outline-success" href="#" title="Finalizar">
-        <i class="bi bi-check-lg"></i>
-      </a>
-    </div>`;
-
-  return html(html_content);
+      ${actions
+        .map((action) => {
+          const { btnClass, icon, title, func, status } =
+            buttonStyles[action] || {};
+          return btnClass
+            ? `
+          <a class="btn ${btnClass}" 
+             href="#" 
+             title="${title}"
+             data-id="${id}" 
+             data-status="${status}">
+            <i class="${icon}"></i>
+          </a>`
+            : "";
+        })
+        .join("")}
+    </div>
+  `);
 }
 
-function parseToLocalDateTime(dateString) {
-  // Parse the input string into components
-  const [datePart, timePart] = dateString.split(" ");
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hours, minutes, seconds] = timePart.split(":").map(Number);
+function getStatusStyle(status) {
+  if (status === "Aguardando aprovação") return "warning";
+  else if (status === "Aguardando técnico") return "info";
+  else if (status === "Aguardando início") return "primary";
+  else if (status === "Finalizada") return "success";
+  else if (status === "Desaprovada") return "danger";
+  else if (status === "Cancelada") return "secondary";
+  else return "info";
+}
 
-  // Create a UTC Date object
-  const utcDate = new Date(
-    Date.UTC(year, month - 1, day, hours, minutes, seconds)
-  );
+async function getEventByID(id) {
+  try {
+    const response = await axios.get(
+      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/${id}`
+    );
 
-  // Adjust the time to GMT-3
-  const gmtMinus3Date = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
+    return JSON.parse(response.data);
+  } catch (error) {
+    showAlert("Desculpe, houve um erro!", "danger");
 
-  return gmtMinus3Date.toLocaleString();
+    console.error(error.response?.data?.message || "Erro ao buscar evento");
+
+    return null;
+  }
+}
+
+async function getTechnicalUsers(
+  sector = "tecnologia_da_informacao_e_suporte"
+) {
+  try {
+    const response = await axios.get(
+      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/users/by_sector/${sector}`
+    );
+
+    return JSON.parse(response.data);
+  } catch (error) {
+    showAlert("Desculpe, houve um erro!", "danger");
+
+    console.error(error.response?.data?.message || "Erro ao buscar evento");
+
+    return null;
+  }
+}
+
+async function setTechnical(reservation_id, technical_id) {
+  try {
+    const response = await axios.put(
+      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/reservations/${reservation_id}/set_technical`,
+      { technical_id },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return JSON.parse(response.data);
+  } catch (error) {
+    showAlert("Desculpe, houve um erro!", "danger");
+
+    console.error(error.response?.data?.message || "Erro ao buscar evento");
+
+    return null;
+  }
+}
+
+async function updateReservation(id, reservation) {
+  try {
+    const response = await axios.put(
+      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/${id}`,
+      reservation,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return JSON.parse(response.data);
+  } catch (error) {
+    showAlert("Desculpe, houve um erro!", "danger");
+
+    console.error(error.response?.data?.message || "Erro ao buscar evento");
+
+    return null;
+  }
+}
+
+async function changeStatus(id, status) {
+  console.log("Alterando status...");
+
+  showAlert("Por favor, aguarde...", "warning");
+
+  const reservation = await getEventByID(id);
+
+  console.log(reservation);
+
+  // Atualiza o status
+  if (reservation.data) {
+    reservation.data.status = status;
+  } else {
+    throw new Error("[1020] Estrutura de dados inesperada");
+  }
+
+  const response = await updateReservation(reservation.id, reservation);
+
+  if (response) {
+    showAlert("Atualizado com sucesso!", "success", true, 3000);
+
+    preLoadTable();
+  }
+}
+
+async function showDetails(id, status) {
+  showAlert("Por favor, aguarde....", "warning");
+
+  console.log("Show Details:");
+
+  console.log({ id, status });
+
+  const reservation = await getEventByID(id);
+
+  console.log(reservation);
+
+  document.querySelector("#modal_event_title").innerHTML =
+    reservation.data.desc;
+
+  document.querySelector(
+    "#modal_event_status"
+  ).innerHTML = `<small class="mt-1 badge text-bg-${getStatusStyle(
+    reservation.data.status
+  )}">${reservation.data.status}</small>`;
+
+  document.querySelector("#modal_event_technical").innerHTML =
+    reservation.data.technical;
+
+  document.querySelector("#modal_event_applicant_name").innerHTML =
+    reservation.data.applicant_name;
+
+  document.querySelector("#modal_event_applicant_email").innerHTML =
+    reservation.data.applicant_email;
+
+  document.querySelector("#modal_event_applicant_phone").innerHTML =
+    reservation.data.applicant_phone;
+
+  document.querySelector("#modal_event_use_own_notebook").innerHTML =
+    reservation.data.use_own_notebook[0];
+
+  document.querySelector("#modal_event_use_fafar_notebook").innerHTML =
+    reservation.data.use_fafar_notebook[0];
+
+  document.querySelector("#modal_event_use_internet_access").innerHTML =
+    reservation.data.use_internet_access[0];
+
+  document.querySelector("#modal_event_use_musical_instruments").innerHTML =
+    reservation.data.use_musical_instruments[0];
+
+  document.querySelector("#modal_event_created_at").innerHTML = new Date(
+    reservation.created_at
+  ).toLocaleString();
+
+  hideAlert();
+
+  showEventDetailsModal();
+}
+
+async function prepareToShowSetTechnicalModal(id, status) {
+  console.log("Set Technical:");
+
+  console.log({ id, status });
+
+  showAlert("Por favor, aguarde....", "warning");
+
+  const technical_users = await getTechnicalUsers();
+
+  console.log(technical_users);
+
+  document.querySelector("#reservation_id").value = id;
+
+  showSetTechnicalModal();
+
+  hideAlert();
+}
+
+async function setTechnicalHandler() {
+  showAlert("Por favor, aguarde...", "warning");
+
+  const technical_id = document.querySelector("select[name='technical']").value;
+
+  const reservation_id = document.querySelector("#reservation_id").value;
+
+  console.log({ technical_id, reservation_id });
+
+  if (!technical_id) {
+    hideSetTechnicalModal();
+    return;
+  }
+
+  const response = await setTechnical(reservation_id, technical_id);
+
+  if (response) {
+    showAlert("Atualizado com sucesso!", "success", true, 3000);
+
+    preLoadTable();
+  }
+
+  hideSetTechnicalModal();
 }
 
 /*
@@ -346,7 +622,7 @@ function parseToLocalDateTime(dateString) {
  */
 function showEventDetailsModal() {
   const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarEventDetailsModal")
+    document.getElementById("intranetFafarReservationDetails")
   );
 
   modal.show();
@@ -354,7 +630,22 @@ function showEventDetailsModal() {
 
 function hideEventDetailsModal() {
   const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarEventDetailsModal")
+    document.getElementById("intranetFafarReservationDetails")
+  );
+  modal.hide();
+}
+
+function showSetTechnicalModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarSetTechnical")
+  );
+
+  modal.show();
+}
+
+function hideSetTechnicalModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarSetTechnical")
   );
   modal.hide();
 }

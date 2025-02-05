@@ -8,7 +8,7 @@ function showAlert(
   delay = 5000
 ) {
   hideAlert();
-  console.log("Olá");
+
   let alert_icon_class = "d-none";
 
   if (type === "success") {

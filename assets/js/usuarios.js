@@ -138,6 +138,8 @@ function renderDataOnTable(users) {
     return [];
   }
 
+  console.log(users);
+
   return users
     .filter(({ ID }) => ID !== "1") // Exclude user with ID 1
     .map((user) => {

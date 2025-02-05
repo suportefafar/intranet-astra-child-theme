@@ -5,13 +5,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 
-add_action('after_switch_theme', 'intranet_fafar_initial_setup');
+add_action( 'after_switch_theme', 'intranet_fafar_initial_setup' );
 
 function intranet_fafar_initial_setup() {
-    if (get_template() === 'astra' && get_stylesheet() === 'intranet-astra-child-theme') {
+    if ( get_template() === 'astra' && get_stylesheet() === 'intranet-astra-child-theme' ) {
         
         // Checa se o setup já foi feito
-        if (true || !get_option('intranet_astra_child_theme_done_setup')) {
+        if ( ! get_option( 'intranet_astra_child_theme_done_setup' ) ) {
 
             // Grava os tipos de vínculo possíveis
             $bond_types = [
@@ -19,20 +19,20 @@ function intranet_fafar_initial_setup() {
                 'SUBSTITUTO',
                 'VOLUNTÁRIO'
             ];
-            update_option('bond_types', $bond_types);
+            update_option( 'bond_types', $bond_types );
 
             // Grava as categorias de vínculo possíveis
             $bond_categories = [
                 'DOCENTE',
                 'TAE'
             ];
-            update_option('bond_categories', $bond_categories);
+            update_option( 'bond_categories', $bond_categories );
 
             // Grava os cargos de vínculo possíveis para docentes
             $professor_bond_positions = [
                 'PROFESSOR DO MAGISTÉRIO SUPERIOR'
             ];
-            update_option('professor_bond_positions', $professor_bond_positions);
+            update_option( 'professor_bond_positions', $professor_bond_positions );
 
             // Grava os cargos de vínculo possíveis para TAEs
             $tae_bond_positions = [
@@ -67,7 +67,7 @@ function intranet_fafar_initial_setup() {
                 'TÉCNICO EM CONTABILIDADE',
                 'TÉCNICO EM TECNOLOGIA DA INFORMAÇÃO'
             ];
-            update_option('tae_bond_positions', $tae_bond_positions);
+            update_option( 'tae_bond_positions', $tae_bond_positions );
 
             // Grava as classes de vínculo possíveis para docentes
             $professor_bond_classes = [
@@ -77,7 +77,7 @@ function intranet_fafar_initial_setup() {
                 'ASSOCIADO',
                 'TITULAR'
             ];
-            update_option('professor_bond_classes', $professor_bond_classes);
+            update_option( 'professor_bond_classes', $professor_bond_classes );
 
             /* 
              * Grava os níveis de classe de vínculo possíveis para docentes
@@ -89,7 +89,7 @@ function intranet_fafar_initial_setup() {
                 '3',
                 '4'
             ];
-            update_option('professor_bond_class_levels', $professor_bond_class_levels);
+            update_option( 'professor_bond_class_levels', $professor_bond_class_levels );
 
             // Grava as classes de vínculo possíveis para TAEs
             $tae_bond_classes = [
@@ -99,7 +99,7 @@ function intranet_fafar_initial_setup() {
                 'D',
                 'E'
             ];
-            update_option('tae_bond_classes', $tae_bond_classes);
+            update_option( 'tae_bond_classes', $tae_bond_classes );
 
             // Grava os status de vínculo possíveis
             $bond_status = [
@@ -108,7 +108,7 @@ function intranet_fafar_initial_setup() {
                 'DESLIGADO',
                 'REMOVIDO'
             ];
-            update_option('bond_status', $bond_status);
+            update_option( 'bond_status', $bond_status );
             
             /* 
              * Grava os setores de trabalho possíveis, como 
@@ -120,7 +120,7 @@ function intranet_fafar_initial_setup() {
              * Cria uma option para não passar para garantir 
              * que esse trecho só seja executado uma vez
              */
-            update_option('intranet_astra_child_theme_done_setup', true);
+            update_option( 'intranet_astra_child_theme_done_setup', true );
         }
     }
 }

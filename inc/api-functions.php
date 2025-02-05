@@ -106,7 +106,6 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_place_reservations',
     ) );
 
-
     register_rest_route( 'intranet/v1', '/submissions/object/(?P<object>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
@@ -114,7 +113,12 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_submissions_by_object_name_handler',
     ) );
 
-
+    register_rest_route( 'intranet/v1', '/users/by_sector/(?P<sector>[\w]+)', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_users_by_sector_slug_handler',
+    ) );
 
     register_rest_route( 'intranet/v1', '/users/(?P<id>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
@@ -138,6 +142,13 @@ function intranet_fafar_api_register_submission_routes() {
     ) );
 
     // EDITABLE
+
+    register_rest_route( 'intranet/v1', '/submissions/reservations/(?P<id>[\w]+)/set_technical', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::EDITABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_set_reservation_technical_handler',
+    ) );
 
     register_rest_route( 'intranet/v1', '/submissions/access_building_request/(?P<id>[\w]+)/register', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
@@ -856,22 +867,97 @@ Array
     [start_time__1] => 18:00
     [end_time__1] => 22:00
 )
+
+How to transform this:
+
+Array
+(
+    [status] => Reunião
+    [event_date__1] => 2025-01-29
+    [event_date__2] => 2025-01-30
+    [event_date__3] => 2025-01-31
+    ...
+    [created_at] => 13123113
+)
+
+Into this
+
+Array
+(
+    [status] => Reunião
+    ...
+    [event_date] => 2025-01-29
+)
+Array
+(
+    [status] => Reunião
+    [event_date] => 2025-01-30
+    ...
+)
+Array
+(
+    [status] => Reunião
+    [event_date] => 2025-01-31
+    ...
+)
 */
 
 function intranet_fafar_api_create_auditorium_reservation_handler( $request ) {
 
-    // Get data from the request
-    $data = $request->get_json_params();
+    $request_data = $request->get_json_params();
 
-    error_log( print_r( '======================================================>', true ) );
-    error_log( print_r( $data, true ) );
+    $base_data = $request_data;
 
-    $submission = intranet_fafar_api_create_auditorium_reservation( $data );
+    $event_dates = [];
+    $start_times = [];
+    $end_times   = [];
+    
+    foreach ( $request_data as $key => $value ) {
+        if ( preg_match( '/^event_date__\d+$/', $key ) ) {
+            $event_dates[] = $value;
 
-    if ( isset( $submission['error_msg'] ) ) {
+            unset($base_data[$key]);
+        }
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
+        if ( preg_match( '/^start_time__\d+$/', $key ) ) {
+            $start_times[] = $value;
 
+            unset($base_data[$key]);
+        }
+
+        if ( preg_match( '/^end_time__\d+$/', $key ) ) {
+            $end_times[] = $value;
+
+            unset($base_data[$key]);
+        }
+    }
+    
+    if( count( $event_dates ) !== count( $start_times ) || 
+        count( $event_dates ) !== count( $end_times ) || 
+        count( $start_times ) !== count( $end_times ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( 'Quantidades de datas e horas diferentes!', 'intranet-fafar-api' ), ( ( $reservation['http_status'] ) ?? 400 ) );
+
+    }
+    
+    for ( $i = 0; $i < count( $event_dates ); $i++ ) {
+
+        $newEntry = $base_data;
+
+        $newEntry["event_date"] = $event_dates[$i];
+
+        $newEntry["start_time"] = $start_times[$i];
+
+        $newEntry["end_time"] = $end_times[$i];
+
+        $reservation = intranet_fafar_api_create_auditorium_reservation( $newEntry );
+
+        if ( isset( $reservation['error_msg'] ) ) {
+
+            return new WP_Error( 'rest_api_sad', esc_html__( $reservation['error_msg'], 'intranet-fafar-api' ), ( ( $reservation['http_status'] ) ?? 400 ) );
+    
+        }
+    
     }
 
     return rest_ensure_response( json_encode( $submission ) );
@@ -900,7 +986,10 @@ function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
 
     error_log(print_r($query_params, true));
 
-    $submissions = intranet_fafar_api_get_auditorium_reservations( ( $query_params['status'] ?? null ) );
+    $submissions = intranet_fafar_api_get_auditorium_reservations( 
+        ( $query_params['status'] ?? null ), 
+        ( $query_params['order'] ?? null )
+    );
 
     if ( isset( $submissions['error_msg'] ) ) {
 
@@ -912,22 +1001,107 @@ function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
 
 }
 
-
-function intranet_fafar_api_get_auditorium_reservations( $status = null ) {
-
-    $auditorium_reservations = intranet_fafar_api_get_submissions_by_object_name( 'auditorium_reservation' );
-
-    if ( isset( $auditorium_reservations['error_msg'] ) )
-        return array( 'error_msg' => $service_ticket['error_msg'] );
+function intranet_fafar_api_get_auditorium_reservations( $status = null, $order = null ) {
     
-    if ( ! $status ) {
-        return $auditorium_reservations;
+    $auditorium_reservations = array();
+
+    if( $order ) {
+        
+        $order_arr = array( 'orderby_column' => 'created_at', 'orderby_json' => '', 'order' => 'ASC' );
+
+        /* Verifica se o padrão usado para attr é 'json:attr' ou 'column:attr' ou apenas 'attr'
+         * Sendo que apenas com o padrão 'json:attr' o attr é tratado 
+         * como se referindo à um submission->data attr
+         */
+        if( count( explode( ':', $order) ) > 1 && 
+            explode( ':', $order )[0] === 'json' ) {
+
+            $order_arr['orderby_column'] = null;
+
+            $order_arr['orderby_json'] = explode( "-", explode( ':', $order )[1] )[0];
+
+        } else if( count( explode( ':', $order) ) > 1 ) {
+            
+            $order_arr['orderby_column'] = explode( "-", explode( ':', $order )[1] )[0];
+
+        } else {
+
+            $order_arr['orderby_column'] = $order;
+
+        }
+
+        // Verifica existe desejo explicito pelo order-how DESC
+        if( count( explode( '-', $order) ) > 1 && 
+            strtolower( explode( '-', $order )[1] ) === 'desc' ) {
+
+            $order_arr['order'] = 'DESC';
+
+        }
+
+        $auditorium_reservations = intranet_fafar_api_get_submissions_by_object_name( 'auditorium_reservation', $order_arr );
+        
+    } else {
+
+        $auditorium_reservations = intranet_fafar_api_get_submissions_by_object_name( 'auditorium_reservation' );
+
+    }
+    
+
+    // Handle potential errors
+    if ( isset( $auditorium_reservations['error_msg'] ) ) {
+
+        return array( 'error_msg' => $auditorium_reservations['error_msg'] );
+
     }
 
-    return array_values( array_filter( $auditorium_reservations, function ( $auditorium_reservation ) use ( $status ) {
-        return ( $auditorium_reservation['data']['status'] === $status );
-    } ) );
+    // Process reservations: add actions and fetch technical details
+    $auditorium_reservations_w_actions = array_map( function ( $reservation ) {
 
+        $reservation['data']['actions'] = intranet_fafar_api_get_auditorium_reservation_actions( $reservation['data']['status'] );
+
+        $reservation['data']['technical'] = ( is_numeric( $reservation['data']['technical'] ) ? 
+                                                intranet_fafar_api_get_user_by_id( $reservation['data']['technical'] ) : '' );
+
+        return $reservation;
+
+    }, $auditorium_reservations );
+
+    // Return all reservations if no status is specified
+    if ( ! $status ) {
+
+        return $auditorium_reservations_w_actions;
+
+    }
+
+    // Filter reservations by status
+    return array_values( array_filter( $auditorium_reservations_w_actions, fn( $res ) => $res['data']['status'] === $status ) );
+}
+
+/*
+ * Retorna ações permitidas para cada status da reserva de auditório
+ * 
+ */
+function intranet_fafar_api_get_auditorium_reservation_actions( $status ) {
+    $actions = [
+        0 => 'show_details',
+        1 => 'approve',
+        2 => 'disapprove',
+        3 => 'cancel',
+        4 => 'set_technical',
+        5 => 'finish',
+    ];
+
+    $actions_indexes_by_status = [
+        "Aguardando aprovação" => [0, 1, 2, 3],
+        "Aguardando técnico" => [0, 3, 4],
+        "Aguardando início" => [0, 3, 4, 5],
+        "Desaprovada" => [0],
+        "Cancelada" => [0],
+        "Finalizada" => [0],
+        "Padrão" => [0, 1, 3],
+    ];
+
+    return array_map( fn( $index ) => $actions[$index], $actions_indexes_by_status[$status] ?? $actions_indexes_by_status['Padrão'] );
 }
 
 
@@ -1491,6 +1665,7 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
 }
 
 /*
+ * @param string $object_name 'place'
  * @param array $order_by ( 'orderby_column' => '', 'orderby_json' => '', 'order' => 'ASC' | 'DESC', 'inet_aton' => '1' )
  * @return array $submissions 
  */
@@ -1587,8 +1762,6 @@ function intranet_fafar_api_get_user_by_id_handler( $request ) {
 
 function intranet_fafar_api_get_user_by_id( $id ) {
 
-    
-
     if( ! $id ) {
 
         return array( 'error_msg' => '[0101]No "id" found.', 'http_status' => 400 );
@@ -1619,6 +1792,44 @@ function intranet_fafar_api_get_users_handler() {
     return rest_ensure_response( json_encode( $submission ) );
 
 }
+
+function intranet_fafar_api_get_users_by_sector_slug_handler( $request ) {
+
+    $sector = (string) $request['sector'];
+
+    $submissions = intranet_fafar_api_get_users_by_sector_slug( $sector );
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( json_encode( $submissions ) );
+
+}
+
+function intranet_fafar_api_get_users_by_sector_slug( $sector ) {
+
+    $submissions = intranet_fafar_api_get_users();
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return $submissions;
+
+    }
+
+
+    $submissions_by_sector = array_filter( $submissions, function ( $submission ) use ( $sector ) {
+        
+        return ( strtolower( $submission['role']['slug'] ) === strtolower( $sector ) );
+
+    } );
+
+    return $submissions_by_sector;
+
+}
+
 /*
  * get_users() return:
  * Array ( [0] => WP_User Object ( 
@@ -1694,6 +1905,7 @@ function intranet_fafar_api_get_users() {
     }, $users );
     
     return $users;
+
 }
 
 function intranet_fafar_api_get_roles( $slug = null ) {
@@ -1707,7 +1919,9 @@ function intranet_fafar_api_get_roles( $slug = null ) {
 
     if( $slug ) {
         $role = $wp_roles->roles[$slug];
-        $role['slug'] = $slug; 
+
+        $role['slug'] = $slug;
+
         return $role;
     }
 
@@ -1844,6 +2058,55 @@ function intranet_fafar_api_get_reservation_by_id( $id ) {
     return $reservation;
 }
 
+function intranet_fafar_api_set_reservation_technical_handler( $request ) {
+
+    $id = (string) $request['id'];
+
+    // Get data from the request
+    $request_data = $request->get_json_params();
+
+    $reservation = intranet_fafar_api_set_reservation_technical( $id, $request_data['technical_id'] );
+
+    if ( isset( $reservation['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $reservation['error_msg'], 'intranet-fafar-api' ), ( ( $reservation['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( json_encode( $reservation ) );
+
+}
+
+function intranet_fafar_api_set_reservation_technical( $reservation_id, $technical_id ) {
+
+    if( ! $reservation_id ) {
+
+        return array( 'error_msg' => 'ID de reserva de auditório não informado!', 'http_status' => 500 );
+
+    }
+
+    if( ! $technical_id ) {
+
+        return array( 'error_msg' => 'ID do técnico não informado!', 'http_status' => 500 );
+
+    }
+
+    $reservation = intranet_fafar_api_get_submission_by_id( $reservation_id );
+
+    if( ! $reservation ) {
+
+        return array( 'error_msg' => 'Reserva de auditório não encontrado!', 'http_status' => 500 );
+
+    }
+
+    $reservation['data']['technical'] = $technical_id;
+
+    $reservation['data']['status'] = 'Aguardando início';
+
+    return intranet_fafar_api_update( $reservation['id'], $reservation );
+
+}
+
 function intranet_fafar_get_user_by_departament( $role_slug = null ) {
 
     if ( ! $role_slug )
@@ -1863,8 +2126,6 @@ function intranet_fafar_get_user_by_departament( $role_slug = null ) {
     foreach ( $users as $user ) {
         $options[esc_attr( $user->ID )] = esc_html( $user->display_name );
     }
-
-    
 
     return $options;
 
