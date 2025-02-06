@@ -110,8 +110,9 @@ async function filterUsers() {
 
   const filtered_users = users.filter((user) => {
     return (
-      user.display_name.toLowerCase().indexOf(filters.user_name.toLowerCase()) >
-        -1 &&
+      removeAccents(user.display_name)
+        .toLowerCase()
+        .indexOf(removeAccents(filters.user_name.toLowerCase())) > -1 &&
       (filters.bond_status === "" ||
         filters.bond_status === user.bond_status) &&
       (filters.bond_categories === "" ||
@@ -122,6 +123,10 @@ async function filterUsers() {
   });
 
   prepareToRenderDataOnTable(filtered_users);
+}
+
+function removeAccents(str) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 function prepareToRenderDataOnTable(data = []) {
