@@ -6,9 +6,12 @@ import { Grid, html } from "https://unpkg.com/gridjs?module";
 let USERS = [];
 
 // Export listed users
-document.querySelector("#btn_export_users").addEventListener("click", () => {
-  exportUsers();
-});
+const btn_export_users = document.querySelector("#btn_export_users");
+if (btn_export_users) {
+  btn_export_users.addEventListener("click", () => {
+    exportUsers();
+  });
+}
 
 // Copy emails of listed users
 document

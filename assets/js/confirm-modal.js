@@ -4,38 +4,80 @@ function showConfirmModal(
   confirm_btn_text = "Delete",
   confirm_btn_type = "danger",
   onAcceptCB = () => {},
-  onDenyCB = () => {}
+  onDenyCB = () => {},
+  allowHTML = false
 ) {
-  const intranetFafarConfirmModal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarConfirmModal")
-  );
+  // Validate modal existence
+  const modalEl = document.getElementById("intranetFafarConfirmModal");
+  if (!modalEl) {
+    console.error("Confirm modal element not found");
+    return;
+  }
 
-  const modal_title = document.querySelector(
-    "#intranetFafarConfirmModal .modal-title"
-  );
-  modal_title.innerText = title;
+  // Cache DOM elements
+  const elements = {
+    title: modalEl.querySelector(".modal-title"),
+    body: modalEl.querySelector(".modal-body"),
+    acceptBtn: modalEl.querySelector("#btn_accept"),
+    denyBtn: modalEl.querySelector("#btn_deny"),
+  };
 
-  const modal_body = document.querySelector(
-    "#intranetFafarConfirmModal .modal-body"
-  );
-  modal_body.innerText = body;
+  // Validate required elements
+  if (Object.values(elements).some((el) => !el)) {
+    console.error("One or more modal elements are missing");
+    return;
+  }
 
-  const modal_btn_accept = document.querySelector("#btn_accept");
-  modal_btn_accept.classList = "";
-  modal_btn_accept.classList.add("btn");
-  modal_btn_accept.classList.add("btn-" + confirm_btn_type);
-  modal_btn_accept.innerText = confirm_btn_text;
-  modal_btn_accept.addEventListener("click", onAcceptCB);
+  // Set modal content
+  elements.title.textContent = title;
+  elements.body[allowHTML ? "innerHTML" : "textContent"] = body;
 
-  const modal_btn_deny = document.querySelector("#btn_deny");
-  modal_btn_deny.addEventListener("click", onDenyCB);
+  // Configure buttons
+  const configureButton = (btnElement, { text, type }) => {
+    btnElement.className = `btn btn-${type}`;
+    btnElement.textContent = text;
+  };
 
-  intranetFafarConfirmModal.show();
+  configureButton(elements.acceptBtn, {
+    text: confirm_btn_text,
+    type: confirm_btn_type,
+  });
+  configureButton(elements.denyBtn, { text: "Cancelar", type: "secondary" });
+
+  // Event handler cleanup system
+  const cleanup = () => {
+    elements.acceptBtn.removeEventListener("click", handleAccept);
+    elements.denyBtn.removeEventListener("click", handleDeny);
+    modalEl.removeEventListener("hidden.bs.modal", cleanup);
+  };
+
+  // Create modal instance
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+  // Event handlers
+  const handleAccept = () => {
+    onAcceptCB();
+    modal.hide();
+  };
+
+  const handleDeny = () => {
+    onDenyCB();
+    modal.hide();
+  };
+
+  // Remove previous listeners and add new ones
+  cleanup(); // Cleanup any existing listeners
+  elements.acceptBtn.addEventListener("click", handleAccept);
+  elements.denyBtn.addEventListener("click", handleDeny);
+  modalEl.addEventListener("hidden.bs.modal", cleanup);
+
+  // Show modal
+  modal.show();
 }
 
 function hideConfirmModal() {
-  const intranetFafarConfirmModal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarConfirmModal")
-  );
-  intranetFafarConfirmModal.hide();
+  const modalEl = document.getElementById("intranetFafarConfirmModal");
+  if (modalEl) {
+    bootstrap.Modal.getInstance(modalEl)?.hide();
+  }
 }

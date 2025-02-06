@@ -19,6 +19,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 wp_enqueue_script_module( 'intranet-fafar-usuarios-script', get_stylesheet_directory_uri() . '/assets/js/usuarios.js', array( 'jquery' ), false, false );
 
+/*
+ * Obtendo o setor do usuário para limitar ou permitir algumas funcionalidades
+ */
+$user        = wp_get_current_user();
+$sector_slug = $user->roles[0];
+
 
 get_header(); ?>
 
@@ -44,10 +50,17 @@ get_header(); ?>
         <!-- HEADER BUTTONS -->
 
         <div class="d-flex justify-content-end gap-2 mb-4">
+            <?php
+                if( in_array( $sector_slug, array( 'pessoal', 'tecnologia_da_informacao_e_suporte', 'administrator' ) ) ):
+            ?>
+
             <a href="#" id="btn_export_users" class="btn btn-outline-dark text-decoration-none w-lg-button">
                 <i class="bi bi-arrow-bar-down"></i>
                 Exportar CSV
             </a>
+            
+            <?php endif; ?>
+            
             <a href="#" id="btn_copy_emails" class="btn btn-light text-decoration-none w-lg-button" >
                 <i class="bi bi-clipboard"></i>
                 Copiar e-mails

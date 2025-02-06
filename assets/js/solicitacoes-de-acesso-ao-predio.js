@@ -28,11 +28,19 @@ document.addEventListener("click", (event) => {
  * a classe 'btn-register-entry' ou é filho de um elemento
  * com essa classe
  */
-document.addEventListener("click", (event) => {
-  const button = event.target.closest(".btn-register-entry");
-  if (button) {
-    const id = button.dataset?.id;
 
+document.addEventListener("click", handleRegisterClick);
+
+function handleRegisterClick(event) {
+  const buttonEntry = event.target.closest(".btn-register-entry");
+  const buttonExit = event.target.closest(".btn-register-exit");
+
+  if (buttonEntry) {
+    console.log("addEventListener ENTRY", new Date().toLocaleString());
+
+    event.stopImmediatePropagation(); // Evita múltiplas execuções no mesmo clique
+
+    const id = buttonEntry.dataset?.id;
     if (id) {
       confirmRegister(
         "Registrar Entrada?",
@@ -42,20 +50,13 @@ document.addEventListener("click", (event) => {
       );
     }
   }
-});
 
-/*
- * Adiciona um evento de clique à DOM,
- * e despara se o elemento que recebeu o clique tem
- * a classe 'btn-register-exit' ou é filho de um elemento
- * com essa classe
- */
-document.addEventListener("click", (event) => {
-  const button = event.target.closest(".btn-register-exit");
+  if (buttonExit) {
+    console.log("addEventListener EXIT", new Date().toLocaleString());
 
-  if (button) {
-    const id = button.dataset?.id;
+    event.stopImmediatePropagation(); // Evita múltiplas execuções no mesmo clique
 
+    const id = buttonExit.dataset?.id;
     if (id) {
       confirmRegister(
         "Registrar Saída?",
@@ -65,7 +66,7 @@ document.addEventListener("click", (event) => {
       );
     }
   }
-});
+}
 
 /*
  * CHARTS RENDER
@@ -153,30 +154,40 @@ async function fetchDataHandler() {
 
   let table_arr = [];
   for (const submission of Object.values(submissions)) {
-    const submission_data = submission["data"];
+    const { data, owner } = submission;
+    const {
+      object_sub_type,
+      access_building_request_type,
+      third_party_name,
+      place,
+      lab,
+      start_date,
+      end_date,
+      logs,
+    } = data;
 
     //console.log(JSON.stringify(submission_data));
 
-    const prevent_write = submission["prevent_write"] ? "1" : "0";
-    const prevent_exec = submission["prevent_exec"] ? "1" : "0";
+    const prevent_write = submission.prevent_write ? "1" : "0";
+    const prevent_exec = submission.prevent_exec ? "1" : "0";
     const permissions = prevent_write + prevent_exec;
 
     const action_column_data = JSON.stringify({
-      id: submission["id"],
+      id: submission.id,
       permissions,
-      object_sub_type: submission_data["object_sub_type"],
+      object_sub_type,
     });
 
     table_arr.push([
-      submission_data["access_building_request_type"],
-      submission["owner"]["data"]["display_name"],
-      submission_data["third_party_name"],
-      submission_data["place"],
-      submission_data["lab"],
-      submission_data["start_date"],
-      submission_data["end_date"],
-      submission_data["logs"],
-      submission_data["logs"],
+      access_building_request_type,
+      owner.data?.display_name,
+      third_party_name,
+      place,
+      lab,
+      start_date,
+      end_date,
+      logs,
+      logs,
       action_column_data,
     ]);
   }
@@ -242,7 +253,6 @@ function actionColFormatter(current) {
         prevent_write
           ? ""
           : `
-      
           <button class="btn btn-outline-secondary btn-submission-details" data-id="${id}" title="Detalhes">
             <i class="bi bi-info-lg"></i>
           </button>
@@ -254,7 +264,7 @@ function actionColFormatter(current) {
           <button class="btn btn-outline-danger btn-register-exit" data-id="${id}" title="Registrar saída">
             <i class="bi bi-building-down"></i>
           </button>
-      `
+          `
       }
     </div>`;
 
@@ -279,6 +289,8 @@ function parseToLocalDateTime(dateString) {
 }
 
 function confirmRegister(title = "", text = "", id = null, type = null) {
+  console.log("confirmRegister", new Date().toLocaleString());
+
   if (id === null || type === null) {
     alert("Nenhum ID ou tipo de registro informado! Contacte o administrador.");
     return;
@@ -297,34 +309,31 @@ function confirmRegister(title = "", text = "", id = null, type = null) {
 }
 
 async function registerEntryOrExit(id, type) {
+  console.log("registerEntryOrExit", new Date().toLocaleString());
   hideConfirmModal();
+  showAlert("Por favor, aguarde...", "warning");
 
-  showAlert("Por favor, aguarde....", "warning");
+  const endpoint = `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request/${id}/register/`;
 
   try {
-    const response = await axios.put(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request/" +
-        id +
-        "/register/",
-      { type }
-    );
+    const response = await axios.put(endpoint, { type });
 
-    console.log(response);
+    // console.log("Registration successful:", response.data);
 
     showAlert("Registrado com sucesso!", "success", true, 3000);
 
     renderGridJS();
   } catch (error) {
-    let error_msg = "[1010]Unknow error on try catch";
+    let errorMessage = "[1010] Unknown error occurred.";
 
     if (error.response?.data?.message) {
-      console.log(error.response.data);
-      error_msg = error.response.data.message;
+      console.error("Registration failed:", error.response.data);
+      errorMessage = error.response.data.message;
     } else {
-      console.log(error);
+      console.error("An unexpected error occurred:", error);
     }
 
-    showAlert(error_msg, "danger");
+    showAlert(errorMessage, "danger");
   }
 }
 

@@ -357,7 +357,7 @@ get_header(); ?>
 
                                 echo '<tr>';
                                 echo    '<td>Emprestado para</td>';
-                                echo    '<td class="fw-medium">' . esc_html( ( ( $loan_to->get( 'display_name' ) ) ?? '--' ) ) . '</td>';
+                                echo    '<td class="fw-medium">' . esc_html( ( $loan_to ? $loan_to->get( 'display_name' ) : '(' . $loan['data']['loan_to'][0] . ')' ) ) . '</td>';
                                 echo '<tr>';
 
                                 echo '<tr>';

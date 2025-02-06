@@ -148,10 +148,22 @@ async function fetchDataHandler() {
 
   let table_arr = [];
   for (const submission of submissions) {
-    const submission_data = submission.data;
+    const { data } = submission;
+    const {
+      status,
+      on_loan,
+      asset,
+      internal_asset,
+      object_sub_type,
+      brand,
+      model,
+      ip,
+      place,
+      applicant,
+    } = data;
 
-    const prevent_write = submission_data.prevent_write ? "1" : "0";
-    const prevent_exec = submission_data.prevent_exec ? "1" : "0";
+    const prevent_write = data.prevent_write ? "1" : "0";
+    const prevent_exec = data.prevent_exec ? "1" : "0";
     const permissions = prevent_write + prevent_exec;
 
     const action_column_data = JSON.stringify({
@@ -159,18 +171,18 @@ async function fetchDataHandler() {
       permissions,
     });
 
-    let status_text = submission_data.status[0];
-    if (submission_data.on_loan) status_text = "Emprestado";
+    let status_text = status[0];
+    if (on_loan) status_text = "Emprestado";
 
     table_arr.push([
-      submission_data.asset,
-      submission_data.internal_asset,
-      submission_data.object_sub_type[0],
-      submission_data.brand,
-      submission_data.model,
-      submission_data.ip.data?.address ?? "",
-      submission_data.place.data.number,
-      submission_data.applicant,
+      asset ?? "",
+      internal_asset ?? "",
+      object_sub_type[0] ?? "",
+      brand ?? "",
+      model ?? "",
+      ip.data?.address ?? "",
+      place.data?.number ?? "",
+      applicant ?? "",
       status_text,
       action_column_data,
     ]);

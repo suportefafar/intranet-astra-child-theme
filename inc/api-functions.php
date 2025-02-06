@@ -202,7 +202,7 @@ function intranet_fafar_api_register_entry_and_exit( $id, $type ) {
     if ( ! isset( $type ) )
         return array( 'error_msg' => '[002] Tipo não informado!' );
 
-    $submission = intranet_fafar_api_get_submission_by_id( $id );
+    $submission = intranet_fafar_api_get_submission_by_id( $id, false );
 
     if ( isset( $submission['error_msg'] ) )
         return $submission;
@@ -335,7 +335,7 @@ function intranet_fafar_api_create_new_loan( $form_data, $contact_form ) {
     if ( ! isset( $form_data['data']['loan_date'] ) )
         return array( 'error_msg' => '[001] Data de empréstimo não informada!' );
 
-    $equipament = intranet_fafar_api_get_submission_by_id( $form_data['data']['equipament'] );
+    $equipament = intranet_fafar_api_get_submission_by_id( $form_data['data']['equipament'], false );
 
     if ( ! $equipament )
         return array( 'error_msg' => '[001] Equipamento não existe!' );
@@ -370,7 +370,7 @@ function intranet_fafar_api_register_loan_return( $form_data, $contact_form ) {
     if ( ! isset( $form_data['data']['return_date'] ) )
         return array( 'error_msg' => '[001] Data de retorno não informada!' );
 
-    $equipament = intranet_fafar_api_get_submission_by_id( $form_data['data']['equipament'] );
+    $equipament = intranet_fafar_api_get_submission_by_id( $form_data['data']['equipament'], false );
 
     if ( ! $equipament )
         return array( 'error_msg' => '[001] Equipamento não existe!' );
@@ -419,7 +419,7 @@ function intranet_fafar_api_insert_update_on_service_ticket( $form_data, $contac
        if ( ! isset( $form_data['data']['status'][0] ) )
            return array( 'error_msg' => '[001] Status não informado!' );
    
-       $service_ticket = intranet_fafar_api_get_submission_by_id( $form_data['data']['service_ticket'] );
+       $service_ticket = intranet_fafar_api_get_submission_by_id( $form_data['data']['service_ticket'], false );
    
        if ( ! $service_ticket )
            return array( 'error_msg' => '[002] Ordem de serviço não existe!' );
@@ -1597,7 +1597,7 @@ function intranet_fafar_api_get_submission_by_id_handler( $request ) {
 
 }
 
-function intranet_fafar_api_get_submission_by_id( $id ) {
+function intranet_fafar_api_get_submission_by_id( $id, $substitute_value = true ) {
 
     global $wpdb;
 
@@ -1633,19 +1633,25 @@ function intranet_fafar_api_get_submission_by_id( $id ) {
 
     }
 
-    if ( isset( $submissions[0]['owner'] ) && is_numeric( $submissions[0]['owner'] ) ) {
+    $submission = $submissions[0];
 
-        $submissions[0]['owner'] = intranet_fafar_api_get_user_by_id( $submissions[0]['owner'] );
+    
+    if( $substitute_value ) {
+        if ( isset( $submission['owner'] ) && is_numeric( $submission['owner'] ) ) {
 
+            $submission['owner'] = intranet_fafar_api_get_user_by_id( $submission['owner'] );
+
+        }
+
+        if ( is_array( $submission['data']['place'] ) && 
+            count( $submission['data']['place'] ) > 0 ) {
+
+            $submission['data']['place'] = intranet_fafar_api_get_submission_by_id( $submission['data']['place'][0] );
+
+        }
     }
 
-    if ( isset( $submissions[0]['data']['place'] ) ) {
-
-        $submissions[0]['data']['place'] = intranet_fafar_api_get_submission_by_id( $submissions[0]['data']['place'][0] );
-
-    }
-
-    return $submissions[0];
+    return $submission;
 }
 
 function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
@@ -1968,13 +1974,25 @@ function intranet_fafar_api_get_equipaments_handler() {
      */ 
     $submissions_joined = array_map( function ( $s ) {
 
-        $applicant              = get_userdata( $s['data']['applicant'][0] );
+        if( is_array( $s['data']['place'] ) && count( $s['data']['place'] ) > 0 ){
 
-        $s['data']['applicant'] = $applicant->get( 'display_name' );
+            $s['data']['place'] = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
+        
+        }
 
-        $s['data']['place']     = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
+        if( is_array( $s['data']['applicant'] ) && count( $s['data']['applicant'] ) > 0 ){
 
-        $s['data']['ip']        = intranet_fafar_api_get_submission_by_id( $s['data']['ip'][0] );
+            $applicant = get_userdata( $s['data']['applicant'][0] );
+
+            $s['data']['applicant'] = $applicant->get( 'display_name' );
+        
+        }
+
+        if( is_array( $s['data']['ip'] ) && count( $s['data']['ip'] ) > 0 ){
+
+            $s['data']['ip'] = intranet_fafar_api_get_submission_by_id( $s['data']['ip'][0] );
+        
+        }
 
         return $s;
         
@@ -2091,7 +2109,7 @@ function intranet_fafar_api_set_reservation_technical( $reservation_id, $technic
 
     }
 
-    $reservation = intranet_fafar_api_get_submission_by_id( $reservation_id );
+    $reservation = intranet_fafar_api_get_submission_by_id( $reservation_id, false );
 
     if( ! $reservation ) {
 
