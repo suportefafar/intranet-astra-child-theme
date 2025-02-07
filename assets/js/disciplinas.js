@@ -123,9 +123,6 @@ function actionColFormatter(current, row) {
       <a class="btn btn-outline-secondary" href="/visualizar-objeto/?id=${id}" title="Detalhes">
         <i class="bi bi-info-lg"></i>
       </a>
-      <a class="btn btn-outline-primary" href="#" title="Eventos">
-        <i class="bi bi-calendar-week"></i>
-      </a>
       ${
         prevent_write
           ? ""

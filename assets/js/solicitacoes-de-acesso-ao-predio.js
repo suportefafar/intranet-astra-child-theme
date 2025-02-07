@@ -102,28 +102,11 @@ const ptBR = {
 
 const grid = new gridjs.Grid({
   columns: [
-    "Tipo",
-    { name: "Solicitante", formatter: (current) => current },
-    "Terceiro",
-    {
-      name: "Local",
-      formatter: (current) => current?.data?.number ?? "",
-    },
-    "Laboratório",
-    {
-      name: "Início",
-      formatter: (current) => new Date(current).toLocaleDateString(),
-    },
-    {
-      name: "Fim",
-      formatter: (current) => new Date(current).toLocaleDateString(),
-    },
+    { name: "Usuário", formatter: userColFormatter },
+    { name: "Local", formatter: placeColFormatter },
+    { name: "Período", formatter: periodColFormatter },
     { name: "Últ. Status", formatter: lastRegisterStatusFormatter },
-    { name: "Últ. Registro", formatter: lastRegisterFormatter },
-    {
-      name: "Ações",
-      formatter: actionColFormatter,
-    },
+    { name: "Ações", formatter: actionColFormatter },
   ],
   data: fetchDataHandler,
   pagination: {
@@ -135,6 +118,18 @@ const grid = new gridjs.Grid({
   resizable: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
+
+async function renderGridJS(data = []) {
+  if (!data) data = [];
+
+  if (data.length === 0) data = await fetchDataHandler();
+
+  grid
+    .updateConfig({
+      data,
+    })
+    .forceRender();
+}
 
 async function fetchDataHandler() {
   let response;
@@ -166,7 +161,21 @@ async function fetchDataHandler() {
       logs,
     } = data;
 
-    //console.log(JSON.stringify(submission_data));
+    const user_column_data = JSON.stringify({
+      access_building_request_type,
+      third_party_name,
+      owner,
+    });
+
+    const place_column_data = JSON.stringify({
+      place,
+      lab,
+    });
+
+    const period_column_data = JSON.stringify({
+      start_date,
+      end_date,
+    });
 
     const prevent_write = submission.prevent_write ? "1" : "0";
     const prevent_exec = submission.prevent_exec ? "1" : "0";
@@ -179,14 +188,9 @@ async function fetchDataHandler() {
     });
 
     table_arr.push([
-      access_building_request_type,
-      owner.data?.display_name,
-      third_party_name,
-      place,
-      lab,
-      start_date,
-      end_date,
-      logs,
+      user_column_data,
+      place_column_data,
+      period_column_data,
       logs,
       action_column_data,
     ]);
@@ -195,16 +199,76 @@ async function fetchDataHandler() {
   return table_arr;
 }
 
-async function renderGridJS(data = []) {
-  if (!data) data = [];
+function userColFormatter(current) {
+  const { access_building_request_type, third_party_name, owner } =
+    JSON.parse(current);
 
-  if (data.length === 0) data = await fetchDataHandler();
+  return html(`
+      <div class="d-flex flex-column gap-1">
+        <div>
+          <span class="me-1"><i class="bi bi-person-up"></i></span>
+          <span>
+            ${access_building_request_type ?? ""}
+          </span>
+        </div>
 
-  grid
-    .updateConfig({
-      data,
-    })
-    .forceRender();
+        <div>
+          <span class="me-1"><i class="bi bi-person"></i></span>
+          <span>
+            <a href="href="/membros/${owner.data.user_login}/"" 
+               class="text-decoration-none" 
+               target="blank" 
+               title="${owner.data.display_name}">
+              ${owner.data.display_name}
+            </a>
+          </span>
+        </div>
+
+        <div>
+          <span class="me-1"><i class="bi bi-person-plus"></i></span>
+          <span>
+            ${third_party_name ?? ""}
+          </span>
+        </div>
+      </div>
+      `);
+}
+
+function placeColFormatter(current) {
+  const { place, lab } = JSON.parse(current);
+
+  return html(`
+      <div>
+        <span>
+          <a href="https://intranet.farmacia.ufmg.br/visualizar-objeto/?id=${
+            place.id
+          }" 
+             class="text-decoration-none" 
+             target="blank" 
+             title="Detalhes da sala ${place.data.number}">
+            ${place.data.number}
+          </a>
+        </span>
+        
+        <span>${lab ?? ""}</span>
+      </div>`);
+}
+
+function periodColFormatter(current) {
+  const { start_date, end_date } = JSON.parse(current);
+
+  return html(`
+      <div class="d-flex flex-column gap-1">
+        <div>
+          <span class="me-1"><i class="bi bi-clock"></i></span>
+          <span>
+            ${new Date(start_date).toLocaleDateString()} - ${new Date(
+    end_date
+  ).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+      `);
 }
 
 function lastRegisterStatusFormatter(current) {
@@ -223,10 +287,6 @@ function lastRegisterStatusFormatter(current) {
     }
   }
 
-  return html(`<span class="badge ${type}">${text}</span>`);
-}
-
-function lastRegisterFormatter(current) {
   let last_register = "--";
 
   if (current && current.length > 0) {
@@ -235,7 +295,18 @@ function lastRegisterFormatter(current) {
     last_register = new Date(last_update.registered_at * 1000).toLocaleString();
   }
 
-  return last_register;
+  return html(`
+    <div class="d-flex flex-column gap-1">
+      <span class="badge ${type}">${text}</span>
+
+      <div>
+        <span class="me-1"><i class="bi bi-clock"></i></span>
+        <span>
+          ${last_register}
+        </span>
+      </div>
+    </div>
+    `);
 }
 
 function actionColFormatter(current) {

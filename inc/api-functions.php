@@ -141,6 +141,13 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_submission_by_id_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/lista-teste', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'lista_teste',
+    ) );
+
     // EDITABLE
 
     register_rest_route( 'intranet/v1', '/submissions/reservations/(?P<id>[\w]+)/set_technical', array(
@@ -172,6 +179,14 @@ function intranet_fafar_api_register_submission_routes() {
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_delete_submission_by_id_handler',
     ) );
+
+}
+
+function lista_teste( $request ) {
+
+    $submissions = array( array( 'text' => 'Olá', 'value' => 'ola' ) );
+
+    return rest_ensure_response( $submissions );
 
 }
 
@@ -814,6 +829,8 @@ function intranet_fafar_api_get_access_building_request_by_owner_handler( $reque
 function intranet_fafar_api_get_access_building_request( $by_owner = false ) {
 
     $submissions = intranet_fafar_api_get_submissions_by_object_name( 'access_building_request' );
+
+    if( isset( $submissions['error_msg'] ) ) return $submissions;
 
     $submissions_filtered = array_filter( $submissions, function ( $submission ) use ( $by_owner ) {
         
@@ -1647,7 +1664,6 @@ function intranet_fafar_api_get_submission_by_id( $id, $substitute_value = true 
             count( $submission['data']['place'] ) > 0 ) {
 
             $submission['data']['place'] = intranet_fafar_api_get_submission_by_id( $submission['data']['place'][0] );
-
         }
     }
 

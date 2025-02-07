@@ -96,7 +96,7 @@ get_header(); ?>
 
                     echo '<tr>';
                     echo    '<td>' . str_replace( '_', ' ', ucwords( $key, '_' ) ) . '</td>';
-                    echo    '<td class="fw-medium">' . ( is_array( $value ) ? implode( ', ', $value ) : $value ) . '</td>';
+                    echo    '<td class="fw-medium">' . $value . '</td>';
                     echo '<tr>';
                 }
                 
