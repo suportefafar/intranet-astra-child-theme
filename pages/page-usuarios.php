@@ -14,19 +14,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 /*
- * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-usuarios-script', get_stylesheet_directory_uri() . '/assets/js/usuarios.js', array( 'jquery' ), false, false );
- */
-wp_enqueue_script_module( 'intranet-fafar-usuarios-script', get_stylesheet_directory_uri() . '/assets/js/usuarios.js', array( 'jquery' ), false, false );
-
-/*
  * Obtendo o setor do usuário para limitar ou permitir algumas funcionalidades
  */
 $user        = wp_get_current_user();
 $sector_slug = $user->roles[0];
 
 
+/*
+ * Importanto script JS customizado
+ * wp_enqueue_script( 'intranet-fafar-usuarios-script', get_stylesheet_directory_uri() . '/assets/js/usuarios.js', array( 'jquery' ), false, false );
+ */
+wp_enqueue_script_module( 'intranet-fafar-usuarios-script', get_stylesheet_directory_uri() . '/assets/js/usuarios.js', array( 'jquery' ), false, true );
+
+$user_logged_params = array(
+    'displayName' => $user->display_name,
+    'userLogin'   => $user->user_login
+);
+
 get_header(); ?>
+
+<script>
+    const userLogged = <?php echo wp_json_encode( $user_logged_params, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
+</script>
+
 
 <?php if ( astra_page_layout() == 'left-sidebar' ) : ?>
 

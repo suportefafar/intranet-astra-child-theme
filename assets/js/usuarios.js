@@ -53,10 +53,8 @@ const ptBR = {
 const grid = new gridjs.Grid({
   columns: [
     { name: "Nome", formatter: nameColFormatter },
-    { name: "Email", formatter: emailColFormatter },
     { name: "Posição", formatter: positionColFormatter },
-    { name: "Status", formatter: statusColFormatter },
-    { name: "Adimito em", formatter: createdAtColFormatter },
+    { name: "Admissão", formatter: createdAtColFormatter },
     { name: "Ações", formatter: actionColFormatter },
   ],
   data: [],
@@ -67,6 +65,7 @@ const grid = new gridjs.Grid({
   search: false,
   sort: true,
   resizable: true,
+  autoWidth: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
@@ -164,7 +163,6 @@ function renderDataOnTable(users) {
         user_registered,
         workplace_place,
         prevent_write,
-        prevent_exec,
       } = user;
 
       const nameData = JSON.stringify({
@@ -173,6 +171,7 @@ function renderDataOnTable(users) {
         avatar_url,
         user_login,
         workplace_place,
+        user_email,
       });
 
       const positionData = JSON.stringify({
@@ -180,20 +179,11 @@ function renderDataOnTable(users) {
         role,
       });
 
-      const permissions = `${prevent_write ? "1" : "0"}${
-        prevent_exec ? "1" : "0"
-      }`;
+      const registeredData = JSON.stringify({ bond_status, user_registered });
 
-      const actionData = JSON.stringify({ id: ID, permissions, user_login });
+      const actionData = JSON.stringify({ id: ID, prevent_write, user_login });
 
-      return [
-        nameData,
-        user_email,
-        positionData,
-        bond_status,
-        user_registered,
-        actionData,
-      ];
+      return [nameData, positionData, registeredData, actionData];
     });
 }
 
@@ -207,12 +197,13 @@ function nameColFormatter(current) {
     avatar_url,
     user_login,
     workplace_place,
+    user_email,
   } = JSON.parse(current);
 
   return html(`
     <div class="d-flex gap-2">
       <div>
-        <img src="${avatar_url}" width="64" class="rounded-circle">
+        <img src="${avatar_url}" width="128" class="rounded-3">
       </div>
       <div class="w-100 d-flex gap-2 flex-column justify-content-center">
         <strong class="mb-0 fs-5">
@@ -220,6 +211,7 @@ function nameColFormatter(current) {
             ${display_name}
           </a>
         </strong>
+
         <div class="d-flex justify-content-between">
           <div>
             <div class="d-flex gap-2">
@@ -233,8 +225,16 @@ function nameColFormatter(current) {
                   workplace_place.data ? workplace_place.data.number : ""
                 }</span>
               </div>
+            </div>
           </div>
         </div>
+        
+        <span class="fs-6">
+          <i class="bi bi-envelope"></i>
+          <a href="mailto:${user_email}" target="_blank" title="Envie e-mail para ${user_email}">
+            ${user_email}
+          </a>
+        </span>
       </div>
     </div>`);
 }
@@ -255,25 +255,9 @@ function positionColFormatter(current) {
     `);
 }
 
-function emailColFormatter(current) {
-  return html(`
-    <div class="d-flex gap-2">
-      <i class="bi bi-envelope"></i>
-      <span class="fs-6">${current}</span>
-    </div>
-    `);
-}
-
 function createdAtColFormatter(current) {
-  return html(`
-      <div class="d-flex gap-2">
-        <i class="bi bi-calendar-event"></i>
-        <span class="fs-6">${new Date(current).toLocaleDateString()}</span>
-      </div>
-  `);
-}
+  const { bond_status, user_registered } = JSON.parse(current);
 
-function statusColFormatter(current) {
   const type =
     {
       emprestado: "text-bg-warning",
@@ -281,24 +265,40 @@ function statusColFormatter(current) {
       desativado: "text-bg-danger",
       quebrado: "text-bg-danger",
       desaparecido: "text-bg-danger",
-    }[current.toLowerCase()] || "text-bg-info";
+    }[bond_status.toLowerCase()] || "text-bg-info";
 
-  return html(`<span class="badge ${type}">${current}</span>`);
+  return html(`
+      <div class="d-flex gap-2">
+        <i class="bi bi-calendar-event"></i>
+        <span class="fs-6">${new Date(
+          user_registered
+        ).toLocaleDateString()}</span>
+        <span class="badge ${type}">${bond_status}</span>
+      </div>
+  `);
 }
 
 function actionColFormatter(current) {
-  const { id, user_login } = JSON.parse(current);
+  const { id, user_login, prevent_write } = JSON.parse(current);
+
+  // Esse objeto é passado de forma global pelo PHP
+  const { userLogin } = userLogged;
+
   return html(`
     <div class="d-flex gap-2">
       <a class="btn btn-outline-secondary" href="/membros/${user_login}/profile/" target="_blank" title="Detalhes">
         <i class="bi bi-info-lg"></i>
       </a>
-      <a class="btn btn-outline-secondary" href="/membros/rootadmfafar_intranet/bp-messages/#/conversation/${id}" target="_blank" title="Enviar mensagem">
+      <a class="btn btn-outline-secondary" href="/membros/${userLogin}/bp-messages/?bm-fast-start=1&to=${id}" target="_blank" title="Enviar mensagem">
         <i class="bi bi-send"></i>
       </a>
-      <a class="btn btn-outline-secondary" href="/wp-admin/user-edit.php?user_id=${id}" target="_blank" title="Editar">
+      ${
+        !prevent_write
+          ? `<a class="btn btn-outline-secondary" href="/wp-admin/user-edit.php?user_id=${id}" target="_blank" title="Editar">
         <i class="bi bi-pencil"></i>
-      </a>
+      </a>`
+          : ""
+      }
     </div>
   `);
 }

@@ -123,6 +123,7 @@ const grid = new gridjs.Grid({
   search: true,
   sort: true,
   resizable: true,
+  autoWidth: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 

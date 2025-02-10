@@ -116,6 +116,7 @@ const grid = new gridjs.Grid({
   search: true,
   sort: true,
   resizable: true,
+  autoWidth: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
@@ -296,15 +297,14 @@ function lastRegisterStatusFormatter(current) {
   }
 
   return html(`
-    <div class="d-flex flex-column gap-1">
+    <div class="d-flex gap-1 align-items-center">
+      <span>
+        <i class="bi bi-clock"></i>
+      </span>
+      <span>
+        ${last_register}
+      </span>
       <span class="badge ${type}">${text}</span>
-
-      <div>
-        <span class="me-1"><i class="bi bi-clock"></i></span>
-        <span>
-          ${last_register}
-        </span>
-      </div>
     </div>
     `);
 }

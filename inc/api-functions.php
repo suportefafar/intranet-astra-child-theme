@@ -1660,8 +1660,9 @@ function intranet_fafar_api_get_submission_by_id( $id, $substitute_value = true 
 
         }
 
-        if ( is_array( $submission['data']['place'] ) && 
-            count( $submission['data']['place'] ) > 0 ) {
+        if ( isset( $submission['data']['place'] ) && 
+             is_array( $submission['data']['place'] ) && 
+             count( $submission['data']['place'] ) > 0 ) {
 
             $submission['data']['place'] = intranet_fafar_api_get_submission_by_id( $submission['data']['place'][0] );
         }
@@ -1921,6 +1922,25 @@ function intranet_fafar_api_get_users() {
         
         $user_data['workplace_place']     = intranet_fafar_api_get_submission_by_id( esc_attr( get_the_author_meta( 'workplace_place', $user->ID ) ) );
         $user_data['workplace_extension'] = esc_attr( get_the_author_meta( 'workplace_extension', $user->ID ) );
+
+        $user_data['prevent_read'] = false;
+        $user_data['prevent_write'] = true;
+        $user_data['prevent_exec'] = true;
+
+        if( isset( $user_data['role']['slug'] ) && 
+            (
+                wp_get_current_user()->roles[0] === 'administrator' || 
+                wp_get_current_user()->roles[0] === 'pessoal' || 
+                wp_get_current_user()->roles[0] === 'tecnologia_da_informacao_e_suporte' || 
+                wp_get_current_user()->get( 'ID' ) === $user_data['ID']
+            )
+          ) {
+
+            $user_data['prevent_read'] = false;
+            $user_data['prevent_write'] = false;
+            $user_data['prevent_exec'] = false;
+
+        }
 
         return $user_data;
 

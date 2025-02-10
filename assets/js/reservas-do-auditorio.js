@@ -50,7 +50,7 @@ document
  * Aguarda até que a DOM seja carregada para inserir os eventos no calendário
  */
 document.addEventListener("DOMContentLoaded", () => {
-  preLoadTable();
+  loadUI();
 });
 
 /*
@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function onClickTabHandler(e) {
   const { dataset } = e.target;
 
-  preLoadTable(dataset);
+  loadUI(dataset);
 }
 
 function changeActiveTab(reservationStatus) {
@@ -87,7 +87,7 @@ function getActivedTab() {
   return null;
 }
 
-async function preLoadTable(tab_dataset = null) {
+async function loadUI(tab_dataset = null) {
   showAlert("Por favor, aguarde...", "warning");
 
   if (!tab_dataset) {
@@ -184,6 +184,7 @@ const grid = new gridjs.Grid({
   search: true,
   order: true,
   resizable: true,
+  autoWidth: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
@@ -517,7 +518,7 @@ async function changeStatus(id, status) {
   if (response) {
     showAlert("Atualizado com sucesso!", "success", true, 3000);
 
-    preLoadTable();
+    loadUI();
   }
 }
 
@@ -611,7 +612,7 @@ async function setTechnicalHandler() {
   if (response) {
     showAlert("Atualizado com sucesso!", "success", true, 3000);
 
-    preLoadTable();
+    loadUI();
   }
 
   hideSetTechnicalModal();

@@ -1,5 +1,5 @@
 let EVENTS = [];
-let CURRENT_CLASSROOM_ID = null;
+let CURRENT_CLASSROOM = { id: null, number: null };
 
 /*
  * LISTENER'S
@@ -9,7 +9,14 @@ let CURRENT_CLASSROOM_ID = null;
  * Aguarda até que a DOM seja carregada para inserir os eventos no calendário
  */
 document.addEventListener("DOMContentLoaded", () => {
-  loadUI();
+  fetchCalendarData();
+});
+
+/*
+ * Adiciona um listener para cada aba
+ */
+document.querySelectorAll("#ul_classroom_tabs .nav-link").forEach((el) => {
+  el.addEventListener("click", onClickTabHandler);
 });
 
 /*
@@ -18,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
 document
   .querySelector("#btn_print_classroom_map")
   .addEventListener("click", () => {
-    const url = "/imprimir-mapa-de-sala/?id=" + CURRENT_CLASSROOM_ID;
+    const url = "/imprimir-mapa-de-sala/?id=" + CURRENT_CLASSROOM.id;
     window.open(url, "_blank").focus();
   });
 
@@ -43,32 +50,96 @@ document
 document.addEventListener("onAddEventSuccess", () => {
   // console.log("Evento disparado!");
   hideAddEventModal();
-  loadUI();
+  fetchCalendarData();
   showAlert("Reserva adicionada com sucesso!", "success", true);
 });
 
-async function loadUI(place_id = false) {
-  const queryString = window.location.search;
-  const urlParams = new URLSearchParams(queryString);
-  const place = urlParams.get("place");
+/*
+ * Lida com clique das abas
+ */
+function onClickTabHandler(e) {
+  const target = e.target;
 
-  if (place_id) {
-    CURRENT_CLASSROOM_ID = place_id;
-  } else if (CURRENT_CLASSROOM_ID) {
-    // não faz nada
-  } else if (place) {
-    CURRENT_CLASSROOM_ID = place;
-  } else {
-    CURRENT_CLASSROOM_ID = document.querySelectorAll(
-      "#ul_place_tabs .nav-link"
-    )[0].dataset.placeId;
+  // Extract necessary data attributes from the clicked element
+  const { classroomId, classroomNumber } = target.dataset;
+
+  // Validate that all required attributes exist
+  if (!classroomId || !classroomNumber) {
+    showAlert(
+      "Ocorreu algum erro! Por favor, contate o setor de T.I.",
+      "danger"
+    );
+    console.error(
+      "O elemento não contém os dados necessários (classroomId, classroomNumber)."
+    );
+    return;
   }
 
-  renderPlacesTabs(CURRENT_CLASSROOM_ID);
+  // Update the current place details
+  CURRENT_CLASSROOM.id = classroomId;
+  CURRENT_CLASSROOM.number = classroomNumber;
 
-  const submissions = await getEventsByPlaceID(CURRENT_CLASSROOM_ID);
+  // Activate the clicked tab
+  changeActiveTab();
 
-  renderCalendar(submissions);
+  // Fetch and render calendar data
+  fetchCalendarData();
+}
+
+// Asynchronously fetch calendar data and render the table
+async function fetchCalendarData() {
+  console.log("CURRENT_CLASSROOM:", CURRENT_CLASSROOM);
+
+  // If CURRENT_CLASSROOM.id is missing, attempt to set it from the active tab
+  if (!CURRENT_CLASSROOM.id) {
+    const defaultTab = getActiveTab();
+    if (defaultTab) {
+      // Here, adjust property names as needed. If your active tab uses classroomId/classroomNumber:
+      const { classroomId, classroomNumber } = defaultTab.dataset;
+      if (classroomId && classroomNumber) {
+        CURRENT_CLASSROOM.id = classroomId;
+        CURRENT_CLASSROOM.number = classroomNumber;
+      } else {
+        showAlert(
+          "Ocorreu algum erro! Por favor, contate o setor de T.I.",
+          "danger"
+        );
+        console.error(
+          "A aba ativa não contém os dados necessários (classroomId, classroomNumber)."
+        );
+        return;
+      }
+    } else {
+      showAlert(
+        "Ocorreu algum erro! Por favor, contate o setor de T.I.",
+        "danger"
+      );
+      console.error("Nenhuma aba ativa encontrada.");
+      return;
+    }
+  }
+
+  // Assuming getEventsByPlaceID is defined and returns a Promise with the submissions data
+  const submissions = await getEventsByPlaceID(CURRENT_CLASSROOM.id);
+  renderTable(submissions);
+}
+
+// Toggle the active class on tabs based on the provided reservation status
+function changeActiveTab() {
+  const tabs = document.querySelectorAll("#ul_classroom_tabs .nav-link");
+
+  tabs.forEach((tab) => {
+    if (tab.dataset.classroomId === CURRENT_CLASSROOM.id) {
+      tab.classList.add("active");
+    } else {
+      tab.classList.remove("active");
+    }
+  });
+}
+
+function getActiveTab() {
+  // This will return the first .nav-link with the "active" class (or null if none exist)
+  return document.querySelector("#ul_classroom_tabs .nav-link.active");
 }
 
 /*
@@ -85,42 +156,11 @@ async function getEventsByPlaceID(place_id) {
 
     // console.log({ response });
   } catch (error) {
-    // console.log(error.response.data.message);
+    console.log(error.response.data.message);
     return [];
   }
 
   return JSON.parse(response.data);
-}
-
-/**
- * UL TABS RENDER
- */
-
-function renderPlacesTabs(place_id = null) {
-  const tabs = document.querySelectorAll("#ul_place_tabs .nav-link");
-
-  tabs.forEach((el) => {
-    el.addEventListener("click", onClickPlaceTabHanlder);
-  });
-
-  if (place_id) {
-    changeActiveTab(place_id);
-  }
-}
-
-async function onClickPlaceTabHanlder(e) {
-  const place_id = e.target.dataset.placeId;
-
-  loadUI(place_id);
-}
-
-function changeActiveTab(placeId) {
-  const tabs = document.querySelectorAll("#ul_place_tabs .nav-link");
-
-  tabs.forEach((el) => {
-    el.classList.remove("active");
-    if (el.dataset.placeId === placeId) el.classList.add("active");
-  });
 }
 
 /**
@@ -154,7 +194,7 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
   events: EVENTS,
 });
 
-function renderCalendar(submissions) {
+function renderTable(submissions) {
   // console.log(submissions);
 
   const arr = [];
@@ -198,6 +238,9 @@ function dateClickHandler(info) {
 
   document.querySelector("#end_time").value =
     parseToTimeInputFormat(date_selected);
+
+  if (CURRENT_CLASSROOM.number)
+    document.querySelector("#place").value = CURRENT_CLASSROOM.number;
 
   showAddEventModal();
 }

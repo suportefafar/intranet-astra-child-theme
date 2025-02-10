@@ -25,7 +25,15 @@ if ( isset( $places['msg_error'] ) )
     $places = array();
 
 $classrooms = array_filter( $places, function ( $place ) {
-    return $place['data']['object_sub_type'] === 'classroom';
+
+    if( ! isset( $place['data']['object_sub_type'] ) )
+        return false;
+
+    return $place['data']['object_sub_type'] === 'classroom' || 
+           ( 
+             is_array( $place['data']['object_sub_type'] ) &&
+             $place['data']['object_sub_type'][0] === 'classroom' 
+           );
 });
 
 get_header(); ?>
@@ -65,67 +73,28 @@ get_header(); ?>
                 Imprimir
             </button>
         </div>
-        
-        <!-- CHARTS -->
-
-        <!--<div class="d-flex justify-content-around mb-4">
-            <div class="card" style="width: 18rem;">intranet_fafar_importar_json
-                <canvas id="myChart1"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Mês</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart2"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Ano</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart3"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Setor</h5>
-                </div>
-            </div>
-        </div>-->
 
         <!-- TABS -->
 
-        <!--<ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#">Active</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-            </li>
-        </ul>-->
-
-        
-        <!-- TABS -->
-
-        <ul class="nav nav-tabs ms-0" id="ul_place_tabs">
+        <ul class="nav nav-tabs ms-0" id="ul_classroom_tabs">
             <?php
             
             $first = true;
+
             foreach ( $classrooms as $classroom ) {
             
                 echo   '<li class="nav-item">
                             <a class="text-decoration-none nav-link ' . ( $first ? ' active' : '' ) . '"' . 
-                            ( $first ? ' aria-current="page"' : '' ) . 
-                            ' href="#" data-place-id="' . $classroom['id'] . '">' . 
+                            ( $first ? ' aria-current="page"' : '' ) . ' 
+                            href="#"  
+                            data-classroom-id="' . $classroom['id'] . '" 
+                            data-classroom-number="' . $classroom['data']['number'] . '">' . 
                             $classroom['data']['number'] .
                             ' </a>
                         </li>';
             
                 $first = false;
+                
             }
 
             ?>
