@@ -270,8 +270,13 @@ get_header(); ?>
                                 <td>Local</td>
                                 <td class="fw-medium">
                                     <?php 
+                                        
                                         echo ( 
-                                                ( isset( $service_ticket['data']['place'] ) && sizeof( $service_ticket['data']['place'] ) ) ?
+                                                ( 
+                                                  isset( $service_ticket['data']['place'] ) && 
+                                                  isset( $service_ticket['data']['place']['id'] ) &&
+                                                  ! isset( $service_ticket['data']['place']['error_msg'] )
+                                                ) ?
                                                     '<a 
                                                         href="./visualizar-objeto?id=' . $service_ticket['data']['place']['id'] . '" 
                                                         target="blank" 
@@ -282,8 +287,10 @@ get_header(); ?>
                                                     $service_ticket['data']['place']['data']['floor'] .
                                                     "ª" . 
                                                     " - Bloco: " . 
-                                                    $service_ticket['data']['place']['data']['block'] : '' . 
-                                                    '</a>'
+                                                    $service_ticket['data']['place']['data']['block'] . 
+                                                    '</a>' 
+                                                    : 
+                                                    ''
                                             ) 
                                     ?>
                                 </td>

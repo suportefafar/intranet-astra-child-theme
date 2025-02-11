@@ -259,38 +259,38 @@ get_header(); ?>
                                 <td>Discos</td>
                                 <td class="fw-medium">
                                     <?php 
-                                        if ( $equipament['data']['disc_capacity_1'] ) {
-                                            echo $equipament['data']['disc_capacity_1'];
+                                        if ( $equipament['data']['disk_capacity_1'] ) {
+                                            echo $equipament['data']['disk_capacity_1'];
                                             echo ' GB ';
                                             echo '(';
-                                            echo ( ( $equipament['data']['disc_type_1'][0] ) ?? '--' );
+                                            echo ( ( $equipament['data']['disk_type_1'][0] ) ?? '--' );
                                             echo ')';
                                             echo '<br />';
                                         }
 
-                                        if ( $equipament['data']['disc_capacity_2'] ) {
-                                            echo $equipament['data']['disc_capacity_2'];
+                                        if ( $equipament['data']['disk_capacity_2'] ) {
+                                            echo $equipament['data']['disk_capacity_2'];
                                             echo ' GB ';
                                             echo '(';
-                                            echo ( ( $equipament['data']['disc_type_2'][0] ) ?? '--' );
+                                            echo ( ( $equipament['data']['disk_type_2'][0] ) ?? '--' );
                                             echo ')';
                                             echo '<br />';
                                         }
 
-                                        if ( $equipament['data']['disc_capacity_3'] ) {
-                                            echo $equipament['data']['disc_capacity_3'];
+                                        if ( $equipament['data']['disk_capacity_3'] ) {
+                                            echo $equipament['data']['disk_capacity_3'];
                                             echo ' GB ';
                                             echo '(';
-                                            echo ( ( $equipament['data']['disc_type_3'][0] ) ?? '--' );
+                                            echo ( ( $equipament['data']['disk_type_3'][0] ) ?? '--' );
                                             echo ')';
                                             echo '<br />';
                                         }
 
-                                        if ( $equipament['data']['disc_capacity_4'] ) {
-                                            echo $equipament['data']['disc_capacity_4'];
+                                        if ( $equipament['data']['disk_capacity_4'] ) {
+                                            echo $equipament['data']['disk_capacity_4'];
                                             echo ' GB ';
                                             echo '(';
-                                            echo ( ( $equipament['data']['disc_type_4'][0] ) ?? '--' );
+                                            echo ( ( $equipament['data']['disk_type_4'][0] ) ?? '--' );
                                             echo ')';
                                             echo '<br />';
                                         }
@@ -315,11 +315,11 @@ get_header(); ?>
                                 <td>SO</td>
                                 <td class="fw-medium">
                                     <?php 
-                                        echo ( ( $equipament['data']['so_type'][0] ) ?? '' );
+                                        echo ( ( $equipament['data']['os_type'][0] ) ?? '' );
                                         echo " ";
-                                        echo ( ( $equipament['data']['so_version'] ) ?? '' );
+                                        echo ( ( $equipament['data']['os_version'] ) ?? '' );
                                         echo " ";
-                                        echo ( ( $equipament['data']['so_arch'][0] ) ?? '' );
+                                        echo ( ( $equipament['data']['os_arch'][0] ) ?? '' );
                                     ?>
                                 </td>
                             <tr>
@@ -347,9 +347,10 @@ get_header(); ?>
                         <?php
                 
                             foreach ( $loans as $loan ) {
+                                    
+                                $loan_to = isset( $loan['data']['loan_to'][0] ) ?
+                                            get_userdata( $loan['data']['loan_to'][0] ) : null;
 
-                                $loan_to = get_userdata( $loan['data']['loan_to'][0] );
-                                
                                 echo '<tr>';
                                 echo    '<td>Data de empréstimo</td>';
                                 echo    '<td class="fw-medium">' . esc_html( ( isset( $loan['data']['loan_date'] ) ) ? fafar_intranet_format_date_local( $loan['data']['loan_date'] )  : '--/--/----' ) . '</td>';
@@ -357,7 +358,7 @@ get_header(); ?>
 
                                 echo '<tr>';
                                 echo    '<td>Emprestado para</td>';
-                                echo    '<td class="fw-medium">' . esc_html( ( $loan_to ? $loan_to->get( 'display_name' ) : '(' . $loan['data']['loan_to'][0] . ')' ) ) . '</td>';
+                                echo    '<td class="fw-medium">' . esc_html( ( $loan_to ? $loan_to->get( 'display_name' ) : '--' ) ) . '</td>';
                                 echo '<tr>';
 
                                 echo '<tr>';

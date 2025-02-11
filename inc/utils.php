@@ -74,3 +74,18 @@ function intranet_fafar_utils_is_json( $data ) {
     
     return json_last_error() === JSON_ERROR_NONE;
 }
+
+
+function intranet_fafar_utils_get_all_roles() {
+
+    global $wp_roles;
+
+    // Ensure the $wp_roles object is loaded.
+    if ( empty( $wp_roles ) ) {
+        $wp_roles = new WP_Roles();
+    }
+
+    // Return an array of all roles.
+    return $wp_roles->roles;
+
+}

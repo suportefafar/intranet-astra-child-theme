@@ -106,16 +106,21 @@ get_header(); ?>
                 );
             ?>
             <?php
-                $roles = intranet_fafar_get_all_roles();
+                $roles = intranet_fafar_utils_get_all_roles();
+
+                $roles_blacklist = array( 'Administrator', 'Editor', 'Author', 'Contributor', 'Subscriber' );
+                $not_wp_roles    = array_filter( $roles, function( $role ) use ( $roles_blacklist ) {
+                    return ! in_array( $role['name'], $roles_blacklist );
+                } );
                     
                 $roles_display_names = array_map( function ( $role ) {
                     return $role['name'];
-                }, $roles );
+                }, $not_wp_roles );
                 $roles_display_names = array_values( $roles_display_names );
 
                 $roles_slugs = array_map( function ( $slug ) {
                     return $slug;
-                }, array_keys( $roles ) );
+                }, array_keys( $not_wp_roles ) );
 
                 echo intranet_fafar_utils_render_dropdown_menu( 
                     array( 

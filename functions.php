@@ -36,15 +36,15 @@ require_once get_stylesheet_directory() . '/inc/utils.php';
 
 require_once get_stylesheet_directory() . '/inc/setup-on-activation.php';
 
+require_once get_stylesheet_directory() . '/inc/rrule.php';
+
+require_once get_stylesheet_directory() . '/inc/api-functions.php';
+
 require_once get_stylesheet_directory() . '/inc/filters.php';
 
 require_once get_stylesheet_directory() . '/inc/class-wp-bootstrap-navwalker.php';
 
 require_once get_stylesheet_directory() . '/inc/enqueue-scripts.php';
-
-require_once get_stylesheet_directory() . '/inc/rrule.php';
-
-require_once get_stylesheet_directory() . '/inc/api-functions.php';
 
 require_once get_stylesheet_directory() . '/inc/shortcodes.php';
 
@@ -54,7 +54,7 @@ require_once get_stylesheet_directory() . '/inc/custom-user-fields.php';
 
 require_once get_stylesheet_directory() . '/inc/template-tags.php';
 
-//require_once get_stylesheet_directory() . '/inc/logs-hooks.php.php';
+//require_once get_stylesheet_directory() . '/inc/logs-hooks.php';
 
 /*
  * Isso é uma gambiarra para lidar com um problema no CF7:

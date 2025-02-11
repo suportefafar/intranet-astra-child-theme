@@ -131,10 +131,7 @@ const grid = new gridjs.Grid({
     },
     {
       name: "Responsável",
-      formatter: (current) =>
-        html(
-          `<a href="/membros/${current.user_login}/" target="blank" title="${current.display_name}">${current.display_name}</a>`
-        ),
+      formatter: ownerColFormatter,
     },
     {
       name: "Status",
@@ -211,10 +208,10 @@ function fetchDataHandler(submissions) {
     });
 
     table_arr.push([
-      code_column_data ?? "--",
+      code_column_data,
       desc_column_data,
-      owner.data ?? "--",
-      status ?? "--",
+      owner,
+      status,
       assigned_to,
       date_column_data,
       action_column_data,
@@ -228,8 +225,6 @@ function codeColFormatter(current) {
   const { id, permissions, code } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
-
-  //console.log(current);
 
   const html_content = `
     <div class="d-flex gap-2">
@@ -265,6 +260,23 @@ function descColFormatter(current) {
       </div>
     </div
     `);
+}
+
+function ownerColFormatter(current) {
+  let { user_login, display_name } = current.data;
+
+  if (!user_login && !display_name) {
+    user_login = "";
+    display_name = "";
+  }
+
+  return html(
+    `<a href="/membros/${user_login}/" 
+        target="blank" 
+        title="${display_name}">
+          ${display_name}
+    </a>`
+  );
 }
 
 function assignedToColFormatter(current) {

@@ -253,7 +253,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
             <th><label for="public_servant_work_sector"><?php _e( "Setor", "intranet-astra-child-theme" ); ?></label></th>
             <td>
                 <?php
-                    $roles = intranet_fafar_get_all_roles();
+                    $roles = intranet_fafar_utils_get_all_roles();
                     
                     $roles_display_names = array_map( function ( $role ) {
                         return $role['name'];
@@ -423,19 +423,4 @@ function intranet_fafar_load_admin_scripts($hook_suffix) {
         );
 
     }
-}
-
-
-function intranet_fafar_get_all_roles() {
-
-    global $wp_roles;
-
-    // Ensure the $wp_roles object is loaded.
-    if ( empty( $wp_roles ) ) {
-        $wp_roles = new WP_Roles();
-    }
-
-    // Return an array of all roles.
-    return $wp_roles->roles;
-
 }

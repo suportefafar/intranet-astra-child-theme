@@ -2201,42 +2201,28 @@ function intranet_fafar_api_get_ips_handler( $request ) {
 }
 
 function intranet_fafar_api_get_ips() {
-
     $ips = intranet_fafar_api_get_submissions_by_object_name( 'ip', array( 'orderby_json' => 'address' ) );
 
-    if( ! $ips || count( $ips ) == 0 ) {
-        return array( 'error_msg' => '[0202]Nenhum ip encontrado', 'http_status' => 400 );
-    }
+    if ( isset( $ips['error_msg'] ) ) return $ips;
 
     $equipaments = intranet_fafar_api_get_submissions_by_object_name( 'equipament' );
 
-    /*
-     * Substituir os campos que tem ID de outro objeto,
-     * pelo objeto de mesmo ID
-     */
-    $ips_joined = array_map( function ( $ip ) use ( $equipaments ) {
+    if ( isset( $equipaments['error_msg'] ) ) return $equipaments;
 
-        $ip['data']['equipament_id'] = null;
-
-        foreach ( $equipaments as $equipament ) {
-
-            if( 
-                isset( $equipament['data']['ip'] ) && 
-                is_array( $equipament['data']['ip'] ) && 
-                count( $equipament['data']['ip'] ) > 0 && 
-                ( $ip['id'] === $equipament['data']['ip'][0] ) 
-              ) {
-                $ip['data']['equipament_id'] = $equipament['id'];
-                break;
-            }
-    
+    // Map equipment IPs for quick lookup
+    $ip_to_equipament = [];
+    foreach ( $equipaments as $equipament ) {
+        if ( ! empty( $equipament['data']['ip'][0] ) ) {
+            $ip_to_equipament[$equipament['data']['ip'][0]] = $equipament['id'];
         }
+    }
+
+    // Replace equipament_id in IPs
+    return array_map( function ( $ip ) use ( $ip_to_equipament ) {
+        $ip['equipament_id'] = $ip_to_equipament[$ip['id']] ?? null;
 
         return $ip;
-        
     }, $ips );
-
-    return $ips_joined;
 }
 
 /*
