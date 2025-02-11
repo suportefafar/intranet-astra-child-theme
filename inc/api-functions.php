@@ -624,19 +624,18 @@ function intranet_fafar_api_get_service_tickets_by_departament_handler( $request
 
 function intranet_fafar_api_get_service_tickets_by_departament( $departament = null, $status = null, $assigned_to = null ) {
 
-    
-
     if ( ! $departament ) {
 
         $user        = wp_get_current_user();
-
         $role_slug   = $user->roles[0];
-
         $departament = $role_slug;
 
     }
 
-    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $departament . "\"', '$.departament_assigned_to') ORDER BY created_at DESC";
+    $query = "SELECT * FROM `SET_TABLE_NAME` " . 
+              "WHERE `object_name` = 'service_ticket' " .  
+              "AND JSON_CONTAINS(data, '\"" . $departament . "\"', '$.departament_assigned_to') " . 
+              "ORDER BY created_at DESC";
 
     $all_service_tickets = intranet_fafar_api_read( $query );
 
@@ -644,14 +643,14 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
         return array( 'error_msg' => $service_ticket['error_msg'] );
 
     if ( empty( $all_service_tickets ) )
-        return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada do usuário atual!' );
+        return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada para ' . $departament );
 
     $service_tickets = array();
     
     for ( $i = 0; $i < count( $all_service_tickets ); $i++ ) {
 
         if ( 
-            $status && 
+            isset( $status ) && 
             strtolower( $status ) !== strtolower( $all_service_tickets[$i]['data']['status'] ) 
            ) {
 
@@ -660,9 +659,11 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
         }
 
         if ( 
-            $assigned_to && 
-            $assigned_to !== $all_service_tickets[$i]['data']['assigned_to'] || 
-            ( ! $all_service_tickets[$i]['data']['assigned_to'] )
+            isset( $assigned_to ) && 
+            ( 
+                $assigned_to !== $all_service_tickets[$i]['data']['assigned_to'] || 
+                ( ! $all_service_tickets[$i]['data']['assigned_to'] )
+            )
            ) {
 
             continue;

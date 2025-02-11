@@ -7,103 +7,88 @@ let EVENTS = [];
  */
 
 /*
- * Aguarda até que a DOM seja carregada para inserir os eventos no calendário
+ * Aguarda até que a DOM seja carregada
  */
 document.addEventListener("DOMContentLoaded", () => {
-  loadUI();
+  fetchTableData();
 });
 
-async function loadUI(osStatus = false) {
-  let CURRENT_OS_STATUS = null;
-
-  if (osStatus) {
-    CURRENT_OS_STATUS = osStatus;
-  } else {
-    CURRENT_OS_STATUS = document.querySelectorAll(
-      "#ul_os_status_tabs .nav-link"
-    )[0].dataset.osStatus;
-  }
-
-  renderOsStatusTabs(CURRENT_OS_STATUS);
-
-  let submissions = null;
-  if (CURRENT_OS_STATUS === "minha") {
-    submissions = await getEventsByAssignedTo();
-  } else {
-    if (CURRENT_OS_STATUS === "todas")
-      submissions = await getEventsByOsStatus("");
-    else submissions = await getEventsByOsStatus(CURRENT_OS_STATUS);
-  }
-
-  renderGridJS(submissions);
-}
-
 /*
- * GET EVENTS
+ * Adiciona um listener para cada aba
  */
-async function getEventsByOsStatus(osStatus) {
+document.querySelectorAll("#ul_os_status_tabs .nav-link").forEach((el) => {
+  el.addEventListener("click", (e) => {
+    changeActiveTab(e);
+
+    fetchTableData();
+  });
+});
+
+function changeActiveTab(el) {
+  const tabs = document.querySelectorAll("#ul_os_status_tabs .nav-link");
+
+  tabs.forEach((tab) => {
+    if (tab === el.target) {
+      tab.classList.add("active");
+    } else {
+      tab.classList.remove("active");
+    }
+  });
+}
+
+function getActiveTabData() {
+  const tab_el = getActiveTab();
+
+  if (!tab_el) {
+    showAlert(
+      "Ocorreu algum erro! Por favor, contate o setor de T.I.",
+      "danger"
+    );
+    console.error("Nenhuma aba ativada");
+    return null;
+  }
+
+  const { url } = tab_el.dataset;
+
+  if (!url) {
+    showAlert(
+      "Ocorreu algum erro! Por favor, contate o setor de T.I.",
+      "danger"
+    );
+    console.error("O elemento não contém os dados necessários (url).");
+    return null;
+  }
+
+  return { url };
+}
+
+function getActiveTab() {
+  return document.querySelector("#ul_os_status_tabs .nav-link.active");
+}
+
+async function fetchTableData() {
+  const tab_data = getActiveTabData();
+  if (!tab_data) return;
+
+  const submissions = await getServiceTickets(tab_data.url);
+  renderTable(submissions);
+}
+
+async function getServiceTickets(url) {
   let response;
-  let status_param = osStatus ?? "";
+
   try {
     response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/service_tickets/by_departament?status=" +
-        status_param
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions" + url
     );
 
-    //console.log({ response });
+    //console.log(response.data);
   } catch (error) {
-    //console.log(error.response.data.message);
+    console.log(error.response.data.message);
     return [];
   }
 
   return JSON.parse(response.data);
-}
-
-async function getEventsByAssignedTo() {
-  let response;
-  try {
-    response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/service_tickets/by_departament?assigned_to=-1"
-    );
-
-    //console.log({ response });
-  } catch (error) {
-    //console.log(error.response.data.message);
-    return [];
-  }
-
-  return JSON.parse(response.data);
-}
-
-/**
- * UL TABS RENDER
- */
-
-function renderOsStatusTabs(os_status = null) {
-  const tabs = document.querySelectorAll("#ul_os_status_tabs .nav-link");
-
-  tabs.forEach((el) => {
-    el.addEventListener("click", onClickPlaceTabHanlder);
-  });
-
-  if (os_status) {
-    changeActiveTab(os_status);
-  }
-}
-
-function onClickPlaceTabHanlder(e) {
-  const { osStatus } = e.target.dataset;
-
-  loadUI(osStatus);
-}
-
-function changeActiveTab(osStatus) {
-  const tabs = document.querySelectorAll("#ul_os_status_tabs .nav-link");
-
-  tabs.forEach((el) => {
-    el.classList.remove("active");
-    if (el.dataset.osStatus === osStatus) el.classList.add("active");
-  });
 }
 
 /*
@@ -141,10 +126,9 @@ const grid = new gridjs.Grid({
       formatter: codeColFormatter,
     },
     {
-      name: "Atribuído à",
-      formatter: assignedToColFormatter,
+      name: "Descrição",
+      formatter: descColFormatter,
     },
-    "Patrimônio",
     {
       name: "Responsável",
       formatter: (current) =>
@@ -153,20 +137,16 @@ const grid = new gridjs.Grid({
         ),
     },
     {
-      name: "Sala",
-      formatter: (current) =>
-        Array.isArray(current) && current.length !== 0
-          ? current.data.number
-          : "--",
-    },
-    {
       name: "Status",
       formatter: statusColFormatter,
     },
-    "Tipo",
+    {
+      name: "Atribuído à",
+      formatter: assignedToColFormatter,
+    },
     {
       name: "Criado",
-      formatter: (current) => parseToLocalDateTime(current),
+      formatter: (current) => createdAtColFormatter(current),
     },
     {
       name: "Ações",
@@ -185,7 +165,7 @@ const grid = new gridjs.Grid({
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-function renderGridJS(data = []) {
+function renderTable(data = []) {
   if (!data) data = [];
 
   if (Array.isArray(data) && data.length === 0) data = [];
@@ -198,36 +178,45 @@ function renderGridJS(data = []) {
 }
 
 function fetchDataHandler(submissions) {
-  //console.log(submissions);
+  console.log(submissions);
 
   let table_arr = [];
   for (const submission of submissions) {
-    const submission_data = submission.data;
+    const { id, data, owner, updated_at, created_at } = submission;
+    const { assigned_to, status, type, code, user_report } = data;
 
-    const prevent_write = submission_data.prevent_write ? "1" : "0";
-    const prevent_exec = submission_data.prevent_exec ? "1" : "0";
+    const prevent_write = data.prevent_write ? "1" : "0";
+    const prevent_exec = data.prevent_exec ? "1" : "0";
     const permissions = prevent_write + prevent_exec;
 
     const code_column_data = JSON.stringify({
-      id: submission.id,
+      id,
       permissions,
-      code: submission_data.code,
+      code,
+    });
+
+    const desc_column_data = JSON.stringify({
+      type,
+      user_report,
+    });
+
+    const date_column_data = JSON.stringify({
+      updated_at,
+      created_at,
     });
 
     const action_column_data = JSON.stringify({
-      id: submission.id,
+      id,
       permissions,
     });
 
     table_arr.push([
       code_column_data ?? "--",
-      submission_data.assigned_to,
-      submission_data.asset ?? "--",
-      submission.owner.data ?? "--",
-      submission_data.place,
-      submission_data.status ?? "--",
-      submission_data.type[0],
-      submission.created_at,
+      desc_column_data,
+      owner.data ?? "--",
+      status ?? "--",
+      assigned_to,
+      date_column_data,
       action_column_data,
     ]);
   }
@@ -235,7 +224,7 @@ function fetchDataHandler(submissions) {
   return table_arr;
 }
 
-function codeColFormatter(current, row) {
+function codeColFormatter(current) {
   const { id, permissions, code } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
@@ -252,7 +241,33 @@ function codeColFormatter(current, row) {
   return html(html_content);
 }
 
-function assignedToColFormatter(current, row) {
+function descColFormatter(current) {
+  const { type, user_report } = JSON.parse(current);
+
+  const MAX_CHAR_DESC = 100;
+
+  return html(`
+    <div class="d-flex flex-column gap-1">
+      <div>
+        <span>
+          ${type}
+        </span>
+      </div>
+
+      <div>
+        <span class="text-secondary">
+        ${
+          user_report.length > MAX_CHAR_DESC
+            ? user_report.slice(0, MAX_CHAR_DESC) + "..."
+            : user_report
+        }
+        </span>
+      </div>
+    </div
+    `);
+}
+
+function assignedToColFormatter(current) {
   //console.log(current);
   if (!current.data) {
     return "--";
@@ -263,20 +278,61 @@ function assignedToColFormatter(current, row) {
   return html(html_content);
 }
 
-function statusColFormatter(current, row) {
+function statusColFormatter(current) {
   let type = "text-bg-info";
-  const current_lower = current.toLowerCase();
 
-  if (current_lower === "nova") type = "text-bg-success";
-  else if (current_lower === "aguardando") type = "text-bg-warning";
-  else if (current_lower === "em andamento") type = "text-bg-primary";
-  else if (current_lower === "finalizada") type = "text-bg-secondary";
-  else if (current_lower === "cancelada") type = "text-bg-danger";
+  switch (current.toLowerCase()) {
+    case "nova":
+      type = "text-bg-success";
+      break;
+
+    case "aguardando":
+      type = "text-bg-warning";
+      break;
+
+    case "em andamento":
+      type = "text-bg-primary";
+      break;
+
+    case "finalizada":
+      type = "text-bg-secondary";
+      break;
+
+    case "cancelada":
+      type = "text-bg-danger";
+      break;
+  }
 
   return html(`<span class="badge ${type}">${current}</span>`);
 }
 
-function actionColFormatter(current, row) {
+function createdAtColFormatter(current) {
+  const { updated_at, created_at } = JSON.parse(current);
+
+  const formatted_created_at = new Date(created_at).toLocaleString();
+
+  const formatted_updated_at = new Date(updated_at).toLocaleString();
+
+  const how_long_created_at = getDateAsHowLongFormatted(created_at);
+
+  const how_long_updated_at = getDateAsHowLongFormatted(updated_at);
+
+  return html(`
+    <div class="d-flex flex-column gap-1">
+      <div>
+        <i class="bi bi-clock"></i>
+        <a href="#" class="text-decoration-none" title="Criado em ${formatted_created_at}">${how_long_created_at}</a>
+      </div>
+
+      <div>
+        <i class="bi bi-arrow-clockwise"></i>
+        <a href="#" class="text-decoration-none" title="Atualizado em ${formatted_updated_at}">${how_long_updated_at}</a>
+      </div>
+    </div>
+  `);
+}
+
+function actionColFormatter(current) {
   const { id, permissions } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
@@ -291,6 +347,25 @@ function actionColFormatter(current, row) {
     </div>`;
 
   return html(html_content);
+}
+
+function getDateAsHowLongFormatted(d) {
+  const date = new Date(d);
+  const now = new Date();
+
+  const diff_seconds = (now.getTime() - date.getTime()) / 1000;
+
+  if (diff_seconds < 60) {
+    return "Agora";
+  } else if (diff_seconds < 60 * 60) {
+    return (diff_seconds / 60).toFixed(0) + "min";
+  } else if (diff_seconds < 60 * 60 * 24) {
+    return (diff_seconds / (60 * 60)).toFixed(0) + "h";
+  } else if (diff_seconds < 60 * 60 * 24 * 30) {
+    return (diff_seconds / (60 * 60 * 24)).toFixed(0) + "d";
+  } else {
+    return date.toLocaleDateString();
+  }
 }
 
 function parseToLocalDateTime(dateString) {
