@@ -1,3 +1,4 @@
+console.log("FOI O JS");
 let EVENTS = [];
 let CURRENT_CLASSROOM = { id: null, number: null };
 

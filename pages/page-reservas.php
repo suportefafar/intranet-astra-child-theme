@@ -21,8 +21,7 @@ wp_enqueue_script_module( 'intranet-fafar-reservas-script', get_stylesheet_direc
 
 $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array( 'orderby_json' => 'number', 'order' => 'ASC' ) );
 
-if ( isset( $places['msg_error'] ) )
-    $places = array();
+if ( isset( $places['error_msg'] ) ) $places = array();
 
 $classrooms = array_filter( $places, function ( $place ) {
 
@@ -34,7 +33,7 @@ $classrooms = array_filter( $places, function ( $place ) {
              is_array( $place['data']['object_sub_type'] ) &&
              $place['data']['object_sub_type'][0] === 'classroom' 
            );
-});
+} );
 
 get_header(); ?>
 
