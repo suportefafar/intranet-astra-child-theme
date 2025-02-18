@@ -118,3 +118,34 @@ function intranet_fafar_utils_remove_accents($str) {
     ];
     return strtr($str, $unwanted);
 }
+
+function intranet_fafar_utils_escape_and_clean( $value ) { 
+
+    if( ! isset( $value ) ) return '';
+
+    if ( ! is_string( $value ) && ! is_numeric( $value ) ) {
+        return '';
+    }    
+
+    if( is_numeric( $value ) ) {
+        $value = absint( $value ); 
+    } else {
+        $value = strtoupper( $value );
+    }
+
+    $value = sanitize_text_field( wp_unslash( $value ?? '' ) );
+
+    return $value;
+
+}
+
+function intranet_fafar_utils_escape_and_clean_to_compare( $value ) { 
+
+    $value = sanitize_text_field( wp_unslash( $value ?? '' ) );
+    $value = intranet_fafar_utils_remove_accents( $value );
+    $value = strtolower( $value );
+    $value = str_replace( ' ', '', $value );
+
+    return $value;
+
+}

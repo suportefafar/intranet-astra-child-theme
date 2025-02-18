@@ -34,6 +34,11 @@ if ( $_SERVER['REQUEST_METHOD'] === 'POST' && ! empty( $_FILES['class_subjects_f
     if (($handle = fopen($file, 'r')) !== false) {
         $raw_content = file_get_contents($file);
         
+        if (substr($raw_content, 0, 3) === "\xEF\xBB\xBF") {
+            $raw_content = substr($raw_content, 3);
+            file_put_contents($file, $raw_content); // Save BOM-free content back to file
+        }
+
         // Detect file encoding
         $encoding = mb_detect_encoding($raw_content, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true) ?: 'ISO-8859-1';
         
@@ -79,29 +84,87 @@ function import_class_subjects( $new_class_subjects ) {
     $class_subjects = intranet_fafar_api_get_submissions_by_object_name( 'class_subject' );
     if( isset( $class_subjects['error_msg'] ) ) $class_subjects = array();
 
-    $error_count = 0;
+    $error_count   = 0;
     $success_count = 0;
-    $total_count = count( $new_class_subjects );
+    $total_count   = count( $new_class_subjects );
 
     foreach( $new_class_subjects as $item ) {
 
+        if(
+            ! isset( $item['Código'] ) || 
+            ! isset( $item['Curso'] ) || 
+            ! isset( $item['Turma'] )
+        ){
+            $error_count++;
+            continue;
+        }
+
+        /* 
+         * Aplica o filtro de código de disciplina se o 
+         * curso informado não for da Pós.
+         * Filtro: 
+         * Verifica se tem código e se ele tem 
+         * 'ACT', 'ALM', 'FAF', 'FAS', 'PFA' ou 'NUT' 
+         */
+        if( 
+            ! str_contains( $item['Curso'], 'PPG' ) && 
+            preg_match( '/ACT|ALM|FAF|FAS|PFA|NUT/', $item['Código'] ) !== 1
+          ) {
+            $error_count++;
+            continue;
+        }
+
+        // Decidimos que é melhor errar com uma optativa que com uma obrigatória
+        $nature_of_subject = 'Obrigatória';
+        if( 
+            intranet_fafar_utils_escape_and_clean_to_compare( $item['Natureza'] ) === 'optativa'
+          ) $nature_of_subject = 'Optativa';
+        
+        /*
+         * Essa condição maluca se dá pelo fato do relatório 
+         * do SIGA - conseguido pelo colegiado -, trazer essa informação
+         * como 'Téo.' ou 'Prá.'. E para não forçar a todos que usem essa 
+         * abreviação, então se faz necessário abracar todas as possibidades 
+         */
+        $type = '';
+        if( 
+            str_contains( 
+                intranet_fafar_utils_escape_and_clean_to_compare( $item['Tipo'] ), 
+                intranet_fafar_utils_escape_and_clean_to_compare( 'teo' ) 
+            ) 
+        ) $type = 'Teórica';
+        else if(
+            str_contains( 
+                intranet_fafar_utils_escape_and_clean_to_compare( $item['Tipo'] ), 
+                intranet_fafar_utils_escape_and_clean_to_compare( 'pra' ) 
+            )
+        ) $type = 'Prática';
+        else if(
+            str_contains( 
+                intranet_fafar_utils_escape_and_clean_to_compare( $item['Tipo'] ), 
+                intranet_fafar_utils_escape_and_clean_to_compare( 'amb' ) 
+            )
+        ) $type = 'Ambas';
+
+
         $new_class_subject = array(
-            'code' => $item['Atividade acadêmica - Código'],
-            'type' => array( ( 
-                $item['Atividade acadêmica - Código'] === 'Teó.' ? 'Teórica' : 'Prática'
-            ) ),
-            'group' => $item['Id.'],
-            'level' => '',
-            'course' => array( $item['Cursos demandantes'] ),
-            'adjustment' => '' ,
-            'professors' => $item['Professores (nome, nº de inscrição, encargo)'],
-            'course_load' => $item['Atividade acadêmica - CH'] ,
-            'departament' => array( $item['Oft.'] ),
-            'name_of_subject' => $item['Atividade acadêmica - Nome'],
-            'nature_of_subject' => array( 'Obrigatória' ),
-            'credits_of_subject' => ( ( (float) $item['Atividade acadêmica - CH'] ) / 15 ),
-            'number_vacancies_offered' => $item['Número de vagas - Disp.'],
-            'version_of_curriculum_matrix' => '' 
+            'code'                         => intranet_fafar_utils_escape_and_clean( $item['Código'] ),
+            'name_of_subject'              => intranet_fafar_utils_escape_and_clean( $item['Nome'] ),
+            'group'                        => intranet_fafar_utils_escape_and_clean( $item['Turma'] ),
+            'nature_of_subject'            => array( $nature_of_subject ),
+            'number_vacancies_offered'     => intranet_fafar_utils_escape_and_clean( $item['Vagas'] ),
+            'desired_time'                 => intranet_fafar_utils_escape_and_clean( $item['Horário'] ),
+            'desired_start_date'           => intranet_fafar_utils_escape_and_clean( $item['Início'] ),
+            'desired_end_date'             => intranet_fafar_utils_escape_and_clean( $item['Fim'] ),
+            'course_load'                  => intranet_fafar_utils_escape_and_clean( $item['Carga Horária'] ),
+            'credits_of_subject'           => ( ( (float) $item['Carga Horária'] ) / 15 ),
+            'course'                       => array( intranet_fafar_utils_escape_and_clean( $item['Curso'] ) ),
+            'level'                        => array( intranet_fafar_utils_escape_and_clean( $item['Nível'] ) ),
+            'departament'                  => array( intranet_fafar_utils_escape_and_clean( $item['Departamento'] ) ),
+            'type'                         => array( intranet_fafar_utils_escape_and_clean( $type ) ),
+            'adjustment'                   => intranet_fafar_utils_escape_and_clean( $item['Vagas'] ),
+            'professors'                   => intranet_fafar_utils_escape_and_clean( $item['Professores'] ),
+            'version_of_curriculum_matrix' => intranet_fafar_utils_escape_and_clean( $item['Matrizes Currículares'] ),
         );
 
         $has_class_subject = false;
@@ -126,64 +189,55 @@ function import_class_subjects( $new_class_subjects ) {
          ) );
 
          if( isset( $result['error_msg'] ) ) {
-
             print_r( $result['error_msg'] );
-
             $error_count++;
-
          }
 
     }
 
-    $success_count = $total_count - $error_count;
+    $success_count = $total_count - $duplicates_count - $error_count;
 
 }
 
-function is_the_same( $class_subject_a, $class_subject_b ){
+function is_the_same( $class_subject_a, $class_subject_b ) {
 
     /*
      * Se já não existe por CÓDIGO, NOME e TURMA 
      * Obs.: No caso do NOME, aplicar low case, retirar acentos e espaços
      */
-
-    // Códigos
-    $code_a = intranet_fafar_utils_remove_accents( $class_subject_a['code'] );
-    $code_a = strtolower( $code_a );
-    $code_a = str_replace( ' ', '', $code_a );
-
-    $code_b = intranet_fafar_utils_remove_accents( $class_subject_b['code'] );
-    $code_b = strtolower( $code_b );
-    $code_b = str_replace( ' ', '', $code_b );
-
-    // Nomes
-    $name_a = intranet_fafar_utils_remove_accents( $class_subject_a['name_of_subject'] );
-    $name_a = strtolower( $name_a );
-    $name_a = str_replace( ' ', '', $name_a );
-
-    $name_b = intranet_fafar_utils_remove_accents( $class_subject_b['name_of_subject'] );
-    $name_b = strtolower( $name_b );
-    $name_b = str_replace( ' ', '', $name_b );
-
-    // Turmas
-    $group_a = intranet_fafar_utils_remove_accents( $class_subject_a['group'] );
-    $group_a = strtolower( $group_a );
-    $group_a = str_replace( ' ', '', $group_a );
-
-    $group_b = intranet_fafar_utils_remove_accents( $class_subject_b['group'] );
-    $group_b = strtolower( $group_b );
-    $group_b = str_replace( ' ', '', $group_b );
+    if( 
+        ! isset( $class_subject_a['code'] ) || 
+        ! isset( $class_subject_a['name_of_subject'] ) || 
+        ! isset( $class_subject_a['group'] )
+      ) return false;
 
     if( 
-        $code_a === $code_b && 
-        $name_a === $name_b && 
-        $group_a === $group_b  
-      ) return true;
+        ! isset( $class_subject_a['code'] ) || 
+        ! isset( $class_subject_a['name_of_subject'] ) || 
+        ! isset( $class_subject_a['group'] )
+      ) return false;
 
+    // Códigos
+    $code_a = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_a['code'] );
+    $code_b = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_b['code'] );
+
+    // Nomes
+    $name_a = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_a['name_of_subject'] );
+    $name_b = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_b['name_of_subject'] );
+
+    // Turmas
+    $group_a = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_a['group'] );
+    $group_b = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_b['group'] );
+
+    if( 
+        intranet_fafar_utils_escape_and_clean_to_compare( $code_a ) === intranet_fafar_utils_escape_and_clean_to_compare( $code_b ) && 
+        intranet_fafar_utils_escape_and_clean_to_compare( $name_a ) === intranet_fafar_utils_escape_and_clean_to_compare( $name_b ) && 
+        intranet_fafar_utils_escape_and_clean_to_compare( $group_a ) === intranet_fafar_utils_escape_and_clean_to_compare( $group_b )  
+      ) return true;
 
     return false;
 
 }
-
 
 get_header(); ?>
 
@@ -232,7 +286,7 @@ get_header(); ?>
             Importar
         </button>
 
-        <h5><?= ( $success_count ?? '0' ) . '/' . ( $total_count ?? '0' ) ?> itens importados.  Erros: <?= ( $error_count ?? '0' ) ?> itens</h5>
+        <h5><?= ( $success_count ?? '0' ) . '/' . ( $total_count ?? '0' ) ?> itens importados. Duplicados: <?= ( $duplicates_count ?? '0' )?> itens. Erros: <?= ( $error_count ?? '0' ) ?> itens</h5>
         <table class="table">
             <thead>
                 <tr>

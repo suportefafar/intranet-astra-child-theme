@@ -1,10 +1,12 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
-/**
- * CHARTS RENDER
+/*
+ * Adiciona evento de clique para exclusão
  */
+document.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest(".btn-delete-submission");
+  if (deleteButton) confirmDelete(deleteButton.dataset.id);
+});
 
-/**
+/*
  * TABLE RENDER
  */
 const ptBR = {
@@ -16,12 +18,8 @@ const ptBR = {
   pagination: {
     previous: "Anterior",
     next: "Próxima",
-    navigate: function (e, r) {
-      return "Página " + e + " de " + r;
-    },
-    page: function (e) {
-      return "Página " + e;
-    },
+    navigate: (e, r) => `Página ${e} de ${r}`,
+    page: (e) => `Página ${e}`,
     showing: "Mostrando",
     of: "de",
     to: "até",
@@ -40,14 +38,11 @@ const grid = new gridjs.Grid({
     "CH",
     "Créditos",
     "Curso",
-    {
-      name: "Ações",
-      formatter: actionColFormatter,
-    },
+    { name: "Ações", formatter: actionColFormatter },
   ],
   data: fetchDataHandler,
   pagination: {
-    limit: 10,
+    limit: 25,
     summary: true,
   },
   search: true,
@@ -57,68 +52,59 @@ const grid = new gridjs.Grid({
 }).render(document.getElementById("table-wrapper"));
 
 async function fetchDataHandler() {
-  let response;
-
   try {
-    response = await axios.get(
+    const response = await axios.get(
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/class_subject"
     );
+
+    const submissions = JSON.parse(response.data);
+
+    console.log(submissions);
+
+    return submissions.map(({ id, data }) => {
+      const {
+        code = "N/A",
+        name_of_subject = "N/A",
+        group = "N/A",
+        course_load = 0,
+        credits_of_subject = 0,
+        course = [],
+      } = data;
+
+      const prevent_write = data.prevent_write ? "1" : "0";
+      const prevent_exec = data.prevent_exec ? "1" : "0";
+      const permissions = `${prevent_write}${prevent_exec}`;
+
+      return [
+        code,
+        name_of_subject,
+        group,
+        course_load,
+        credits_of_subject,
+        course.join(", "),
+        JSON.stringify({ id, permissions }),
+      ];
+    });
   } catch (error) {
-    console.log(error.response.data.message);
+    console.error(
+      "Erro ao buscar dados:",
+      error.response?.data?.message || error
+    );
     return [];
   }
-
-  const submissions = JSON.parse(response.data);
-
-  console.log(submissions);
-
-  let table_arr = [];
-  for (const submission of submissions) {
-    const submission_data = submission["data"];
-
-    const prevent_write = submission["prevent_write"] ? "1" : "0";
-    const prevent_exec = submission["prevent_exec"] ? "1" : "0";
-    const permissions = prevent_write + prevent_exec;
-
-    const action_column_data = JSON.stringify({
-      id: submission["id"],
-      permissions,
-    });
-
-    table_arr.push([
-      submission_data["code"],
-      submission_data["name_of_subject"],
-      submission_data["group"],
-      submission_data["course_load"],
-      submission_data["credits_of_subject"],
-      submission_data["course"].join(", "),
-      action_column_data,
-    ]);
-  }
-
-  return table_arr;
 }
 
 async function renderGridJS(data = []) {
-  if (!data) data = [];
-
   if (data.length === 0) data = await fetchDataHandler();
 
-  grid
-    .updateConfig({
-      data,
-    })
-    .forceRender();
+  grid.updateConfig({ data }).forceRender();
 }
 
-function actionColFormatter(current, row) {
+function actionColFormatter(current) {
   const { id, permissions } = JSON.parse(current);
+  const prevent_write = parseInt(permissions[0]);
 
-  const prevent_write = parseInt(permissions.split("")[0]);
-
-  console.log(current, row);
-
-  const html_content = `
+  return gridjs.html(`
     <div class="d-flex gap-2">
       <a class="btn btn-outline-secondary" href="/visualizar-objeto/?id=${id}" title="Detalhes">
         <i class="bi bi-info-lg"></i>
@@ -127,32 +113,16 @@ function actionColFormatter(current, row) {
         prevent_write
           ? ""
           : `
-      <a class="btn btn-outline-secondary" href="/editar-disciplina/?id=${id}" title="Editar">
-        <i class="bi bi-pencil"></i>
-      </a>
-      <button class="btn btn-outline-danger btn-delete-submission" data-id="${id}" title="Excluir">
-        <i class="bi bi-trash"></i>
-      </button> `
+        <a class="btn btn-outline-secondary" href="/editar-disciplina/?id=${id}" title="Editar">
+          <i class="bi bi-pencil"></i>
+        </a>
+        <button class="btn btn-outline-danger btn-delete-submission" data-id="${id}" title="Excluir">
+          <i class="bi bi-trash"></i>
+        </button>`
       }
-    </div>`;
-
-  return html(html_content);
+    </div>
+  `);
 }
-
-/*
- * Adiciona um evento de clique à DOM,
- * e despara se o elemento que recebeu o clique tem
- * a classe 'btn-loan-equipament' ou é filho de um elemento
- * com essa classe
- */
-document.addEventListener("click", (event) => {
-  const deleteButton = event.target.closest(".btn-delete-submission");
-
-  if (deleteButton) {
-    const id = deleteButton.dataset.id;
-    confirmDelete(id);
-  }
-});
 
 function confirmDelete(id) {
   showConfirmModal(
@@ -166,29 +136,18 @@ function confirmDelete(id) {
 
 async function deleteSubmission(id) {
   hideConfirmModal();
-
   showAlert("Por favor, aguarde....", "warning");
 
   try {
-    const response = await axios.delete(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
+    await axios.delete(
+      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/${id}`
     );
-
-    console.log(response);
-
     showAlert("Excluído com sucesso!", "success", true, 3000);
-
     renderGridJS();
   } catch (error) {
-    let error_msg = "[1010]Unknow error on try catch";
-
-    if (error.response?.data?.message) {
-      console.log(error.response.data);
-      error_msg = error.response.data.message;
-    } else {
-      console.log(error);
-    }
-
+    const error_msg =
+      error.response?.data?.message || "[1010] Erro desconhecido";
+    console.error("Erro ao excluir:", error_msg);
     showAlert(error_msg, "danger");
   }
 }

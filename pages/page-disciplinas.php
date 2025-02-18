@@ -17,8 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Importanto script JS customizado
  * wp_enqueue_script( 'intranet-fafar-disciplinas-script', get_stylesheet_directory_uri() . '/assets/js/disciplinas.js', array( 'jquery' ), false, false );
  */
-wp_enqueue_script_module( 'intranet-fafar-disciplinas-script', get_stylesheet_directory_uri() . '/assets/js/disciplinas.js', array( 'jquery' ), false, false );
-
+// wp_enqueue_script_module( 'intranet-fafar-disciplinas-script', get_stylesheet_directory_uri() . '/assets/js/disciplinas.js', array( 'jquery' ), false, false );
+wp_enqueue_script( 'intranet-fafar-disciplinas-script', get_stylesheet_directory_uri() . '/assets/js/disciplinas.js', array(), false, true );
 
 get_header(); ?>
 
@@ -49,48 +49,6 @@ get_header(); ?>
                 Adicionar
             </a>
         </div>
-
-        <!-- CHARTS -->
-
-        <!--<div class="d-flex justify-content-around mb-4">
-            <div class="card" style="width: 18rem;">intranet_fafar_importar_json
-                <canvas id="myChart1"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Mês</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart2"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Ano</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart3"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Setor</h5>
-                </div>
-            </div>
-        </div>-->
-
-        <!-- TABS -->
-
-        <!--<ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#">Active</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-            </li>
-        </ul>-->
 
         <!-- TABLES -->
 
