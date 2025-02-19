@@ -39,6 +39,7 @@ const grid = new gridjs.Grid({
       formatter: (current) => current + "ª",
     },
     "Bloco",
+    "Capacidade",
     {
       name: "Tipo",
       formatter: typeColFormatter,
@@ -75,6 +76,7 @@ async function fetchDataHandler() {
         desc = "N/A",
         floor = 0,
         block = 0,
+        capacity = 0,
         object_sub_type = "N/A",
       } = data;
 
@@ -87,6 +89,7 @@ async function fetchDataHandler() {
         desc,
         floor,
         block,
+        parseInt(capacity),
         object_sub_type,
         JSON.stringify({ id, permissions }),
       ];
@@ -102,16 +105,18 @@ async function fetchDataHandler() {
 
 function typeColFormatter(current) {
   switch (current[0]) {
-    case "general":
-      return "Geral";
-    case "classroom":
-      return "Sala de aula";
-    case "professor_office":
-      return "Gabinete";
-    case "lab":
-      return "Laboratório";
     case "auditorium":
       return "Auditório";
+    case "classroom":
+      return "Sala de aula";
+    case "general":
+      return "Geral";
+    case "lab":
+      return "Laboratório";
+    case "multimedia_room":
+      return "Multimídia";
+    case "professor_office":
+      return "Gabinete";
     default:
       return "--";
   }

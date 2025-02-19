@@ -127,13 +127,13 @@ function intranet_fafar_utils_escape_and_clean( $value ) {
         return '';
     }    
 
+    $value = sanitize_text_field( wp_unslash( $value ?? '' ) );
+
     if( is_numeric( $value ) ) {
         $value = absint( $value ); 
     } else {
-        $value = strtoupper( $value );
+        $value = mb_strtoupper( $value, 'UTF-8' );
     }
-
-    $value = sanitize_text_field( wp_unslash( $value ?? '' ) );
 
     return $value;
 

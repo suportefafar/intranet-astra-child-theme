@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 
+echo intranet_fafar_utils_escape_and_clean('Teórica');
+
 /*
  * Importanto script JS customizado
  * wp_enqueue_script( 'intranet-fafar-salas-script', get_stylesheet_directory_uri() . '/assets/js/salas.js', array( 'jquery' ), false, false );
@@ -20,226 +22,115 @@ if ( ! defined( 'ABSPATH' ) ) {
 // wp_enqueue_script( 'intranet-fafar-salas-script', get_stylesheet_directory_uri() . '/assets/js/salas.js', array( 'jquery' ), false, false );
 
 function generate_reservations($class_subjects) {
-
-    if( isset( $class_subjects['error_msg'] ) ) {
-
+    if (isset($class_subjects['error_msg'])) {
         return 'Nenhuma reserva encontrada!';
-
     }
 
-    $vacancies = array();
-    $vacancies_average = 0;
+    // Filtra disciplinas com mais de 80 vagas, disciplinas práticas e estágio
+    $class_subjects = array_filter($class_subjects, function ($subject) {
+        return (
+            $subject['data']['number_vacancies_offered'] > 0 && 
+            $subject['data']['number_vacancies_offered'] < 80 &&  
+            isset( $subject['data']['desired_time'] ) &&
+            is_string( $subject['data']['desired_time'] ) &&  
+            ! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'estagio' ) &&  
+            ! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'monografia' ) &&  
+            ! str_contains( strtoupper( $subject['data']['group']), 'P' )
+        );
+    });
 
-    $durations = array();
-    $duration_average = 0;
-
-    foreach( $class_subjects as $class_subject ) {
-
-        if ( $class_subject['data']['number_vacancies_offered'] >= 80 )
-            continue;
-
-        foreach( getDurations( $class_subject['data']['desired_time'] ) as $duration ) {
-            $durations[] = $duration;
-        }
-
-        $vacancies[] = $class_subject['data']['number_vacancies_offered'];
-
+    if (empty($class_subjects)) {
+        return 'Não há disciplinas cadastradas para reservas.';
     }
+
+    echo '<br />Tentando reservar ' . count($class_subjects) . ' disciplinas.<br />';
+
+    $vacancies = array_column(array_column($class_subjects, 'data'), 'number_vacancies_offered');
+    $durations = array_merge(...array_map(fn($subject) => getDurations($subject['data']['desired_time']), $class_subjects));
 
     $vacancies_average = array_sum($vacancies) / count($vacancies);
     $duration_average = array_sum($durations) / count($durations);
+    
+    // $vacancies_stdev = standardDeviation($vacancies);
+    // $durations_stdev = standardDeviation($durations);
 
-    $vacancie_stdes = standardDeviation($vacancies);
-    $duration_stdes = standardDeviation($durations);
+    $groups = array_fill(1, 4, []);
 
-    $group_1 = array();
-    $group_2 = array();
-    $group_3 = array();
-    $group_4 = array();
-    $group_5 = array();
-    $group_6 = array();
-    $group_7 = array();
-    $group_8 = array();
-    $group_9 = array();
+    foreach ($class_subjects as $subject) {
+        $subject_duration = array_sum(getDurations($subject['data']['desired_time']));
+        $vacancies = $subject['data']['number_vacancies_offered'];
 
-    foreach ( $class_subjects as $class_subject ) {
-
-        $class_subject_duration = 0;
-        foreach( getDurations( $class_subject['data']['desired_time'] ) as $duration ) {
-            $class_subject_duration += $duration;
-        }
-        
-        if (
-            $class_subject['data']['number_vacancies_offered'] >= ( $vacancies_average + $vacancie_stdes ) && 
-            $class_subject_duration >= ( $duration_average + $duration_stdes )
-        ) $group_1[] = $class_subject;
-        else if(
-            $class_subject['data']['number_vacancies_offered'] >= ( $vacancies_average + $vacancie_stdes ) && 
-            $class_subject_duration >= ( $duration_average - $duration_stdes ) && 
-            $class_subject_duration < ( $duration_average + $duration_stdes )
-        ) $group_2[] = $class_subject;
-        else if(
-            $class_subject['data']['number_vacancies_offered'] >= ( $vacancies_average + $vacancie_stdes ) && 
-            $class_subject_duration < ( $duration_average - $duration_stdes )
-        ) $group_3[] = $class_subject;
-        else if (
-            $class_subject['data']['number_vacancies_offered'] >= ( $vacancies_average - $vacancie_stdes ) && 
-            $class_subject['data']['number_vacancies_offered'] < ( $vacancies_average + $vacancie_stdes ) && 
-            $class_subject_duration >= ( $duration_average + $duration_stdes )
-        ) $group_4[] = $class_subject;
-        else if(
-            $class_subject['data']['number_vacancies_offered'] >= ( $vacancies_average - $vacancie_stdes ) && 
-            $class_subject['data']['number_vacancies_offered'] < ( $vacancies_average + $vacancie_stdes ) && 
-            $class_subject_duration >= ( $duration_average - $duration_stdes ) && 
-            $class_subject_duration < ( $duration_average + $duration_stdes )
-        ) $group_5[] = $class_subject;
-        else if(
-            $class_subject['data']['number_vacancies_offered'] >= ( $vacancies_average - $vacancie_stdes ) && 
-            $class_subject['data']['number_vacancies_offered'] < ( $vacancies_average + $vacancie_stdes ) && 
-            $class_subject_duration < ( $duration_average - $duration_stdes )
-        ) $group_6[] = $class_subject;
-        else if (
-            $class_subject['data']['number_vacancies_offered'] < ( $vacancies_average - $vacancie_stdes ) && 
-            $class_subject_duration >= ( $duration_average + $duration_stdes )
-        ) $group_7[] = $class_subject;
-        else if(
-            $class_subject['data']['number_vacancies_offered'] < ( $vacancies_average - $vacancie_stdes ) && 
-            $class_subject_duration >= ( $duration_average - $duration_stdes ) && 
-            $class_subject_duration < ( $duration_average + $duration_stdes )
-        ) $group_8[] = $class_subject;
-        else if(
-            $class_subject['data']['number_vacancies_offered'] < ( $vacancies_average - $vacancie_stdes ) && 
-            $class_subject_duration < ( $duration_average - $duration_stdes )
-        ) $group_9[] = $class_subject;
-        
-
+        $group_index = (int)(($vacancies >= $vacancies_average) << 1 | ($subject_duration >= $duration_average)) + 1;
+        $groups[$group_index][] = $subject;
     }
-    
-    echo 'Vagas: ' . $vacancies_average . ' (D.V.:' . standardDeviation($vacancies) . ')<br />
-    Duração: ' . $duration_average . ' (D.V.:' . standardDeviation($durations) . ')<br/ >
-    Grupo 1: ' . count($group_1) . '<br />
-    Grupo 2: ' . count($group_2) . '<br />
-    Grupo 3: ' . count($group_3) . '<br />
-    Grupo 4: ' . count($group_4) . '<br />
-    Grupo 5: ' . count($group_5) . '<br />
-    Grupo 6: ' . count($group_6) . '<br />
-    Grupo 7: ' . count($group_7) . '<br />
-    Grupo 8: ' . count($group_8) . '<br />
-    Grupo 9: ' . count($group_9) . '<br />
-    Total: ' . count($class_subjects);
 
-    $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array( 'orderby_json' => 'capacity', 'order' => 'ASC' ) );
+    foreach ($groups as $index => $group) {
+        echo "Grupo $index: " . count($group) . '<br />';
+    }
 
-    $classrooms = array_filter( $places, function ( $place ) { 
-        return ( isset( $place['data']['object_sub_type'][0] ) && $place['data']['object_sub_type'][0] === 'classroom' ); 
-    } );
+    echo '<br />';
 
-    $count_reserve_fails = 0;
-    $reservation_to_make_counter = 0;
-    $class_subject_with_error = array();
-    
-    $all_groups = array_merge(
-        $group_1,
-        $group_2,
-        $group_3,
-        $group_4,
-        $group_5,
-        $group_6,
-        $group_7,
-        $group_8,
-        $group_9,
+    $classrooms = array_filter(
+        intranet_fafar_api_get_submissions_by_object_name('place', ['orderby_json' => 'capacity', 'order' => 'ASC']),
+        fn($place) => $place['data']['object_sub_type'][0] === 'classroom'
     );
 
-    // print_r( $classrooms );
-    // echo '<br/>';
-    // echo '<br/>';
-    // print_r( $all_groups );
+    $failed_reservations = [];
+    $attempts = 0;
+    $failures = 0;
 
-    // Reserva de grupos
-    foreach ( $all_groups as $class_subject ) {
+    foreach (array_merge(...$groups) as $subject) {
+        $possible_rooms = array_filter($classrooms, fn($room) => $room['data']['capacity'] >= $subject['data']['number_vacancies_offered']);
+        $schedules = parse_schedule( $subject['data']['desired_time']);
 
-        $possible_classrooms = array_filter( $classrooms, 
-            function ( $classroom ) use ( $class_subject ) {
-                return ( 
-                    $classroom['data']['capacity'] >= $class_subject['data']['number_vacancies_offered'] 
-                );
-            } 
-        );
+        if(count($schedules) === 0) echo '<br />SEM SCHEDULES: ' . $subject['id'] . ' ' . $subject['data']['desired_time'] . '<br />';
 
-        $schedules = parse_schedule( $class_subject['data']['desired_time'] );
+        foreach ($schedules as $schedule) {
+            $attempts++;
+            $reserved = false;
 
-        // print_r( $class_subject );
-        // echo "<br/>";
-        // print_r( $schedules );
-        // echo "<br/>";
-        // echo "<br/>";
-
-        foreach( $schedules as $schedule ) {
-
-            $reservation_to_make_counter++;
-
-            $made_reservation = false;
-
-            foreach ( $possible_classrooms as $classroom ) {
-
-                // Tenho uma sala($classroom) para a $class_subject da vez
-                $reservation['object_name'] = 'reservation';
-
-                $reservation['data'] = json_encode( array(
-                    'discipline' => array( $class_subject['id'] ),
-                    'place' => array( $classroom['id'] ),
-                    'frequency' => array( 'weekly' ),
-                    'weekdays' => $schedule['weekday'],
-                    'start_time' => $schedule['start'],
-                    'end_time' => $schedule['end'],
-                    'date' => ( isset($class_subject['desired_start_date']) && $class_subject['desired_start_date'] ? convert_date( $class_subject['desired_start_date'] ) : '2025-03-03' ),
-                    'end_date' => ( isset($class_subject['desired_end_date']) && $class_subject['desired_end_date'] ? convert_date( $class_subject['desired_end_date'] ) : '2025-07-03' ),
-                ) );
-
-                $new_reservation = intranet_fafar_api_create_or_update_reservation( $reservation );
-
-                if( isset( $new_reservation['error_msg'] ) ) {
-                    // echo $new_reservation['error_msg'];
-                    continue;
-                } 
-                    
-                intranet_fafar_api_create( $new_reservation );
-
-                $made_reservation = true;
+            foreach ($possible_rooms as $room) {
+                $reservation = [
+                    'object_name' => 'reservation',
+                    'data' => json_encode([
+                        'discipline' => [$subject['id']],
+                        'place' => [$room['id']],
+                        'frequency' => ['weekly'],
+                        'weekdays' => $schedule['weekday'],
+                        'start_time' => $schedule['start'],
+                        'end_time' => $schedule['end'],
+                        'date' => convert_date($subject['data']['desired_start_date'] ?? '2025-03-03'),
+                        'end_date' => convert_date($subject['data']['desired_end_date'] ?? '2025-07-03'),
+                    ])
+                ];
                 
-                break;
-
+                $new_reservation = intranet_fafar_api_create_or_update_reservation($reservation);
+                
+                if (!isset($new_reservation['error_msg'])) {
+                    intranet_fafar_api_create($new_reservation);
+                    $reserved = true;
+                    break;
+                }
             }
 
-            if( ! $made_reservation ) {
-                $count_reserve_fails++;
-                $class_subject_with_error[] = array( 'class_subject' => $class_subject['data']['code'], 'schedule' => $schedule, 'nature_of_subject' => $class_subject['data']['nature_of_subject'] );
+            if (!$reserved) {
+                $failures++;
+                $failed_reservations[] = ['class_subject' => $subject['data']['code'], 'schedule' => $schedule, 'nature_of_subject' => $subject['data']['nature_of_subject']];
             }
-
         }
     }
 
-    echo '<br />';
-    echo '<br />';
-    echo $reservation_to_make_counter . ' tentativas';
-    echo '<br />';
-    echo $count_reserve_fails . ' falhas';
-    echo '<br />';
-    echo '<br />Disciplinas com falhas:';
-    echo '<pre>';
-    print_r($class_subject_with_error);
-    echo '</pre>';
-    echo '<br />';
-    echo '<br />';
-    echo ( $reservation_to_make_counter - $count_reserve_fails ) . ' com sucesso';
-    echo '<br />';
+    echo "$attempts tentativas<br />$failures falhas<br /><br />Disciplinas com falhas:<br /><pre>";
+    print_r($failed_reservations);
+    echo "</pre><br />" . ($attempts - $failures) . " com sucesso<br />";
+    
     return '';
-
 }
 
-function parse_schedule( $input) {
+
+function parse_schedule($input) {
     $result = [];
-    preg_match_all('/(\d{2}:\d{2})\s+(\d{2}:\d{2})\s+\((\w{3})\)/', $input, $matches, PREG_SET_ORDER);
+    preg_match_all('/(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})\s+\((\w{3})\)/', $input, $matches, PREG_SET_ORDER);
     
     // Mapeamento dos dias da semana para números (Seg = 1, Ter = 2, ..., Dom = 7)
     $days_map = [
@@ -256,13 +147,14 @@ function parse_schedule( $input) {
             $result[] = [
                 'start' => $start,
                 'end' => $end,
-                'weekday' => [ (int) $weekday ]
+                'weekday' => [(int) $weekday]
             ];
         }
     }
 
     return $result;
 }
+
 
 function convert_date($date) {
     $dt = DateTime::createFromFormat('d/m/Y', $date);
