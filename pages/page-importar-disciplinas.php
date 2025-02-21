@@ -135,20 +135,20 @@ function import_class_subjects( $new_class_subjects ) {
         $type = ( isset( $item['Tipo'] ) ? $item['Tipo'] : '' );
         if( 
             str_contains( 
-                $type, 
-                intranet_fafar_utils_escape_and_clean_to_compare( 'teo' ) 
+                intranet_fafar_utils_escape_and_clean_to_compare( $type ), 
+                'teo' 
             ) 
         ) $type = 'Teórica';
         else if(
             str_contains( 
-                $type, 
-                intranet_fafar_utils_escape_and_clean_to_compare( 'pra' ) 
+                intranet_fafar_utils_escape_and_clean_to_compare( $type ), 
+                'pra' 
             )
         ) $type = 'Prática';
         else if(
             str_contains( 
-                $type, 
-                intranet_fafar_utils_escape_and_clean_to_compare( 'amb' ) 
+                intranet_fafar_utils_escape_and_clean_to_compare( $type ), 
+                'amb' 
             )
         ) $type = 'Ambas';
 
@@ -176,9 +176,9 @@ function import_class_subjects( $new_class_subjects ) {
             'course_load'                  => intranet_fafar_utils_escape_and_clean( $carga_horaria ),
             'credits_of_subject'           => $credits,
             'course'                       => array( intranet_fafar_utils_escape_and_clean( $curso ) ),
-            'level'                        => array( intranet_fafar_utils_escape_and_clean( $nivel ) ),
+            'level'                        => array( intranet_fafar_utils_escape_and_clean( $nivel, 'capitalized' ) ),
             'departament'                  => array( intranet_fafar_utils_escape_and_clean( $departamento ) ),
-            'type'                         => array( intranet_fafar_utils_escape_and_clean( $type ) ),
+            'type'                         => array( intranet_fafar_utils_escape_and_clean( $type, 'capitalized' ) ),
             'adjustment'                   => intranet_fafar_utils_escape_and_clean( $ajuste ),
             'professors'                   => intranet_fafar_utils_escape_and_clean( $professores ),
             'version_of_curriculum_matrix' => intranet_fafar_utils_escape_and_clean( $matrizes_curriculares ),
@@ -201,7 +201,7 @@ function import_class_subjects( $new_class_subjects ) {
             'object_name' => 'class_subject',
             'owner'       => '',
             'group_owner' => '',
-            'permissions' => '770',
+            'permissions' => '777',
             'data'        => $new_class_subject, 
          ) );
 
@@ -298,10 +298,10 @@ get_header(); ?>
 
         <hr class="mx-1" />
         
-        <button class="mb-3 btn btn-success" id="btn_import" <?= $allow_to_import ? '' : 'disabled' ?>>
+        <!-- <button class="mb-3 btn btn-success" id="btn_import" <?= $allow_to_import ? '' : 'disabled' ?>>
             <i class="bi bi-file-earmark-arrow-up"></i>
             Importar
-        </button>
+        </button> -->
 
         <h5><?= ( $success_count ?? '0' ) . '/' . ( $total_count ?? '0' ) ?> itens importados. | Duplicados: <?= ( $duplicates_count ?? '0' ) ?> itens. | Disciplinas Não-FAFAR: <?= ( $not_a_fafar_subject ?? '0' ) ?> | Erros: <?= ( $error_count ?? '0' ) ?> itens</h5>
         <table class="table">

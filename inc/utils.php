@@ -119,7 +119,11 @@ function intranet_fafar_utils_remove_accents($str) {
     return strtr($str, $unwanted);
 }
 
-function intranet_fafar_utils_escape_and_clean( $value ) { 
+/*
+ * @params
+ * $pattern = upper (default) | lower | capitalized
+ */
+function intranet_fafar_utils_escape_and_clean( $value, $pattern = 'upper' ) { 
 
     if( ! isset( $value ) ) return '';
 
@@ -132,7 +136,14 @@ function intranet_fafar_utils_escape_and_clean( $value ) {
     if( is_numeric( $value ) ) {
         $value = absint( $value ); 
     } else {
-        $value = mb_strtoupper( $value, 'UTF-8' );
+        if ( $pattern === 'lower' ) {
+            $value = mb_strtolower( $value, 'UTF-8' );
+        } else if ( $pattern === 'capitalized' ) {
+            $value = mb_strtolower( $value, 'UTF-8' );
+            $value = ucfirst( $value );
+        } else {
+            $value = mb_strtoupper( $value, 'UTF-8' );
+        }
     }
 
     return $value;

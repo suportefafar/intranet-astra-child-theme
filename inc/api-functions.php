@@ -34,6 +34,13 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_create_auditorium_reservation_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/submission/', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::CREATABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_create_submission_handler',
+    ) );
+
     // READABLE
 
     register_rest_route( 'intranet/v1', '/submissions/service_tickets/by_user', array(
@@ -855,6 +862,35 @@ function intranet_fafar_api_get_access_building_request( $by_owner = false ) {
 
 }
 
+
+function intranet_fafar_api_create_submission_handler( $request ) {
+
+    $request_data = $request->get_json_params();
+    
+    if( 
+        ! isset( $request_data['object_name'] ) || 
+        ! isset( $request_data['data'] )
+      ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( 'Faltando atributo(s): object_name e/ou data', 'intranet-fafar-api' ), 400 );
+
+    }
+
+    $submission = array( 
+        'object_name' => $request_data['object_name'], 
+        'data'        => $request_data['data'],
+    );
+
+    $submission = intranet_fafar_api_create( $submission );
+
+    if ( isset( $submission['error_msg'] ) ) {
+        return new WP_Error( 'rest_api_sad', esc_html__( 'Erro ao criar:' . $submission['error_msg'], 'intranet-fafar-api' ), 400 );
+    }
+
+    return rest_ensure_response( json_encode( $submission ) );
+
+}
+
 /*
 Array
 (
@@ -1268,7 +1304,14 @@ function intranet_fafar_api_create_or_update_reservation( $form_data ) {
         // Gerando a prop 'until' só com números
         $date = new DateTime( $new_form_data['data']['end_date'] );
 
-        $until = $date->format( 'Ymd' ) . 'T000000';
+        /*
+         * '+1 day' para cobrir o dia de encerramento, todo.
+         * Se informado '24102025T000000' cobre até o primeiro segundo de 24/10/2025
+         * O que eu quero é cobrir 24/10/2025 todo, 
+         * então: '25102025T000000'
+         */ 
+        $date->modify('+1 day');
+        $until = $date->format('Ymd') . 'T000000';
 
         /*
          * Gerando RRULE string com a: 
@@ -2124,9 +2167,26 @@ function intranet_fafar_api_create( $submission, $check_ermissions = true ) {
     $unique_hash = time().bin2hex( $bytes ); 
 
     $submission['id']      = $unique_hash;
-    $submission['form_id'] = $submission['form_id'] ?? '-2';
-    $submission['data']    = intranet_fafar_utils_is_json( $submission['data'] ) ? 
-                                $submission['data'] : json_encode( $submission['data'] );
+
+    if (
+        ! isset( $submission['form_id'] ) || 
+        ! $submission['form_id'] || 
+        ! is_numeric( $submission['form_id'] )
+    ) {
+        $submission['form_id'] = '-2';
+    }
+
+    if (
+        ! isset( $submission['owner'] ) || 
+        ! $submission['owner'] || 
+        ! is_numeric( $submission['owner'] )
+    ) {
+        $submission['owner'] = get_current_user_id();
+    }
+
+    if ( ! intranet_fafar_utils_is_json( $submission['data'] ) ) {
+        $submission['data'] = json_encode( $submission['data'] );
+    }
 
     $wpdb->insert( $table_name, $submission );
 

@@ -447,7 +447,10 @@ function intranet_fafar_get_classrooms_as_select_options() {
 
     foreach ( $places as $place ) {
 
-        if ( $place['data']['object_sub_type'] === 'classroom' )
+        if (
+            $place['data']['object_sub_type'][0] === 'classroom' || 
+            $place['data']['object_sub_type'][0] === 'multimedia_room'
+        )
             $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
 
     }

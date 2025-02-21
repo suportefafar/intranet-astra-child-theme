@@ -263,11 +263,12 @@ async function viewEvent(info) {
     end
   ).toLocaleString();
 
-  document.querySelector("#modal_event_owner").innerHTML =
-    event.owner.data.display_name;
+  document.querySelector("#modal_event_owner").innerHTML = event.owner?.data
+    ? event.owner.data.display_name
+    : "--";
 
   document.querySelector("#modal_event_applicant").innerHTML = event.data
-    .applicant.data
+    .applicant?.data
     ? event.data.applicant.data.display_name
     : "--";
 

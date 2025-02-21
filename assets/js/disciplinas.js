@@ -109,6 +109,9 @@ function actionColFormatter(current) {
       <a class="btn btn-outline-secondary" href="/visualizar-objeto/?id=${id}" title="Detalhes">
         <i class="bi bi-info-lg"></i>
       </a>
+      <a class="btn btn-outline-info" href="/reservas-por-disciplina/?id=${id}" title="Reservas dessa disciplina">
+        <i class="bi bi-calendar-event"></i>
+      </a>
       ${
         prevent_write
           ? ""

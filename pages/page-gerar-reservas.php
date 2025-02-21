@@ -13,8 +13,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 
-echo intranet_fafar_utils_escape_and_clean('Teórica');
-
 /*
  * Importanto script JS customizado
  * wp_enqueue_script( 'intranet-fafar-salas-script', get_stylesheet_directory_uri() . '/assets/js/salas.js', array( 'jquery' ), false, false );
@@ -89,20 +87,39 @@ function generate_reservations($class_subjects) {
             $attempts++;
             $reserved = false;
 
+            if ( has_reservation_for_another_group() ) continue;
+
             foreach ($possible_rooms as $room) {
+
+                $date = '10/03/2025';
+                if(
+                    isset($subject['data']['desired_start_date'] ) && $subject['data']['desired_start_date']
+                ) $date = $subject['data']['desired_start_date'];
+
+                $end_date = '12/07/2025';
+                if(
+                    isset($subject['data']['desired_end_date'] ) && $subject['data']['desired_end_date']
+                ) $end_date = $subject['data']['desired_end_date'];
+
                 $reservation = [
                     'object_name' => 'reservation',
+                    'permissions' => '777',
                     'data' => json_encode([
                         'discipline' => [$subject['id']],
-                        'place' => [$room['id']],
-                        'frequency' => ['weekly'],
-                        'weekdays' => $schedule['weekday'],
+                        'place'      => [$room['id']],
+                        'frequency'  => ['weekly'],
+                        'weekdays'   => $schedule['weekday'],
                         'start_time' => $schedule['start'],
-                        'end_time' => $schedule['end'],
-                        'date' => convert_date($subject['data']['desired_start_date'] ?? '2025-03-03'),
-                        'end_date' => convert_date($subject['data']['desired_end_date'] ?? '2025-07-03'),
+                        'end_time'   => $schedule['end'],
+                        'date'       => convert_date( $date ),
+                        'end_date'   => convert_date( $end_date ),
+                        'applicant'  => get_current_user_id()
                     ])
                 ];
+
+                // echo '<br />';
+                // print_r($reservation);
+                // echo '<br />';
                 
                 $new_reservation = intranet_fafar_api_create_or_update_reservation($reservation);
                 
@@ -127,6 +144,10 @@ function generate_reservations($class_subjects) {
     return '';
 }
 
+
+function has_reservation_for_another_group() {
+    return false;
+}
 
 function parse_schedule($input) {
     $result = [];
