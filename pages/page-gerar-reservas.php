@@ -87,7 +87,16 @@ function generate_reservations($class_subjects) {
             $attempts++;
             $reserved = false;
 
-            if ( has_reservation_for_another_group() ) continue;
+            $reservation_obj = array(
+                'class_subject' => [$subject['id']],
+                'start_time'    => $schedule['start'],
+                'end_time'      => $schedule['end'],
+                'weekdays'      => $schedule['weekday'],
+            );
+
+            if (
+                has_reservation_for_another_group( $reservation_obj )
+            ) continue;
 
             foreach ($possible_rooms as $room) {
 
@@ -105,15 +114,15 @@ function generate_reservations($class_subjects) {
                     'object_name' => 'reservation',
                     'permissions' => '777',
                     'data' => json_encode([
-                        'discipline' => [$subject['id']],
-                        'place'      => [$room['id']],
-                        'frequency'  => ['weekly'],
-                        'weekdays'   => $schedule['weekday'],
-                        'start_time' => $schedule['start'],
-                        'end_time'   => $schedule['end'],
-                        'date'       => convert_date( $date ),
-                        'end_date'   => convert_date( $end_date ),
-                        'applicant'  => get_current_user_id()
+                        'class_subject' => [$subject['id']],
+                        'place'         => [$room['id']],
+                        'frequency'     => ['weekly'],
+                        'weekdays'      => $schedule['weekday'],
+                        'start_time'    => $schedule['start'],
+                        'end_time'      => $schedule['end'],
+                        'date'          => convert_date( $date ),
+                        'end_date'      => convert_date( $end_date ),
+                        'applicant'     => get_current_user_id()
                     ])
                 ];
 
@@ -144,9 +153,44 @@ function generate_reservations($class_subjects) {
     return '';
 }
 
+/*
+ * Verifica se uma mesma disciplina já foi 
+ * reservada no mesmo horário e dia da semana, 
+ * mas de turma diferente, apenas. Se sim, 
+ * não há necessidade de outra reserva.
+ */
+function has_reservation_for_another_group( $new_reservation ) {
+    $reservations = intranet_fafar_api_get_submissions_by_object_name( 'reservation' );
 
-function has_reservation_for_another_group() {
-    return false;
+    if(
+        count( $reservations ) === 0 || 
+        isset( $reservations['error_msg'] )
+    ) return false;
+
+    $duplicate = array_filter( $reservations, function ( $reservation ) use ( $new_reservation ) {
+
+        if(
+            ! isset( $reservation['data']['class_subject'] ) || 
+            ! $reservation['data']['class_subject']
+        ) return false;
+
+        $class_subject_a = intranet_fafar_api_get_submission_by_id( $reservation['data']['class_subject'][0] );
+        $class_subject_b = intranet_fafar_api_get_submission_by_id( $new_reservation['class_subject'][0] );
+
+        if(
+            isset( $class_subject_a['error_msg'] ) || 
+            isset( $class_subject_b['error_msg'] )
+        ) return false;
+
+        return (
+            $class_subject_a['data']['code'] === $class_subject_b['data']['code'] && 
+            $reservation['data']['start_time'] === $new_reservation['start_time'] && 
+            $reservation['data']['end_time'] === $new_reservation['end_time'] && 
+            $reservation['data']['weekdays'] === $new_reservation['weekdays']
+        );
+    } );
+
+    return ( count( $duplicate ) > 0 );
 }
 
 function parse_schedule($input) {
@@ -155,7 +199,7 @@ function parse_schedule($input) {
     
     // Mapeamento dos dias da semana para números (Seg = 1, Ter = 2, ..., Dom = 7)
     $days_map = [
-        'SEG' => 1, 'TER' => 2, 'QUA' => 3, 
+        'SEG' => 1, 'TER' => 2, 'QUA' => 3,
         'QUI' => 4, 'SEX' => 5, 'SAB' => 6, 'DOM' => 7
     ];
 

@@ -321,13 +321,15 @@ function intranet_fafar_api_bff_reservations_prepare( $reservations, $attr_wl ) 
             if ( ! in_array( $key, $attr_wl ) ) continue;
             
             $value = ( is_array( $value ) ? $value[0] : $value );
-            if ( $key == 'discipline' ) {
+            if ( $key == 'class_subject' ) {
 
-                $discipline = (array) intranet_fafar_api_get_submission_by_id( $value );
-                $item_arr['discipline'] = array( 'id' => $discipline['id'], 
-                                                 'code' => $discipline['code'], 
-                                                 'name_of_subject' => $discipline['name_of_subject'], 
-                                                 'group' => $discipline['group'] );
+                $class_subject = (array) intranet_fafar_api_get_submission_by_id( $value );
+                $item_arr['class_subject'] = array(
+                    'id'              => $class_subject['id'], 
+                    'code'            => $class_subject['code'], 
+                    'name_of_subject' => $class_subject['name_of_subject'], 
+                    'group'           => $class_subject['group']
+                );
 
                 continue;
 
@@ -1175,7 +1177,7 @@ function intranet_fafar_api_get_auditorium_reservation_actions( $status ) {
  *     [data] => {
  *          "far_prevent_submit":"1",
  *          "desc":"DESCRICAO DO EVENTO SIM",
- *          "discipline":["1728413739e86f5dc2b8"],
+ *          "class_subject":["1728413739e86f5dc2b8"],
  *          "date":"2024-11-07",
  *          "start_time":"08:00",
  *          "end_time":"09:00",
@@ -1256,13 +1258,13 @@ function intranet_fafar_api_create_or_update_reservation( $form_data ) {
 
         $title = $new_form_data['data']['desc'];
 
-    } else if ( isset( $new_form_data['data']['discipline'][0] ) ) {
+    } else if ( isset( $new_form_data['data']['class_subject'][0] ) ) {
 
-        $discipline = intranet_fafar_api_get_submission_by_id( $new_form_data['data']['discipline'][0]  );
+        $class_subject = intranet_fafar_api_get_submission_by_id( $new_form_data['data']['class_subject'][0]  );
 
-        if ( $discipline ) {
+        if ( $class_subject ) {
 
-            $title = $discipline['data']['code'] . ' (' . $discipline['data']['group'] . ')';
+            $title = $class_subject['data']['code'] . ' (' . $class_subject['data']['group'] . ')';
 
         }
 
@@ -2028,9 +2030,9 @@ function intranet_fafar_api_get_reservation_by_id( $id ) {
 
     }
 
-    if ( isset( $reservation['data']['discipline'][0] ) ) {
+    if ( isset( $reservation['data']['class_subject'][0] ) ) {
 
-        $reservation['data']['discipline'] = intranet_fafar_api_get_submission_by_id( $reservation['data']['discipline'][0] );
+        $reservation['data']['class_subject'] = intranet_fafar_api_get_submission_by_id( $reservation['data']['class_subject'][0] );
 
     }
 
