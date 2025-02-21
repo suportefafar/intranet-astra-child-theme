@@ -33,16 +33,23 @@
  * Content: content inside the main content container
  * START
  */
+
+.ast-container {
+  padding: 0;
+}
+
 #primary {
-  padding-top: 1.25rem !important;
-  padding-left: 1.25rem !important;
-  margin-top: 0 !important;
+  padding: 1.25rem;
+  margin-top: 0;
 }
 
 #secondary {
-  padding-top: 1.25rem !important;
-  padding-right: 1.25rem !important;
-  margin-top: 0 !important;
+  padding: 1.25rem;
+  margin-top: 0;
+  margin-bottom: 0;
+  min-height: 100vh;
+
+  background-color: var(--ast-global-color-4);
 }
 
 #content {

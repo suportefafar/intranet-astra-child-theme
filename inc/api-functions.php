@@ -435,8 +435,6 @@ function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
 
        if ( $form_data['object_name'] !== 'service_ticket_update' ) return $form_data;
    
-       
-   
        // Atualizando a propriedade 'status' da ordem de serviço
        $form_data['data'] = json_decode( $form_data['data'], true );
    

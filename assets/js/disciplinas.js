@@ -35,9 +35,9 @@ const grid = new gridjs.Grid({
     "Cód.",
     "Nome",
     "Turma",
-    "CH",
-    "Créditos",
     "Curso",
+    "Natureza",
+    "Vagas",
     { name: "Ações", formatter: actionColFormatter },
   ],
   data: fetchDataHandler,
@@ -66,9 +66,9 @@ async function fetchDataHandler() {
         code = "N/A",
         name_of_subject = "N/A",
         group = "N/A",
-        course_load = 0,
-        credits_of_subject = 0,
         course = [],
+        nature_of_subject = [],
+        number_vacancies_offered = 0,
       } = data;
 
       const prevent_write = data.prevent_write ? "1" : "0";
@@ -79,9 +79,9 @@ async function fetchDataHandler() {
         code,
         name_of_subject,
         group,
-        course_load,
-        credits_of_subject,
         course.join(", "),
+        nature_of_subject.join(","),
+        number_vacancies_offered,
         JSON.stringify({ id, permissions }),
       ];
     });
@@ -109,7 +109,7 @@ function actionColFormatter(current) {
       <a class="btn btn-outline-secondary" href="/visualizar-objeto/?id=${id}" title="Detalhes">
         <i class="bi bi-info-lg"></i>
       </a>
-      <a class="btn btn-outline-info" href="/reservas-por-disciplina/?id=${id}" title="Reservas dessa disciplina">
+      <a class="btn btn-outline-info" href="/reservas-por-disciplina/?id=${id}" target="blank" title="Reservas dessa disciplina">
         <i class="bi bi-calendar-event"></i>
       </a>
       ${

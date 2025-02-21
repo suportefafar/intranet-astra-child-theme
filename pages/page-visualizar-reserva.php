@@ -132,7 +132,7 @@ get_header(); ?>
                     <div class="px-2 py-2 border-bottom border-dark">
                         <h5 class="fw-bold p-0 m-0"> Informações </h5>
                     </div>
-                    <table class="table table-borderless border border-0">
+                    <table class="table border border-end-0 border-start-0">
                         <tbody>
                             <tr>
                                 <td>Descrição</td>

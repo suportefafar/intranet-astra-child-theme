@@ -69,7 +69,7 @@ get_header(); ?>
 
         <br />
         <h5>Dados Brutos</h5>
-        <table class="table">
+        <table class="table border border-end-0 border-start-0">
             <tbody>
                 <?php
 

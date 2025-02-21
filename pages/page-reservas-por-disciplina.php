@@ -27,7 +27,6 @@ if( isset( $_GET['id'] ) ) {
     $id                      = intranet_fafar_utils_escape_and_clean_to_compare($_GET['id']);
     $reservations            = intranet_fafar_api_get_submissions_by_object_name( 'reservation', ['orderby_column' => 'created_at', 'order' => 'ASC'] );
     $reservations_by_subject = array_filter( $reservations, function( $reservation ) use( $id ) {
-        return $reservation['data']['class_subject'][0] === $id;
     } ) ?? array();
 
     $reservations_by_subject = array_map( function( $reservation ) {

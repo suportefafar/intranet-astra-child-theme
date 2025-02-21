@@ -19,7 +19,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 // wp_enqueue_script( 'intranet-fafar-salas-script', get_stylesheet_directory_uri() . '/assets/js/salas.js', array( 'jquery' ), false, false );
 
+$reservation_log = array();
+
 function generate_reservations($class_subjects) {
+
+    global $reservation_log;
+
     if (isset($class_subjects['error_msg'])) {
         return 'Nenhuma reserva encontrada!';
     }
@@ -49,43 +54,85 @@ function generate_reservations($class_subjects) {
     $vacancies_average = array_sum($vacancies) / count($vacancies);
     $duration_average = array_sum($durations) / count($durations);
     
-    // $vacancies_stdev = standardDeviation($vacancies);
-    // $durations_stdev = standardDeviation($durations);
+    $vacancies_stdev = standardDeviation($vacancies);
+    $durations_stdev = standardDeviation($durations);
 
-    $groups = array_fill(1, 4, []);
+    echo '<br />';
+    echo 'Vagas: ' . round( $vacancies_average, 2 ) . ' (D.P.:' . round( $vacancies_stdev, 2 ) . ')';
+    echo '<br />';
+    echo 'Duração: ' . round( $duration_average, 2 ) . ' (D.P.:' . round( $durations_stdev, 2 ) . ')';
 
-    foreach ($class_subjects as $subject) {
-        $subject_duration = array_sum(getDurations($subject['data']['desired_time']));
-        $vacancies = $subject['data']['number_vacancies_offered'];
+    // $groups = array_fill(1, 4, []);
 
-        $group_index = (int)(($vacancies >= $vacancies_average) << 1 | ($subject_duration >= $duration_average)) + 1;
-        $groups[$group_index][] = $subject;
+    // foreach ($class_subjects as $subject) {
+    //     $subject_duration = array_sum(getDurations($subject['data']['desired_time']));
+    //     $vacancies = $subject['data']['number_vacancies_offered'];
+
+    //     $group_index = (int)(($vacancies >= $vacancies_average) << 1 | ($subject_duration >= $duration_average)) + 1;
+    //     $groups[$group_index][] = $subject;
+
+
+    // }
+
+    // foreach ($groups as $index => $group) {
+    //     echo "Grupo $index: " . count($group) . '<br />';
+    // }
+
+    foreach ( $class_subjects as &$subject ) {
+        $scheduales     = getDurations( $subject['data']['desired_time'] );
+        $scheduales_qtd = count( $scheduales );
+
+        /*
+         * Os seguintes pesos são, por padrão, para disciplinas obrigatória.
+         * (Na dúvida, trata com se fosse obrigatória)
+         */
+        $w_v = 1; // Peso para vagas
+        $w_t = 65; // Peso para quantidade de horários
+        $w_n = 3; // Peso para natureza da disciplina: 'obrigatória' ou 'optativa'
+        if(
+            isset( $subject['data']['nature_of_subject'][0] ) && 
+            intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['nature_of_subject'][0] ) === 'optativa' 
+        ) {
+            $w_v = 0.5;
+            $w_t = 25;
+            $w_n = 1;
+        }
+
+        $subject['score'] = ( ( (int) $subject['data']['number_vacancies_offered'] * $w_v ) + ( $scheduales_qtd * $w_t ) ) * $w_n;
     }
 
-    foreach ($groups as $index => $group) {
-        echo "Grupo $index: " . count($group) . '<br />';
-    }
+    usort( $class_subjects, function( $a, $b ) {
+        return $b['score'] <=> $a['score']; // Sort descending
+    } );
 
     echo '<br />';
 
     $classrooms = array_filter(
-        intranet_fafar_api_get_submissions_by_object_name('place', ['orderby_json' => 'capacity', 'order' => 'ASC']),
-        fn($place) => $place['data']['object_sub_type'][0] === 'classroom'
+        intranet_fafar_api_get_submissions_by_object_name( 'place', ['orderby_json' => 'capacity', 'order' => 'ASC'] ),
+        fn( $place ) => $place['data']['object_sub_type'][0] === 'classroom'
     );
 
     $failed_reservations = [];
-    $attempts = 0;
-    $failures = 0;
+    $attempts            = 0;
+    $failures            = 0;
 
-    foreach (array_merge(...$groups) as $subject) {
+    foreach ( $class_subjects as $subject ) {
         $possible_rooms = array_filter($classrooms, fn($room) => $room['data']['capacity'] >= $subject['data']['number_vacancies_offered']);
         $schedules = parse_schedule( $subject['data']['desired_time']);
 
-        if(count($schedules) === 0) echo '<br />SEM SCHEDULES: ' . $subject['id'] . ' ' . $subject['data']['desired_time'] . '<br />';
+        if(count($schedules) === 0) {
+            $reservation_log[] = array(
+                'sub_id'    => $subject['id'],
+                'sub_code'  => $subject['data']['code'],
+                'scheduale' => '',
+                'status'    => 'fail',
+                'desc'      => 'Sem scheduale: ' . print_r( $subject['data']['desired_time'], true ),
+            );
+            continue;
+        } 
 
         foreach ($schedules as $schedule) {
             $attempts++;
-            $reserved = false;
 
             $reservation_obj = array(
                 'class_subject' => [$subject['id']],
@@ -96,7 +143,18 @@ function generate_reservations($class_subjects) {
 
             if (
                 has_reservation_for_another_group( $reservation_obj )
-            ) continue;
+            ) {
+                $reservation_log[] = array(
+                    'sub_id'    => $subject['id'],
+                    'sub_code'  => $subject['data']['code'],
+                    'scheduale' => print_r( $schedule, true ),
+                    'status'    => 'fail',
+                    'desc'      => 'Existe reserva com mesma disciplina e turma',
+                );
+                continue;
+            } 
+
+            $new_reservation = null;
 
             foreach ($possible_rooms as $room) {
 
@@ -130,18 +188,34 @@ function generate_reservations($class_subjects) {
                 // print_r($reservation);
                 // echo '<br />';
                 
-                $new_reservation = intranet_fafar_api_create_or_update_reservation($reservation);
+                $new_reservation = intranet_fafar_api_create_or_update_reservation( $reservation );
                 
-                if (!isset($new_reservation['error_msg'])) {
-                    intranet_fafar_api_create($new_reservation);
-                    $reserved = true;
+                if ( ! isset( $new_reservation['error_msg'] ) ) {
+                    $new_reservation = intranet_fafar_api_create( $new_reservation );
                     break;
                 }
             }
 
-            if (!$reserved) {
+            if ( isset( $new_reservation['error_msg'] ) ) {
                 $failures++;
+
+                $reservation_log[] = array(
+                    'sub_id'    => $subject['id'],
+                    'sub_code'  => $subject['data']['code'],
+                    'scheduale' => print_r( $schedule, true ),
+                    'status'    => 'fail',
+                    'desc'      => $new_reservation['error_msg'],
+                );
+
                 $failed_reservations[] = ['class_subject' => $subject['data']['code'], 'schedule' => $schedule, 'nature_of_subject' => $subject['data']['nature_of_subject']];
+            } else {
+                $reservation_log[] = array(
+                    'sub_id'    => $subject['id'],
+                    'sub_code'  => $subject['data']['code'],
+                    'scheduale' => print_r( $schedule, true ),
+                    'status'    => 'success',
+                    'desc'      => '',
+                );
             }
         }
     }
@@ -299,16 +373,46 @@ get_header(); ?>
 
 <?php else: ?>
 
-<br />
+    <br />
 
-<a 
-    href="/gerar-reservas?generate=true" 
-    class="btn btn-primary text-decoration-none" 
-    title="Gerar reservas">
-        Gerar
-</a>
+    <a 
+        href="/gerar-reservas?generate=true" 
+        class="btn btn-primary text-decoration-none" 
+        title="Gerar reservas">
+            Gerar
+    </a>
 
 <?php endif; ?>
+
+    <br />
+
+    <h5><?= ( isset( $reservation_log[0] ) ? count( $reservation_log ) : '0' ) ?> reservas</h5>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Código Disciplina</th>
+                <th scope="col">Horários</th>
+                <th scope="col">Status</th>
+                <th scope="col">Desc</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+                if( isset( $reservation_log ) && is_array( $reservation_log ) && count( $reservation_log ) > 0 ){
+                    foreach ( $reservation_log as $row ) {
+                        echo '<tr>';
+                            echo '<td><a href="/visualizar-objeto?id=' . $row['sub_id'] . '" target="blank">' . $row['sub_code'] . '</td>';
+                            echo '<td>' . $row['scheduale'] . '</td>';
+                            echo '<td>' . $row['status'] . '</td>';
+                            echo '<td>' . $row['desc'] . '</td>';
+                        echo '</tr>'; 
+                    }
+                }    
+            ?>
+        </tbody>
+    </table>
+        
 
         
 <!--
