@@ -86,6 +86,11 @@ add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_new_loan',
 add_filter( 'fafar_cf7crud_before_update', 'intranet_fafar_api_register_loan_return', 10, 2 );
 
 /*
+ * Adicionando handler para criação de ordem de serviço
+ */
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_service_ticket', 10, 2 );
+
+/*
  * Adicionando checagem para registrar atualização de ordem de serviço
  */
 add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_insert_update_on_service_ticket', 10, 2 );

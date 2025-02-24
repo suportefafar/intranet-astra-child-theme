@@ -53,8 +53,8 @@ const ptBR = {
 const grid = new gridjs.Grid({
   columns: [
     {
-      name: "Código",
-      formatter: codeColFormatter,
+      name: "Número",
+      formatter: numberColFormatter,
     },
     {
       name: "Atribuído à",
@@ -115,10 +115,10 @@ async function fetchDataHandler() {
     const prevent_exec = submission_data.prevent_exec ? "1" : "0";
     const permissions = prevent_write + prevent_exec;
 
-    const code_column_data = JSON.stringify({
+    const number_column_data = JSON.stringify({
       id: submission.id,
       permissions,
-      code: submission_data.code,
+      number: submission_data.number,
     });
 
     const action_column_data = JSON.stringify({
@@ -127,7 +127,7 @@ async function fetchDataHandler() {
     });
 
     table_arr.push([
-      code_column_data,
+      number_column_data,
       submission_data.assigned_to,
       submission_data.departament_assigned_to.role_display_name ?? "--",
       submission_data.status ?? "--",
@@ -153,8 +153,8 @@ async function renderGridJS(data = []) {
     .forceRender();
 }
 
-function codeColFormatter(current, row) {
-  const { id, permissions, code } = JSON.parse(current);
+function numberColFormatter(current, row) {
+  const { id, permissions, number } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
 
@@ -163,7 +163,7 @@ function codeColFormatter(current, row) {
   const html_content = `
     <div class="d-flex gap-2">
       <a href="/visualizar-ordem-de-servico/?id=${id}" title="Detalhes">
-        ${code}
+        ${number}
       </a>
     </div>`;
 

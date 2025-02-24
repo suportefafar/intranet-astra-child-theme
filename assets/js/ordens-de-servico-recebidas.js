@@ -122,8 +122,8 @@ const ptBR = {
 const grid = new gridjs.Grid({
   columns: [
     {
-      name: "Código",
-      formatter: codeColFormatter,
+      name: "Número",
+      formatter: numberColFormatter,
     },
     {
       name: "Descrição",
@@ -180,16 +180,16 @@ function fetchDataHandler(submissions) {
   let table_arr = [];
   for (const submission of submissions) {
     const { id, data, owner, updated_at, created_at } = submission;
-    const { assigned_to, status, type, code, user_report } = data;
+    const { assigned_to, status, type, number, user_report } = data;
 
     const prevent_write = data.prevent_write ? "1" : "0";
     const prevent_exec = data.prevent_exec ? "1" : "0";
     const permissions = prevent_write + prevent_exec;
 
-    const code_column_data = JSON.stringify({
+    const number_column_data = JSON.stringify({
       id,
       permissions,
-      code,
+      number,
     });
 
     const desc_column_data = JSON.stringify({
@@ -208,7 +208,7 @@ function fetchDataHandler(submissions) {
     });
 
     table_arr.push([
-      code_column_data,
+      number_column_data,
       desc_column_data,
       owner,
       status,
@@ -221,15 +221,15 @@ function fetchDataHandler(submissions) {
   return table_arr;
 }
 
-function codeColFormatter(current) {
-  const { id, permissions, code } = JSON.parse(current);
+function numberColFormatter(current) {
+  const { id, permissions, number } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
 
   const html_content = `
     <div class="d-flex gap-2">
       <a href="/visualizar-ordem-de-servico/?id=${id}" title="Detalhes">
-        ${code}
+        ${number}
       </a>
     </div>`;
 

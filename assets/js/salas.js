@@ -34,11 +34,11 @@ const grid = new gridjs.Grid({
   columns: [
     "Número",
     "Descrição",
+    "Bloco",
     {
       name: "Andar",
       formatter: (current) => current + "ª",
     },
-    "Bloco",
     "Capacidade",
     {
       name: "Tipo",
@@ -77,7 +77,7 @@ async function fetchDataHandler() {
         floor = 0,
         block = 0,
         capacity = 0,
-        object_sub_type = "N/A",
+        object_sub_type = [],
       } = data;
 
       const prevent_write = data.prevent_write ? "1" : "0";
@@ -87,11 +87,16 @@ async function fetchDataHandler() {
       return [
         number,
         desc,
-        floor,
         block,
+        floor,
         parseInt(capacity),
         object_sub_type,
-        JSON.stringify({ id, permissions }),
+        JSON.stringify({
+          id,
+          permissions,
+          object_sub_type: object_sub_type[0],
+          number,
+        }),
       ];
     });
   } catch (error) {
@@ -122,10 +127,17 @@ function typeColFormatter(current) {
   }
 }
 
-function actionColFormatter(current, row) {
-  const { id, permissions, object_sub_type } = JSON.parse(current);
+function actionColFormatter(current) {
+  const { id, permissions, object_sub_type, number } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
+
+  const reservables = [
+    "classroom",
+    "living_room",
+    "computer_lab",
+    "multimedia_room",
+  ];
 
   const html_content = `
     <div class="d-flex gap-2">
@@ -135,10 +147,18 @@ function actionColFormatter(current, row) {
       </a>
 
       ${
-        object_sub_type === "classroom" || object_sub_type === "auditorium"
-          ? `<a class="btn btn-outline-primary" href="/reservas/?sala=${id}" title="Eventos">
-          <i class="bi bi-calendar-week"></i>
-        </a>`
+        reservables.indexOf(object_sub_type) > -1
+          ? `<a class="btn btn-outline-primary" href="/reservas/?place_id=${id}" target="blank" title="Reservas da sala ${number}">
+            <i class="bi bi-calendar-week"></i>
+          </a>`
+          : ""
+      }
+
+      ${
+        object_sub_type === "auditorium"
+          ? `<a class="btn btn-outline-primary" href="/reservas-do-auditorio/" target="blank" title="Reservas do auditório">
+            <i class="bi bi-calendar-range"></i>
+          </a>`
           : ""
       }
       

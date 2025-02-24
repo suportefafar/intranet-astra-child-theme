@@ -10,6 +10,7 @@ let CURRENT_CLASSROOM = { id: null, number: null };
  * Aguarda até que a DOM seja carregada para inserir os eventos no calendário
  */
 document.addEventListener("DOMContentLoaded", () => {
+  onLoadCalendarByUrlParams();
   fetchCalendarData();
 });
 
@@ -54,6 +55,21 @@ document.addEventListener("onAddEventSuccess", () => {
   fetchCalendarData();
   showAlert("Reserva adicionada com sucesso!", "success", true);
 });
+
+function onLoadCalendarByUrlParams() {
+  const params = new URLSearchParams(document.location.search);
+  const place_id = params.get("place_id");
+
+  if (!place_id) return null;
+
+  // Update the current place details
+  CURRENT_CLASSROOM.id = place_id;
+
+  console.log({ place_id });
+
+  // Activate the clicked tab
+  changeActiveTab();
+}
 
 /*
  * Lida com clique das abas

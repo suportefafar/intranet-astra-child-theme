@@ -181,12 +181,15 @@ get_header(); ?>
                                 </td>
                             <tr>
                             <tr>
-                                <td>Código</td>
+                                <td>Número</td>
                                 <td class="fw-medium">
-                                <?php 
+                                    <?php 
                                         echo ( 
-                                            isset( $service_ticket['data']['code'] ) ? 
-                                                $service_ticket['data']['code'] : 
+                                            isset( $service_ticket['data']['number'] ) ? 
+                                                '<mark>' . 
+                                                    str_pad( $service_ticket['data']['number'], 6, '0', STR_PAD_LEFT ) .
+                                                '</mark>' 
+                                                : 
                                                 '' 
                                             ) 
                                     ?>

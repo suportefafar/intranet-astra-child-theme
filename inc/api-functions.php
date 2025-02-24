@@ -428,6 +428,45 @@ function intranet_fafar_api_register_loan_return( $form_data ) {
 
 }
 
+function intranet_fafar_api_create_service_ticket( $form_data ) {
+
+    // Verificações iniciais
+    if ( ! isset( $form_data['object_name'] ) ) return $form_data;
+
+    if ( $form_data['object_name'] !== 'service_ticket' ) return $form_data;
+       
+    $form_data['data'] = json_decode( $form_data['data'], true );
+    
+    /*
+     * Na intranet anterior, era gerado IDs das ordens de serviços de forma incremental.
+     * Foi solicitado que fosse mantido esse padrão.
+     * 
+     * Essa linha cria um parâmetro para receber esse 'ID' incremental, mantendo o padrão.
+     */
+    $form_data['data']['number'] = get_incremental_service_ticker_number();
+    
+    // Se tudo deu certo, então apenas retorna o objeto para ser inserido
+    $form_data['data'] = json_encode( $form_data['data'] );
+    
+    // Retorna uma obj genérico para concluir a submissão com sucesso
+    return $form_data;
+
+}
+
+function get_incremental_service_ticker_number() {
+
+    $service_tickets = intranet_fafar_api_get_submissions_by_object_name( 'service_ticket', array( 'orderby_column' => 'created_at', 'order' => 'DESC' ) );
+
+    if( isset( $service_tickets['error_msg'] ) ) return 1;
+
+    if( ! isset( $service_tickets[0]['data']['number'] ) ) return 1;
+    
+    if( ! is_numeric( $service_tickets[0]['data']['number'] ) ) return 1;
+
+    return ( (int) $service_tickets[0]['data']['number'] ) + 1;
+
+}
+
 function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
    
        // Verificações iniciais
@@ -435,9 +474,9 @@ function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
 
        if ( $form_data['object_name'] !== 'service_ticket_update' ) return $form_data;
    
-       // Atualizando a propriedade 'status' da ordem de serviço
        $form_data['data'] = json_decode( $form_data['data'], true );
-   
+       
+       // Atualizando a propriedade 'status' da ordem de serviço
        if ( ! isset( $form_data['data']['status'][0] ) )
            return array( 'error_msg' => '[001] Status não informado!' );
    
