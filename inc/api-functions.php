@@ -1287,6 +1287,28 @@ function intranet_fafar_api_create_or_update_reservation( $form_data ) {
 
     }
 
+    /* 
+     * Verificando se sala/lugar existe
+     */
+    $place = intranet_fafar_api_get_submission_by_id( $new_form_data['data']['place'][0], false );
+
+    if( isset( $place['error_msg'] ) ) {
+        return array( 'error_msg' => '[421] Lugar/sala não existe com este ID' );
+    }
+
+    /* 
+     * Verificando se o usuário tem permissão de reserva nessa sala 
+     */
+    if(
+        ! intranet_fafar_api_check_write_permission(
+            $place
+        )
+    ) {
+        return array( 'error_msg' => '[765] Não autorizado!' );
+    }
+
+
+
     $title = 'Reserva ' . time();
 
     if( isset( $new_form_data['data']['desc'] ) && 

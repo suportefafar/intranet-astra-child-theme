@@ -94,7 +94,6 @@ function onClickTabHandler(e) {
 
   // Update the current place details
   CURRENT_CLASSROOM.id = classroomId;
-  CURRENT_CLASSROOM.number = classroomNumber;
 
   // Activate the clicked tab
   changeActiveTab();
@@ -146,8 +145,10 @@ function changeActiveTab() {
   const tabs = document.querySelectorAll("#ul_classroom_tabs .nav-link");
 
   tabs.forEach((tab) => {
-    if (tab.dataset.classroomId === CURRENT_CLASSROOM.id) {
+    const { classroomId, classroomNumber } = tab.dataset;
+    if (classroomId === CURRENT_CLASSROOM.id) {
       tab.classList.add("active");
+      CURRENT_CLASSROOM.number = classroomNumber;
     } else {
       tab.classList.remove("active");
     }

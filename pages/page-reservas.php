@@ -23,15 +23,17 @@ $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array( 'or
 
 if ( isset( $places['error_msg'] ) ) $places = array();
 
-$classrooms = array_filter( $places, function ( $place ) {
+$reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
+
+$classrooms = array_filter( $places, function ( $place ) use ( $reservables ) {
 
     if( ! isset( $place['data']['object_sub_type'] ) )
         return false;
 
-    return $place['data']['object_sub_type'] === 'classroom' || 
+    return in_array( $place['data']['object_sub_type'], $reservables ) || 
            ( 
-             is_array( $place['data']['object_sub_type'] ) &&
-             $place['data']['object_sub_type'][0] === 'classroom' 
+             isset( $place['data']['object_sub_type'][0] ) &&
+             in_array( $place['data']['object_sub_type'][0], $reservables ) 
            );
 } );
 
