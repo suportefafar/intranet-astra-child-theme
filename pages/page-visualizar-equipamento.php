@@ -391,9 +391,11 @@ get_header(); ?>
         </div>
 
         <?php
-
             $user_role = intranet_fafar_get_user_slug_role();
-            if ( $user_role === 'ti' || $user_role === 'administrator' ) {
+            if (
+                $user_role === 'tecnologia_da_informacao_e_suporte' || 
+                $user_role === 'administrator'
+            ) {
                 echo '<h5 class="mt-5">Objeto PHP</h5>';
                 echo '<pre>';
                     print_r( $equipament );
@@ -403,7 +405,6 @@ get_header(); ?>
                     print_r( $loans );
                 echo '</pre>';
             }
-
         ?>
 
 

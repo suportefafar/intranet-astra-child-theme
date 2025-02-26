@@ -38,11 +38,11 @@ $tabs_metadata = array(
     ),
     array(
         'text' => 'Canceladas',
-        'url' => '/service_tickets/by_departament?status=Canceladas'
+        'url' => '/service_tickets/by_departament?status=Cancelada'
     ),
     array(
         'text' => 'Finalizadas',
-        'url' => '/service_tickets/by_departament?status=Finalizadas'
+        'url' => '/service_tickets/by_departament?status=Finalizada'
     ),
     array(
         'text' => 'Todas',

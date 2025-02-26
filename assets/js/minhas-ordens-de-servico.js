@@ -131,7 +131,7 @@ async function fetchDataHandler() {
       submission_data.assigned_to,
       submission_data.departament_assigned_to.role_display_name ?? "--",
       submission_data.status ?? "--",
-      submission_data.type[0] ?? "--",
+      submission_data.type ?? "--",
       submission.updated_at,
       submission.created_at,
       action_column_data,

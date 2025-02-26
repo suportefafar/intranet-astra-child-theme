@@ -263,7 +263,7 @@ function descColFormatter(current) {
 }
 
 function ownerColFormatter(current) {
-  let { user_login, display_name } = current.data;
+  let { user_login = "", display_name = "N/A" } = current.data ?? {};
 
   if (!user_login && !display_name) {
     user_login = "";

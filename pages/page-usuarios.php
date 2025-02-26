@@ -59,22 +59,27 @@ get_header(); ?>
 --> 
         <!-- HEADER BUTTONS -->
 
-        <div class="d-flex justify-content-end gap-2 mb-4">
-            <?php
-                if( in_array( $sector_slug, array( 'pessoal', 'tecnologia_da_informacao_e_suporte', 'administrator' ) ) ):
-            ?>
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <h6 class="mb-0">
+                <span id="users_counter">0</span> usuário(s)
+            </h6>
+            <div class="d-flex gap-2">
+                <?php
+                    if( in_array( $sector_slug, array( 'pessoal', 'tecnologia_da_informacao_e_suporte', 'administrator' ) ) ):
+                ?>
 
-            <a href="#" id="btn_export_users" class="btn btn-outline-dark text-decoration-none w-lg-button">
-                <i class="bi bi-arrow-bar-down"></i>
-                Exportar CSV
-            </a>
-            
-            <?php endif; ?>
-            
-            <a href="#" id="btn_copy_emails" class="btn btn-light text-decoration-none w-lg-button" >
-                <i class="bi bi-clipboard"></i>
-                Copiar e-mails
-            </a>
+                <a href="#" id="btn_export_users" class="btn btn-outline-dark text-decoration-none w-lg-button">
+                    <i class="bi bi-arrow-bar-down"></i>
+                    Exportar CSV
+                </a>
+                
+                <?php endif; ?>
+                
+                <a href="#" id="btn_copy_emails" class="btn btn-light text-decoration-none w-lg-button" >
+                    <i class="bi bi-clipboard"></i>
+                    Copiar e-mails
+                </a>
+            </div>
         </div>
 
         <div id="filters_container" class="d-flex gap-3 mb-2">

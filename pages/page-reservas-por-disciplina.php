@@ -27,6 +27,7 @@ if( isset( $_GET['id'] ) ) {
     $id                      = intranet_fafar_utils_escape_and_clean_to_compare($_GET['id']);
     $reservations            = intranet_fafar_api_get_submissions_by_object_name( 'reservation', ['orderby_column' => 'created_at', 'order' => 'ASC'] );
     $reservations_by_subject = array_filter( $reservations, function( $reservation ) use( $id ) {
+        return isset( $reservation['data']['class_subject'][0] ) && $reservation['data']['class_subject'][0] === $id;
     } ) ?? array();
 
     $reservations_by_subject = array_map( function( $reservation ) {
@@ -119,11 +120,18 @@ get_header(); ?>
             </tbody>
         </table>
 
-        <pre>
-            <?php
+        <?php
+            $user_role = intranet_fafar_get_user_slug_role();
+            if (
+                $user_role === 'tecnologia_da_informacao_e_suporte' || 
+                $user_role === 'administrator'
+            ) {
+                echo '<h5 class="mt-5">Objeto PHP</h5>';
+                echo '<pre>';
                 print_r( isset( $reservations_by_subject ) ? $reservations_by_subject : '' );
-            ?>
-        </pre>
+                echo '</pre>';
+            }
+        ?>
         
 <!--
     * Conteúdo customizado da página

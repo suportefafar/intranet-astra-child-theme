@@ -1,13 +1,14 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
-/**
- * CHARTS RENDER
+/*
+ * Adiciona evento de clique para exclusão
  */
+document.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest(".btn-delete-submission");
+  if (deleteButton) confirmDelete(deleteButton.dataset.id);
+});
 
-/**
+/*
  * TABLE RENDER
  */
-
 const ptBR = {
   search: { placeholder: "Digite uma palavra-chave..." },
   sort: {
@@ -17,12 +18,8 @@ const ptBR = {
   pagination: {
     previous: "Anterior",
     next: "Próxima",
-    navigate: function (e, r) {
-      return "Página " + e + " de " + r;
-    },
-    page: function (e) {
-      return "Página " + e;
-    },
+    navigate: (e, r) => `Página ${e} de ${r}`,
+    page: (e) => `Página ${e}`,
     showing: "Mostrando",
     of: "de",
     to: "até",
@@ -33,21 +30,28 @@ const ptBR = {
   error: "Ocorreu um erro ao buscar os dados",
 };
 
-new gridjs.Grid({
+const grid = new gridjs.Grid({
   columns: [
-    "ID",
     "Categoria",
     "Fonte",
     "Usuário",
-    "Em",
+    {
+      name: "Desc",
+      formatter: (current) =>
+        current.length > 50 ? current.slice(0, 50) + "..." : current,
+    },
+    {
+      name: "Registrado em",
+      formatter: (current) => new Date(current).toLocaleString(),
+    },
     {
       name: "Ações",
-      formatter: formatterHandler,
+      formatter: actionColFormatter,
     },
   ],
-  data: fetchDataHadler,
+  data: fetchDataHandler,
   pagination: {
-    limit: 20,
+    limit: 25,
     summary: true,
   },
   search: true,
@@ -56,43 +60,108 @@ new gridjs.Grid({
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-async function fetchDataHadler() {
-  let response;
-
+async function fetchDataHandler() {
   try {
-    response = await axios.get(
+    const response = await axios.get(
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/log"
     );
+
+    const submissions = JSON.parse(response.data);
+
+    console.log(submissions);
+
+    return submissions.reverse().map(({ id, data, created_at }) => {
+      const { category = "N/A", source = "N/A", user = 0, desc = 0 } = data;
+
+      const prevent_write = data.prevent_write ? "1" : "0";
+      const prevent_exec = data.prevent_exec ? "1" : "0";
+      const permissions = `${prevent_write}${prevent_exec}`;
+
+      return [
+        category,
+        source,
+        user,
+        JSON.stringify(desc),
+        created_at,
+        JSON.stringify({
+          id,
+          permissions,
+        }),
+      ];
+    });
   } catch (error) {
-    console.log(error.response.data.message);
+    console.error(
+      "Erro ao buscar dados:",
+      error.response?.data?.message || error
+    );
     return [];
   }
-
-  const logs = JSON.parse(response.data);
-
-  let logs_tabela_arr = [];
-  for (const log of logs.reverse()) {
-    console.log(log);
-    logs_tabela_arr.push([
-      log["id"],
-      log["category"],
-      log["source"],
-      log["user"],
-      log["created_at"],
-    ]);
-  }
-
-  return logs_tabela_arr;
 }
 
-function formatterHandler(_, row) {
-  const html_content = `
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href='/visualizar-objeto/?id=${row.cells[0].data}' title='Detalhes'>
-      <i class="bi bi-info-lg"></i>
-    </a>
-  </div>  
-      `;
+function actionColFormatter(current) {
+  const { id, permissions, object_sub_type, number } = JSON.parse(current);
 
-  return html(html_content);
+  const prevent_write = parseInt(permissions.split("")[0]);
+
+  const reservables = [
+    "classroom",
+    "living_room",
+    "computer_lab",
+    "multimedia_room",
+  ];
+
+  const html_content = `
+    <div class="d-flex gap-2">
+
+      <a class="btn btn-outline-secondary" href="/visualizar-objeto/?id=${id}" title="Detalhes">
+        <i class="bi bi-info-lg"></i>
+      </a>
+      
+      ${
+        prevent_write
+          ? ""
+          : `
+
+      <button class="btn btn-outline-danger btn-delete-submission" data-id="${id}" title="Excluir">
+        <i class="bi bi-trash"></i>
+      </button> 
+      `
+      }
+    </div>`;
+
+  return gridjs.html(html_content);
+}
+
+async function renderGridJS(data = []) {
+  if (data.length === 0) data = await fetchDataHandler();
+
+  grid.updateConfig({ data }).forceRender();
+}
+
+function confirmDelete(id) {
+  showConfirmModal(
+    "Excluir Sala?",
+    "Essa ação não pode ser desfeita.",
+    "Excluir",
+    "danger",
+    () => deleteSubmission(id)
+  );
+}
+
+async function deleteSubmission(id) {
+  hideConfirmModal();
+  showAlert("Por favor, aguarde....", "warning");
+
+  try {
+    await axios.delete(
+      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/${id}`
+    );
+    showAlert("Excluído com sucesso!", "success", true, 3000);
+    renderGridJS();
+  } catch (error) {
+    const error_msg =
+      error.response?.data?.message || "[1010] Erro desconhecido";
+    console.error("Erro ao excluir:", error_msg);
+    showAlert(error_msg, "danger");
+  }
 }

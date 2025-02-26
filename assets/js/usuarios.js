@@ -147,6 +147,8 @@ function renderDataOnTable(users) {
 
   console.log(users);
 
+  updateUsersCounter(users.length);
+
   return users
     .filter(({ ID }) => ID !== "1") // Exclude user with ID 1
     .map((user) => {
@@ -260,11 +262,9 @@ function createdAtColFormatter(current) {
 
   const type =
     {
-      emprestado: "text-bg-warning",
-      ativado: "text-bg-primary",
-      desativado: "text-bg-danger",
-      quebrado: "text-bg-danger",
-      desaparecido: "text-bg-danger",
+      aposentado: "text-bg-warning",
+      ativo: "text-bg-primary",
+      removido: "text-bg-danger",
     }[bond_status.toLowerCase()] || "text-bg-info";
 
   return html(`
@@ -443,9 +443,18 @@ function copyEmailsToClipboard() {
 }
 
 /*
+ * Atualizador do elemento que mostra a quantidade de usuários
+ */
+
+function updateUsersCounter(quantity) {
+  document.querySelector("#users_counter").innerHTML = quantity;
+}
+
+/*
  * Helper Functions
  */
 
 function capitalizeFirstLetter(value) {
+  if (!value) return "";
   return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
 }

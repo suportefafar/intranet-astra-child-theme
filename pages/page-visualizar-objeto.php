@@ -106,16 +106,18 @@ get_header(); ?>
         </table>
 
         <?php
-
             $user_role = intranet_fafar_get_user_slug_role();
-            if ( $user_role === 'ti' || $user_role === 'administrator' ) {
+            if (
+                $user_role === 'tecnologia_da_informacao_e_suporte' || 
+                $user_role === 'administrator'
+            ) {
                 echo '<h5 class="mt-5">Objeto PHP</h5>';
                 echo '<pre>';
                     print_r( $submission );
                 echo '</pre>';
             }
-
         ?>
+
         
 <!--
     * Conteúdo customizado da página

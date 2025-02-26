@@ -122,6 +122,8 @@ function typeColFormatter(current) {
       return "Multimídia";
     case "professor_office":
       return "Gabinete";
+    case "computer_lab":
+      return "Lab de Computador";
     default:
       return "--";
   }
@@ -142,7 +144,7 @@ function actionColFormatter(current) {
   const html_content = `
     <div class="d-flex gap-2">
 
-      <a class="btn btn-outline-secondary" href="/visualizar-objeto/?id=${id}" title="Detalhes">
+      <a class="btn btn-outline-secondary" href="/visualizar-sala/?id=${id}" title="Detalhes">
         <i class="bi bi-info-lg"></i>
       </a>
 

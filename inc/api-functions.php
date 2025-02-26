@@ -443,7 +443,9 @@ function intranet_fafar_api_create_service_ticket( $form_data ) {
      * 
      * Essa linha cria um parâmetro para receber esse 'ID' incremental, mantendo o padrão.
      */
-    $form_data['data']['number'] = get_incremental_service_ticker_number();
+    $new_number = get_incremental_service_ticker_number();
+
+    $form_data['data']['number'] = str_pad( $new_number, 6, '0', STR_PAD_LEFT );
     
     // Se tudo deu certo, então apenas retorna o objeto para ser inserido
     $form_data['data'] = json_encode( $form_data['data'] );
@@ -842,6 +844,27 @@ function intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $servi
     }
 
     return $service_ticket_updates;      
+
+}
+
+function intranet_fafar_api_get_service_ticket_evaluation_by_id( $id ) {
+
+    if(
+        ! isset( $id ) && 
+        ! $id
+    ) return array( 'error_msg' => 'Nenhum id informado' );
+
+    $service_evalutations = intranet_fafar_api_get_submissions_by_object_name( 'service_evaluation' );
+
+    if( isset( $service_evalutations['error_msg'] ) ) return $service_evalutations;
+
+    $filtered = array_filter( $service_evalutations, function ( $service_evalutations ) use ( $id ) {
+        return ( $service_evalutations['data']['service_ticket'] == $id );
+    } );
+
+    $filtered = array_values( $filtered );
+
+    return $filtered;
 
 }
 
@@ -1679,14 +1702,10 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
  * @return array $submissions 
  */
 function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order_by = array() ) {
-    
-    global $wpdb;
-
-    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
 
     if( ! $object_name ) {
 
-        return array( 'error_msg' => '[0201]No "object name" found.', 'http_status' => 500 );
+        return array( 'error_msg' => '[0201]Nenhum nome de objeto informado', 'http_status' => 500 );
 
     }
 
@@ -2212,10 +2231,8 @@ function intranet_fafar_api_get_ips() {
 
 /*
  * SIMPLE CREATE, READ, UPDATE and DELETE FUNCS
- * 
  */
-
-function intranet_fafar_api_create( $submission, $check_ermissions = true ) {
+function intranet_fafar_api_create( $submission, $check_permissions = true, $do_action = true ) {
 
     if ( ! isset( $submission['data'] ) )
         return array( 'error_msg' => 'No "data" column informed!' );
@@ -2251,7 +2268,8 @@ function intranet_fafar_api_create( $submission, $check_ermissions = true ) {
 
     $wpdb->insert( $table_name, $submission );
 
-    do_action( 'intranet_fafar_api_after_create', $submission['id'] );
+    if( $do_action )
+        do_action( 'intranet_fafar_api_after_create', $submission['id'] );
 
     return array( 'id' => $submission['id'] );
   

@@ -128,77 +128,62 @@ function intranet_fafar_logs_create_log_from_api( $submission_id ) {
 
 function intranet_fafar_logs_register_log( $category, $source, $desc, $user = null ) {
 
-    global $wpdb;
-
-    $has_register_log_correct = true;
-
-    $desc = sanitize_text_field( $desc );
-
-    if ( ! $category ) {
-
-        $has_register_log_correct = false;
-        $desc .= '[Category not informed] ';
+    // Category not informed
+    if (
+        ! isset( $category ) || 
+        ! $category
+    ) {
         $category = false;
-
     }
 
-    if ( ! $source ) {
-
-        $has_register_log_correct = false;
-        $desc .= '[Source not informed] ';
+    // Source not informed
+    if (
+        ! isset( $source ) || 
+        ! $source
+    ) {
         $source = false;
-        
     }
 
-    if ( ! $desc ) {
-
-        $has_register_log_correct = false;
-        $desc .= '[Desc not informed] ';
-        
-    }
-
-    if ( $user ) {
-
-        $desc .= '[User informed] ';
-        
+    // Desc not informed
+    if (
+        ! isset( $desc ) || 
+        ! $desc
+    ) {
+        $desc = 'Desc not informed';
     } else {
-
-        $user = get_current_user_id();
-
+        if ( ! is_string( $desc ) ) {
+            $desc = json_encode( $desc );
+        }
+    
+        $desc = sanitize_text_field( $desc );
     }
 
-    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
-    /*
-     * Generating unique hash for submission 'id'
-     */
-    $bytes             = random_bytes(5);
-    $unique_hash       = time().bin2hex($bytes); 
-    $form_post_id      = '-1';
-    $form_data_as_json = stripslashes( json_encode( 
-        array( 
-            'category' => $category,
-            'source' => $source,
-            'desc' => $desc,
-            'user' => $user,
-            ) 
-    ) );
-    $id_wp_adm_user              = '1';
-    $it_role_name                = 'informatica';
-    /** 
-     * Total access to owner(adm user) and users on 'informatica' role
-     * */ 
-    $log_permissions_code_access = '770';
+    // User not informed
+    if (
+        ! isset( $user ) || 
+        ! $user
+    ) {
+        $user = get_current_user_id();
+    } else {
+        $desc = '[User informed] ' . $desc;
+    }
 
 
-    $wpdb->insert( $table_name, array(
-        'id'          => $unique_hash,
-        'data'        => $form_data_as_json,
+    $submission = array(
+        'owner'       => 1,
+        'group_owner' => 'tecnologia_da_informacao_e_suporte',
+        'permissions' => '770',
         'object_name' => 'log',
-        'form_id'     => $form_post_id,
-        'owner'       => $id_wp_adm_user,
-        'group_owner' => $it_role_name,
-        'permissions' => $log_permissions_code_access,
-    ) );
+        'data'        => array(
+            'category' => $category,
+            'source'   => $source,
+            'desc'     => $desc,
+            'user'     => $user,
+        ),
+    );
 
-    return $has_register_log_correct;
+    error_log( print_r( $submission, true ) );
+
+    intranet_fafar_api_create( $submission, true, false );
+
 }

@@ -84,7 +84,8 @@ $prevent_insert_update = ( ! isset( $service_ticket_departament_role_slug ) ||
 
 $prevent_write = isset( $service_ticket['data']['prevent_write'] );
 
-//print_r($updates);
+$service_evaluations = intranet_fafar_api_get_service_ticket_evaluation_by_id( $ID );
+
 
 if ( isset( $updates['error_msg'] ) )
     $updates = array();
@@ -187,7 +188,7 @@ get_header(); ?>
                                         echo ( 
                                             isset( $service_ticket['data']['number'] ) ? 
                                                 '<mark>' . 
-                                                    str_pad( $service_ticket['data']['number'], 6, '0', STR_PAD_LEFT ) .
+                                                    $service_ticket['data']['number'] .
                                                 '</mark>' 
                                                 : 
                                                 '' 
@@ -238,8 +239,8 @@ get_header(); ?>
                                 <td class="fw-medium">
                                     <?php 
                                         echo ( 
-                                            isset( $service_ticket['data']['type'][0] ) ? 
-                                                $service_ticket['data']['type'][0] : 
+                                            isset( $service_ticket['data']['type'] ) ? 
+                                                $service_ticket['data']['type'] : 
                                                 '' 
                                             ) 
                                     ?>
@@ -366,11 +367,45 @@ get_header(); ?>
                     </table>
                 </div>
             </div>
-        </div>
-        <?php
 
+            <div class="row">
+                <div class="col-12">
+                    <div class="px-2 py-2 border-bottom border-dark mb-2">
+                        <h5 class="fw-bold p-0 m-0"> Avaliação </h5>
+                    </div>
+                    <?php if (
+                       ! isset( $service_evaluations['error_msg'] ) && 
+                       isset( $service_evaluations[0] )
+                    ): ?>
+                        <div class="px-2 py-3">
+                            <div class="evaluation-header">
+                                <div>
+                                    <h5 class="mb-1"><?= htmlspecialchars( $service_ticket['owner']['data']->display_name ) ?></h5>
+                                    <small class="text-muted"><?= date( "d M Y", strtotime( $service_evaluations[0]['created_at'] ) ) ?></small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                    <span class="star"><?= $i <= $service_evaluations[0]['data']['rate'] ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>' ?></span>
+                                <?php endfor; ?>
+                                <span class="ms-2 text-muted"><?= number_format($service_evaluations[0]['data']['rate'], 1) ?></span>
+                            </div>
+                            <p class="mt-2"><?= htmlspecialchars($service_evaluations[0]['data']['comment']) ?></p>
+                        </div>
+
+                    <?php else: ?>
+                        <p>Nenhuma avaliação disponível.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <?php
             $user_role = intranet_fafar_get_user_slug_role();
-            if ( $user_role === 'ti' || $user_role === 'administrator' ) {
+            if (
+                $user_role === 'tecnologia_da_informacao_e_suporte' || 
+                $user_role === 'administrator'
+            ) {
                 echo '<h5 class="mt-5">Objeto PHP</h5>';
                 echo '<pre>';
                     print_r( $service_ticket );
@@ -379,10 +414,11 @@ get_header(); ?>
                 echo '<pre>';
                     print_r( $updates );
                 echo '</pre>';
+                echo '<pre>';
+                    print_r( $service_evaluations );
+                echo '</pre>';
             }
-
         ?>
-
 
         <!-- Modal para inserir atualização na O.S. -->
         <div class="modal fade" id="intranetFafarInsertServiceTicketUpdate" tabindex="-1" aria-labelledby="intranetFafarInsertServiceTicketUpdateLabel" aria-hidden="true">
