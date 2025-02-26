@@ -706,15 +706,14 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
 
         }
 
-        if ( 
-            isset( $assigned_to ) && 
-            ( 
-                $assigned_to !== $all_service_tickets[$i]['data']['assigned_to'] || 
-                ( ! $all_service_tickets[$i]['data']['assigned_to'] )
-            )
-           ) {
+        if ( isset( $assigned_to ) ) {
 
-            continue;
+            if( $assigned_to == -1 ) $assigned_to = get_current_user_id();
+
+            if( 
+                ! $all_service_tickets[$i]['data']['assigned_to'] || 
+                $assigned_to !== $all_service_tickets[$i]['data']['assigned_to']
+            ) continue;
 
         }
 
