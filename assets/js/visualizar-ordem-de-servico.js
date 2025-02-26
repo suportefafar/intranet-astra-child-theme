@@ -68,6 +68,9 @@ async function setAssignedToUserProp(user_assigned_to_id) {
 
     service_ticket.data.assigned_to = user_assigned_to_id;
 
+    service_ticket.owner = service_ticket.owner.ID;
+    service_ticket.data.place = [service_ticket.data.place.id];
+
     const response = await axios.put(
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" +
         service_ticket_id,

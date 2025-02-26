@@ -471,34 +471,34 @@ function get_incremental_service_ticker_number() {
 
 function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
    
-       // Verificações iniciais
-       if ( ! isset( $form_data['object_name'] ) ) return $form_data;
+        // Verificações iniciais
+        if ( ! isset( $form_data['object_name'] ) ) return $form_data;
 
-       if ( $form_data['object_name'] !== 'service_ticket_update' ) return $form_data;
+        if ( $form_data['object_name'] !== 'service_ticket_update' ) return $form_data;
    
-       $form_data['data'] = json_decode( $form_data['data'], true );
+        $form_data['data'] = json_decode( $form_data['data'], true );
        
-       // Atualizando a propriedade 'status' da ordem de serviço
-       if ( ! isset( $form_data['data']['status'][0] ) )
-           return array( 'error_msg' => '[001] Status não informado!' );
+        // Atualizando a propriedade 'status' da ordem de serviço
+        if ( ! isset( $form_data['data']['status'][0] ) )
+            return array( 'error_msg' => '[001] Status não informado!' );
    
-       $service_ticket = intranet_fafar_api_get_submission_by_id( $form_data['data']['service_ticket'], false );
+        $service_ticket = intranet_fafar_api_get_submission_by_id( $form_data['data']['service_ticket'], false );
    
-       if ( ! $service_ticket )
-           return array( 'error_msg' => '[002] Ordem de serviço não existe!' );
+        if ( isset( $service_ticket['error_msg'] ) )
+            return $service_ticket;
    
-       $service_ticket['data']['status'] = $form_data['data']['status'][0];
+        $service_ticket['data']['status'] = $form_data['data']['status'][0];
    
-       $service_ticket = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
+        $service_ticket = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
 
-       if ( isset( $service_ticket['error_msg'] ) )
-           return array( 'error_msg' => $service_ticket['error_msg'] );
+        if ( isset( $service_ticket['error_msg'] ) )
+            return $service_ticket;
 
-       // Se tudo deu certo, então apenas retorna o objeto para ser inserido
-       $form_data['data'] = json_encode( $form_data['data'] );
+        // Se tudo deu certo, então apenas retorna o objeto para ser inserido
+        $form_data['data'] = json_encode( $form_data['data'] );
 
-       // Retorna uma obj genérico para concluir a submissão com sucesso
-       return $form_data;
+        // Retorna uma obj genérico para concluir a submissão com sucesso
+        return $form_data;
     
 }
 
@@ -554,8 +554,7 @@ function intranet_fafar_api_get_service_tickets_by_user_handler( $request ) {
 
 function intranet_fafar_api_get_service_tickets_by_user() {
 
-    $user    = wp_get_current_user();
-    $user_id = $user->ID;
+    $user_id = get_current_user_id();
 
     //$query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $new_code . "\"', '$.code')";
 

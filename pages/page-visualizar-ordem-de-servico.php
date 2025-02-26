@@ -86,7 +86,6 @@ $prevent_write = isset( $service_ticket['data']['prevent_write'] );
 
 $service_evaluations = intranet_fafar_api_get_service_ticket_evaluation_by_id( $ID );
 
-
 if ( isset( $updates['error_msg'] ) )
     $updates = array();
 
@@ -373,11 +372,11 @@ get_header(); ?>
                     <div class="px-2 py-2 border-bottom border-dark mb-2">
                         <h5 class="fw-bold p-0 m-0"> Avaliação </h5>
                     </div>
+                    <div class="px-2 py-3">
                     <?php if (
                        ! isset( $service_evaluations['error_msg'] ) && 
                        isset( $service_evaluations[0] )
                     ): ?>
-                        <div class="px-2 py-3">
                             <div class="evaluation-header">
                                 <div>
                                     <h5 class="mb-1"><?= htmlspecialchars( $service_ticket['owner']['data']->display_name ) ?></h5>
@@ -391,11 +390,11 @@ get_header(); ?>
                                 <span class="ms-2 text-muted"><?= number_format($service_evaluations[0]['data']['rate'], 1) ?></span>
                             </div>
                             <p class="mt-2"><?= htmlspecialchars($service_evaluations[0]['data']['comment']) ?></p>
-                        </div>
 
                     <?php else: ?>
-                        <p>Nenhuma avaliação disponível.</p>
+                        <p class="text-muted">Nenhuma avaliação disponível.</p>
                     <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
