@@ -167,6 +167,8 @@ function renderDataOnTable(users) {
         prevent_write,
       } = user;
 
+      console.log(ID);
+
       const nameData = JSON.stringify({
         display_name,
         workplace_extension,
@@ -260,6 +262,8 @@ function positionColFormatter(current) {
 function createdAtColFormatter(current) {
   const { bond_status, user_registered } = JSON.parse(current);
 
+  console.log({ bond_status, user_registered });
+
   const type =
     {
       aposentado: "text-bg-warning",
@@ -269,10 +273,15 @@ function createdAtColFormatter(current) {
 
   return html(`
       <div class="d-flex gap-2">
+      ${
+        user_registered
+          ? `
         <i class="bi bi-calendar-event"></i>
         <span class="fs-6">${new Date(
           user_registered
-        ).toLocaleDateString()}</span>
+        ).toLocaleDateString()}</span>`
+          : ""
+      }
         <span class="badge ${type}">${bond_status}</span>
       </div>
   `);

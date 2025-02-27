@@ -106,13 +106,6 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_auditorium_reservations_handler',
     ) );
 
-    register_rest_route( 'intranet/v1', '/submissions/(?P<place>[\w]+)/reservations', array(
-        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
-        'methods'  => WP_REST_Server::READABLE,
-        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_place_reservations',
-    ) );
-
     register_rest_route( 'intranet/v1', '/submissions/object/(?P<object>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
@@ -125,6 +118,13 @@ function intranet_fafar_api_register_submission_routes() {
         'methods'  => WP_REST_Server::READABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_get_users_by_sector_slug_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/submissions/(?P<place>[\w]+)/reservations', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_place_reservations',
     ) );
 
     register_rest_route( 'intranet/v1', '/users/(?P<id>[\w]+)', array(
@@ -896,7 +896,7 @@ function intranet_fafar_api_get_access_building_request_by_owner_handler( $reque
 
 function intranet_fafar_api_get_access_building_request( $by_owner = false ) {
 
-    $submissions = intranet_fafar_api_get_submissions_by_object_name( 'access_building_request' );
+    $submissions = intranet_fafar_api_get_submissions_by_object_name( 'access_building_request', array( 'orderby_column' => 'created_at', 'order' => 'DESC' ) );
 
     if( isset( $submissions['error_msg'] ) ) return $submissions;
 
@@ -1897,23 +1897,30 @@ function intranet_fafar_api_get_users() {
 
     $users = array_map( function ( $user ) {
 
-        $user_data = (array) $user->data;
+        // Lidando com permissões
+        $current_user_role = ( isset( wp_get_current_user()->roles[0] ) ? wp_get_current_user()->roles[0] : '' );
 
+        $can_view_personal_info = false;
+
+        if(
+            $current_user_role === 'administrator' || 
+            $current_user_role === 'pessoal' || 
+            $user->ID === get_current_user_id()
+        ) $can_view_personal_info = true;
+
+        
+        $user_data = (
+            $can_view_personal_info ? 
+            ( (array) $user->data ) : 
+            array(
+                'ID' => $user->ID,
+                'display_name' => $user->data->display_name,
+                'user_email' => $user->data->user_email,
+            )
+        );
+
+        // Informações abertas
         $user_data['avatar_url'] = get_avatar_url( $user->ID );
-
-        $user_data['personal_phone']             = esc_attr( get_the_author_meta( 'personal_phone', $user->ID ) );
-        $user_data['personal_birthday']          = esc_attr( get_the_author_meta( 'personal_birthday', $user->ID ) );
-        $user_data['personal_cpf']               = esc_attr( get_the_author_meta( 'personal_cpf', $user->ID ) );
-        $user_data['personal_ufmg_registration'] = esc_attr( get_the_author_meta( 'personal_ufmg_registration', $user->ID ) );
-        $user_data['personal_siape']             = esc_attr( get_the_author_meta( 'personal_siape', $user->ID ) );
-
-        $user_data['address_cep_code']     = esc_attr( get_the_author_meta( 'address_cep_code', $user->ID ) );
-        $user_data['address_uf']           = esc_attr( get_the_author_meta( 'address_uf', $user->ID ) );
-        $user_data['address_city']         = esc_attr( get_the_author_meta( 'address_city', $user->ID ) );
-        $user_data['address_neighborhood'] = esc_attr( get_the_author_meta( 'address_neighborhood', $user->ID ) );
-        $user_data['address_public_place'] = esc_attr( get_the_author_meta( 'address_public_place', $user->ID ) );
-        $user_data['address_number']       = esc_attr( get_the_author_meta( 'address_number', $user->ID ) );
-        $user_data['address_complement']   = esc_attr( get_the_author_meta( 'address_complement', $user->ID ) );
         
         $user_data['public_servant_bond_type']     = esc_attr( get_the_author_meta( 'public_servant_bond_type', $user->ID ) );
         $user_data['public_servant_bond_category'] = esc_attr( get_the_author_meta( 'public_servant_bond_category', $user->ID ) );
@@ -1922,28 +1929,33 @@ function intranet_fafar_api_get_users() {
         $user_data['public_servant_bond_level']    = esc_attr( get_the_author_meta( 'public_servant_bond_level', $user->ID ) );
         $user_data['role']                         = intranet_fafar_api_get_roles( esc_attr( ! empty( $user->roles ) ? $user->roles[0] : '' ) );
         $user_data['bond_status']                  = esc_attr( get_the_author_meta( 'bond_status', $user->ID ) );
-        
+              
         $user_data['workplace_place']     = intranet_fafar_api_get_submission_by_id( esc_attr( get_the_author_meta( 'workplace_place', $user->ID ) ) );
         $user_data['workplace_extension'] = esc_attr( get_the_author_meta( 'workplace_extension', $user->ID ) );
 
-        $user_data['prevent_read'] = false;
+        $user_data['prevent_read']  = false;
         $user_data['prevent_write'] = true;
-        $user_data['prevent_exec'] = true;
+        $user_data['prevent_exec']  = true;
 
-        if( isset( $user_data['role']['slug'] ) && 
-            (
-                wp_get_current_user()->roles[0] === 'administrator' || 
-                wp_get_current_user()->roles[0] === 'pessoal' || 
-                wp_get_current_user()->roles[0] === 'tecnologia_da_informacao_e_suporte' || 
-                wp_get_current_user()->get( 'ID' ) === $user_data['ID']
-            )
-          ) {
+        if( ! $can_view_personal_info ) return $user_data;
 
-            $user_data['prevent_read'] = false;
-            $user_data['prevent_write'] = false;
-            $user_data['prevent_exec'] = false;
+        $user_data['personal_phone']             = esc_attr( get_the_author_meta( 'personal_phone', $user->ID ) );
+        $user_data['personal_birthday']          = esc_attr( get_the_author_meta( 'personal_birthday', $user->ID ) );
+        $user_data['personal_cpf']               = esc_attr( get_the_author_meta( 'personal_cpf', $user->ID ) );
+        $user_data['personal_ufmg_registration'] = esc_attr( get_the_author_meta( 'personal_ufmg_registration', $user->ID ) );
+        $user_data['personal_siape']             = esc_attr( get_the_author_meta( 'personal_siape', $user->ID ) );
+            
+        $user_data['address_cep_code']     = esc_attr( get_the_author_meta( 'address_cep_code', $user->ID ) );
+        $user_data['address_uf']           = esc_attr( get_the_author_meta( 'address_uf', $user->ID ) );
+        $user_data['address_city']         = esc_attr( get_the_author_meta( 'address_city', $user->ID ) );
+        $user_data['address_neighborhood'] = esc_attr( get_the_author_meta( 'address_neighborhood', $user->ID ) );
+        $user_data['address_public_place'] = esc_attr( get_the_author_meta( 'address_public_place', $user->ID ) );
+        $user_data['address_number']       = esc_attr( get_the_author_meta( 'address_number', $user->ID ) );
+        $user_data['address_complement']   = esc_attr( get_the_author_meta( 'address_complement', $user->ID ) );
 
-        }
+        $user_data['prevent_read']  = false;
+        $user_data['prevent_write'] = false;
+        $user_data['prevent_exec']  = false;
 
         return $user_data;
 
@@ -2023,7 +2035,7 @@ function intranet_fafar_api_get_equipaments_handler() {
 
             $applicant = get_userdata( $s['data']['applicant'][0] );
 
-            $s['data']['applicant'] = $applicant->get( 'display_name' );
+            $s['data']['applicant'] = ( $applicant ? $applicant->get( 'display_name' ) : '' );
         
         }
 
@@ -2221,7 +2233,7 @@ function intranet_fafar_api_get_ips() {
 
     // Replace equipament_id in IPs
     return array_map( function ( $ip ) use ( $ip_to_equipament ) {
-        $ip['equipament_id'] = $ip_to_equipament[$ip['id']] ?? null;
+        $ip['data']['equipament_id'] = $ip_to_equipament[$ip['id']] ?? null;
 
         return $ip;
     }, $ips );

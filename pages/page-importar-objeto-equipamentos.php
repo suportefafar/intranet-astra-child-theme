@@ -36,15 +36,15 @@ $new_submissions     = array();
 if (
     $_SERVER['REQUEST_METHOD'] === 'POST' && 
     isset( $_POST['old_users'] ) && 
-    isset( $_POST['old_service_tickets'] )
+    isset( $_POST['old_equipaments'] )
 ) {
 
     $old_users_json = $_POST["old_users"];
-    $old_service_tickets_json   = $_POST["old_service_tickets"];
+    $old_equipaments_json   = $_POST["old_equipaments"];
 
     //$json_d = json_decode( preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $json_string), true );
     $old_users = json_decode(stripslashes($old_users_json), true);
-    $old_service_tickets   = json_decode(stripslashes($old_service_tickets_json), true);
+    $old_equipaments   = json_decode(stripslashes($old_equipaments_json), true);
 
     print_r("<br/>");
     print_r("JSON LAST ERROR: ");
@@ -75,107 +75,109 @@ if (
 
     print_r("<br/>");
 
-    foreach ( $old_service_tickets as $old_service_ticket )
+    foreach ( $old_equipaments as $old_equipament )
     {
 
-        if($old_service_ticket['codusu'] == '0') {
-            error_log(print_r('SEM COD\n', true));
-            continue;
-        }
-        
-        // $new_service_ticket = array(
-        //     'object_name' => 'service_ticket',
-        //     'owner' => get_fafar_new_user_id_by_old_id( $old_service_ticket['codusu'], $old_users ),
-        //     'permissions' => '774',
-        //     'created_at' => $old_service_ticket['data'],
-        //     'updated_at' => $old_service_ticket['dt_informacoes'],
-        //     'data' => array(
-        //         "type" => get_fafar_service_type( $old_service_ticket['setor'], $old_service_ticket['servico'] ),
-        //         "asset" => $old_service_ticket['patrimonio'],
-        //         "place" => [
-        //             get_fafar_user_place( $old_service_ticket['sala'] )
-        //         ],
-        //         "number" => str_pad( $old_service_ticket['id'], 6, '0', STR_PAD_LEFT ),
-        //         "status" => get_fafar_old_status( $old_service_ticket['status'] ),
-        //         "assigned_to" => get_fafar_new_user_id_by_old_id( $old_service_ticket['tecnico'], $old_users ),
-        //         "user_report" => $old_service_ticket['desc'],
-        //         "departament_assigned_to" => [
-        //             get_fafar_departament_assigned_to( $old_service_ticket['setor'] )
-        //         ],
-        //     ), 
-        // );
-
-
-        $new_service_ticket = array(
-            'object_name' => 'service_ticket',
-            'owner' => get_fafar_new_user_id_by_old_id( $old_service_ticket['codusu'], $old_users ),
-            'group_owner' => get_fafar_sector_by_old_id( $old_service_ticket['codusu'] ),
+        $new_equipament = array(
+            'object_name' => 'equipament',
+            'group_owner' => 'tecnologia_da_informacao_e_suporte',
             'permissions' => '774',
-            'created_at' => $old_service_ticket['data'],
-            'updated_at' => $old_service_ticket['dt_informacoes'],
             'data' => array(
-                'type' => get_fafar_service_type( $old_service_ticket['setor'], $old_service_ticket['servico'] ),
-                'asset' => $old_service_ticket['patrimonio'],
-                'place' => [
-                    get_fafar_user_place( $old_service_ticket['sala'] )
+                "ip" => [ get_fafar_ip_by_old_id( $old_equipament['ip_id'] ) ],
+                "desc" => $old_equipament['descricao'],
+                "asset" => $old_equipament['patrimonio'],
+                "brand" => $old_equipament['marca'],
+                "model" => $old_equipament['modelo'],
+                "place" => [
+                    get_fafar_user_place( '2006' )
                 ],
-                'number' => str_pad( $old_service_ticket['id'], 6, '0', STR_PAD_LEFT ),
-                'status' => get_fafar_old_status( $old_service_ticket['status'] ),
-                'assigned_to' => get_fafar_new_user_id_by_old_id( $old_service_ticket['tecnico'], $old_users ),
-                'user_report' => ($old_service_ticket['item'] ? $old_service_ticket['item'] . ': ' : '') . $old_service_ticket['desc'],
-                'departament_assigned_to' => [
-                    get_fafar_departament_assigned_to( $old_service_ticket['setor'] )
+                "status" => [
+                    ( $old_equipament['status'] == 1 ? "Ativado" : "Desativado" )
                 ],
+                "gpu_ram" => "",
+                "on_loan" => "",
+                "os_arch" => [],
+                "os_type" => [],
+                "ram_type" => [],
+                "applicant" => [
+                    get_fafar_new_user_id_by_old_id( $old_equipament['usuario_responsavel_id'], $old_users )
+                ],
+                "cpu_brand" => [],
+                "cpu_model" => "",
+                "gpu_brand" => [],
+                "gpu_model" => "",
+                "os_version" => "",
+                "disk_type_1" => [
+                    "HD"
+                ],
+                "disk_type_2" => [
+                    "HD"
+                ],
+                "disk_type_3" => [
+                    "HD"
+                ],
+                "disk_type_4" => [
+                    "HD"
+                ],
+                "mac_address" => "",
+                "ram_capacity" => "",
+                "cpu_frequency" => "",
+                "gpu_frequency" => "",
+                "internal_asset" => "",
+                "disk_capacity_1" => "",
+                "disk_capacity_2" => "",
+                "disk_capacity_3" => "",
+                "disk_capacity_4" => "",
+                "object_sub_type" => [
+                    get_fafar_type_equipament( $old_equipament['tipo'] ),
+                ],
+                "is_connected_to_router" => [ 'Não' ]
             ),
         );
 
-        $new_submission = intranet_fafar_api_create( $new_service_ticket );
+        intranet_fafar_api_create( $new_equipament );
 
-        if( isset( $new_submission['id'] ) ) {
-
-            if( str_replace(' ', '', $old_service_ticket['informacoes'] ) ) {
-
-                $service_ticket_update = array(
-                    'object_name' => 'service_ticket_update',
-                    'owner' => get_fafar_new_user_id_by_old_id( $old_service_ticket['tecnico'], $old_users ),
-                    'group_owner' => get_fafar_sector_by_old_id( $old_service_ticket['tecnico'] ),
-                    'permissions' => '774',
-                    'created_at' => $old_service_ticket['dt_informacoes'],
-                    'data' => array(
-                        'service_report' => $old_service_ticket['informacoes'],
-                        'status'         => [ get_fafar_old_status( $old_service_ticket['status'] ) ],
-                        'service_ticket' => $new_submission['id'],
-                    ),
-                );
-
-                intranet_fafar_api_create( $service_ticket_update );
-
-            }
-
-            if( $old_service_ticket['avaliacao'] ) {
-                
-                $new_service_evaluation = array(
-                    'object_name' => 'service_evaluation',
-                    'owner' => get_fafar_new_user_id_by_old_id( $old_service_ticket['codusu'], $old_users ),
-                    'group_owner' => get_fafar_sector_by_old_id( $old_service_ticket['codusu'] ),
-                    'permissions' => '774',
-                    'created_at' => $old_service_ticket['dt_informacoes'],
-                    'data' => array(
-                        'rate' => $old_service_ticket['avaliacao'],
-                        'comment' => $old_service_ticket['comentario_avaliacao'],
-                        'service_ticket' => $new_submission['id'],
-                    ),
-                );
-
-                intranet_fafar_api_create( $new_service_evaluation );
-
-            }
-            
-            // $new_submissions[] = $new_service_evaluation;
-        }
-        // $new_submissions[] = $new_service_ticket;
+        // $new_submissions[] = $new_equipament;
 
     }
+
+}
+
+function get_fafar_type_equipament( $index ) {
+
+    if(
+        ! isset( $index ) ||
+        $index === null || 
+        is_array( $index )
+    ) return '';
+
+    return array(
+        '1' => 'Computador',
+        '2' => 'Notebook',
+        '3' => 'Netbook',
+        '4' => 'Monitor',
+        '5' => 'Roteador',
+        '6' => 'Teclado',
+        '7' => 'Mouse',
+    )[(int) $index] ?? 'Outros';
+
+}
+
+function get_fafar_ip_by_old_id( $old_id ) {
+
+    if( $old_id == 0 ) return '';
+
+    $ips = intranet_fafar_api_get_submissions_by_object_name( 'ip' );
+
+    foreach( $ips as $ip ) {
+
+        if( $ip['data']['old_id'] === $old_id ) {
+            return $ip['id'];
+        }
+
+    } 
+
+    return '';
 
 }
 
@@ -456,7 +458,7 @@ function get_fafar_user_place( $number ) {
 
     }
 
-    return false;
+    return '';
 }
 
 function get_fafar_address_obj( $user_id, $addresses ) {
@@ -611,8 +613,8 @@ get_header(); ?>
             </div>
 
             <div class="form-floating mb-3">
-                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_service_tickets" rows="15" required></textarea>
-                <label for="floatingTextarea">OS</label>
+                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_equipaments" rows="15" required></textarea>
+                <label for="floatingTextarea">Equipamento</label>
             </div>
 
             <button type="submit">

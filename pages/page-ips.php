@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $ips = intranet_fafar_api_get_ips();
 
 $ips_in_use = array_filter( $ips, function ( $ip ) {
-    return isset( $ip['data']['equipament_id'] ) ? $ip['data']['equipament_id'] : false;
+    return isset( $ip['data']['equipament_id'] );
 } );
 
 $ips_usage_percentage = count( $ips_in_use ) / count( $ips ) * 100;

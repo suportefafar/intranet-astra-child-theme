@@ -34,17 +34,17 @@ $combinations        = array();
 $new_submissions     = array(); 
 
 if (
-    $_SERVER['REQUEST_METHOD'] === 'POST' && 
-    isset( $_POST['old_users'] ) && 
-    isset( $_POST['old_service_tickets'] )
+    $_SERVER['REQUEST_METHOD'] === 'POST'
 ) {
 
-    $old_users_json = $_POST["old_users"];
-    $old_service_tickets_json   = $_POST["old_service_tickets"];
+    $old_users_json     = $_POST["old_users"];
+    $old_accesses_json  = $_POST["old_accesses"];
+    $old_histories_json = $_POST["old_histories"];
 
     //$json_d = json_decode( preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $json_string), true );
-    $old_users = json_decode(stripslashes($old_users_json), true);
-    $old_service_tickets   = json_decode(stripslashes($old_service_tickets_json), true);
+    $old_users     = json_decode(stripslashes($old_users_json), true);
+    $old_accesses  = json_decode(stripslashes($old_accesses_json), true);
+    $old_histories = json_decode(stripslashes($old_histories_json), true);
 
     print_r("<br/>");
     print_r("JSON LAST ERROR: ");
@@ -75,107 +75,103 @@ if (
 
     print_r("<br/>");
 
-    foreach ( $old_service_tickets as $old_service_ticket )
+    foreach ( $old_accesses as $old_access )
     {
 
-        if($old_service_ticket['codusu'] == '0') {
-            error_log(print_r('SEM COD\n', true));
-            continue;
-        }
-        
-        // $new_service_ticket = array(
-        //     'object_name' => 'service_ticket',
-        //     'owner' => get_fafar_new_user_id_by_old_id( $old_service_ticket['codusu'], $old_users ),
-        //     'permissions' => '774',
-        //     'created_at' => $old_service_ticket['data'],
-        //     'updated_at' => $old_service_ticket['dt_informacoes'],
-        //     'data' => array(
-        //         "type" => get_fafar_service_type( $old_service_ticket['setor'], $old_service_ticket['servico'] ),
-        //         "asset" => $old_service_ticket['patrimonio'],
-        //         "place" => [
-        //             get_fafar_user_place( $old_service_ticket['sala'] )
-        //         ],
-        //         "number" => str_pad( $old_service_ticket['id'], 6, '0', STR_PAD_LEFT ),
-        //         "status" => get_fafar_old_status( $old_service_ticket['status'] ),
-        //         "assigned_to" => get_fafar_new_user_id_by_old_id( $old_service_ticket['tecnico'], $old_users ),
-        //         "user_report" => $old_service_ticket['desc'],
-        //         "departament_assigned_to" => [
-        //             get_fafar_departament_assigned_to( $old_service_ticket['setor'] )
-        //         ],
-        //     ), 
-        // );
-
-
-        $new_service_ticket = array(
-            'object_name' => 'service_ticket',
-            'owner' => get_fafar_new_user_id_by_old_id( $old_service_ticket['codusu'], $old_users ),
-            'group_owner' => get_fafar_sector_by_old_id( $old_service_ticket['codusu'] ),
+        $new_access = array(
+            'object_name' => 'access_building_request',
+            'owner' => get_fafar_new_user_id_by_old_id( $old_access['user_id'], $old_users ),
             'permissions' => '774',
-            'created_at' => $old_service_ticket['data'],
-            'updated_at' => $old_service_ticket['dt_informacoes'],
+            'created_at' => $old_access['data_solicitacao'],
             'data' => array(
-                'type' => get_fafar_service_type( $old_service_ticket['setor'], $old_service_ticket['servico'] ),
-                'asset' => $old_service_ticket['patrimonio'],
-                'place' => [
-                    get_fafar_user_place( $old_service_ticket['sala'] )
+                "lab" => $old_access['laboratorio'],
+                "place" => [
+                    get_fafar_user_place( $old_access['sala'] ),
                 ],
-                'number' => str_pad( $old_service_ticket['id'], 6, '0', STR_PAD_LEFT ),
-                'status' => get_fafar_old_status( $old_service_ticket['status'] ),
-                'assigned_to' => get_fafar_new_user_id_by_old_id( $old_service_ticket['tecnico'], $old_users ),
-                'user_report' => ($old_service_ticket['item'] ? $old_service_ticket['item'] . ': ' : '') . $old_service_ticket['desc'],
-                'departament_assigned_to' => [
-                    get_fafar_departament_assigned_to( $old_service_ticket['setor'] )
+                "end_date" => $old_access['data_fim'],
+                "start_date" => $old_access['data_inicio'],
+                "third_party_name" => "",
+                "request-acceptance" => [
+                    "1"
                 ],
+                "third_party_sector" => "",
+                "justification_for_request" => $old_access['justificativa'],
+                "access_building_request_type" => [
+                    "Acesso Próprio"
+                ]
             ),
         );
 
-        $new_submission = intranet_fafar_api_create( $new_service_ticket );
+        $id_old = $old_access['id'];
 
-        if( isset( $new_submission['id'] ) ) {
+        $histories = array_filter( $old_histories, function ( $old_history ) use ( $id_old ) {
 
-            if( str_replace(' ', '', $old_service_ticket['informacoes'] ) ) {
+            return $old_history['id_acessos'] === $id_old;
 
-                $service_ticket_update = array(
-                    'object_name' => 'service_ticket_update',
-                    'owner' => get_fafar_new_user_id_by_old_id( $old_service_ticket['tecnico'], $old_users ),
-                    'group_owner' => get_fafar_sector_by_old_id( $old_service_ticket['tecnico'] ),
-                    'permissions' => '774',
-                    'created_at' => $old_service_ticket['dt_informacoes'],
-                    'data' => array(
-                        'service_report' => $old_service_ticket['informacoes'],
-                        'status'         => [ get_fafar_old_status( $old_service_ticket['status'] ) ],
-                        'service_ticket' => $new_submission['id'],
-                    ),
-                );
+        } );
 
-                intranet_fafar_api_create( $service_ticket_update );
+        $logs = array();
 
-            }
+        foreach($histories as $history) {
+            $logs[] = array(
+                'type' => 'entry',
+                'registered_at' => strtotime( $history['data_entrada'] ),
+            );
 
-            if( $old_service_ticket['avaliacao'] ) {
-                
-                $new_service_evaluation = array(
-                    'object_name' => 'service_evaluation',
-                    'owner' => get_fafar_new_user_id_by_old_id( $old_service_ticket['codusu'], $old_users ),
-                    'group_owner' => get_fafar_sector_by_old_id( $old_service_ticket['codusu'] ),
-                    'permissions' => '774',
-                    'created_at' => $old_service_ticket['dt_informacoes'],
-                    'data' => array(
-                        'rate' => $old_service_ticket['avaliacao'],
-                        'comment' => $old_service_ticket['comentario_avaliacao'],
-                        'service_ticket' => $new_submission['id'],
-                    ),
-                );
-
-                intranet_fafar_api_create( $new_service_evaluation );
-
-            }
-            
-            // $new_submissions[] = $new_service_evaluation;
+            $logs[] = array(
+                'type' => 'exit',
+                'registered_at' => strtotime( $history['data_saida'] ),
+            );
         }
-        // $new_submissions[] = $new_service_ticket;
+
+        $new_access['data']['logs'] = $logs;
+
+        intranet_fafar_api_create( $new_access );
+
+        // $new_submissions[] = $new_access;
 
     }
+    
+
+}
+
+function get_fafar_type_equipament( $index ) {
+
+    if(
+        ! isset( $index ) ||
+        $index === null || 
+        is_array( $index )
+    ) return '';
+
+    return array(
+        '1' => 'Computador',
+        '2' => 'Notebook',
+        '3' => 'Netbook',
+        '4' => 'Monitor',
+        '5' => 'Roteador',
+        '6' => 'Teclado',
+        '7' => 'Mouse',
+    )[(int) $index] ?? 'Outros';
+
+}
+
+function get_fafar_ip_by_old_id( $old_id ) {
+
+    if( $old_id == 0 ) return '';
+
+    $ips = intranet_fafar_api_get_submissions_by_object_name( 'ip' );
+
+    foreach( $ips as $ip ) {
+
+        if( $ip['data']['old_id'] === $old_id ) {
+
+            return $ip['id'];
+
+        }
+
+    } 
+
+    return '';
 
 }
 
@@ -456,7 +452,7 @@ function get_fafar_user_place( $number ) {
 
     }
 
-    return false;
+    return '';
 }
 
 function get_fafar_address_obj( $user_id, $addresses ) {
@@ -611,8 +607,13 @@ get_header(); ?>
             </div>
 
             <div class="form-floating mb-3">
-                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_service_tickets" rows="15" required></textarea>
-                <label for="floatingTextarea">OS</label>
+                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_accesses" rows="15" required></textarea>
+                <label for="floatingTextarea">Acessos</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_histories" rows="15" required></textarea>
+                <label for="floatingTextarea">Histórico de acesso</label>
             </div>
 
             <button type="submit">
