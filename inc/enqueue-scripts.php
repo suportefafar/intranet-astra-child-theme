@@ -70,6 +70,8 @@ function add_footer_custom_scripts() {
         <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
 		
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.4/dist/sweetalert2.all.min.js"></script>
+
+        <script src="<?= get_stylesheet_directory_uri() ?>/assets/js/utils.js"></script>
 	<?php
 
 }

@@ -68,11 +68,11 @@ const grid = new gridjs.Grid({
     "Tipo",
     {
       name: "Atualizado",
-      formatter: (current) => parseToLocalDateTime(current),
+      formatter: (current) => formatDateTime(current),
     },
     {
       name: "Criado",
-      formatter: (current) => parseToLocalDateTime(current),
+      formatter: (current) => formatDateTime(current),
     },
     {
       name: "Ações",
@@ -259,21 +259,4 @@ async function deleteSubmission(id) {
 
     showAlert(error_msg, "danger");
   }
-}
-
-function parseToLocalDateTime(dateString) {
-  // Parse the input string into components
-  const [datePart, timePart] = dateString.split(" ");
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hours, minutes, seconds] = timePart.split(":").map(Number);
-
-  // Create a UTC Date object
-  const utcDate = new Date(
-    Date.UTC(year, month - 1, day, hours, minutes, seconds)
-  );
-
-  // Adjust the time to GMT-3
-  const gmtMinus3Date = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
-
-  return gmtMinus3Date.toLocaleString();
 }

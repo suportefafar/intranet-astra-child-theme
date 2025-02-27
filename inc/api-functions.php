@@ -562,7 +562,7 @@ function intranet_fafar_api_get_service_tickets_by_user() {
 
     // Se for Administrador, então acessa todas as ordens de serviço
     if ( $user_id === 1 )
-        $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket'";
+        $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' ORDER BY created_at DESC";
 
 
     $service_tickets = intranet_fafar_api_read( $query );

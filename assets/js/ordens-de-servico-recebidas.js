@@ -321,9 +321,9 @@ function statusColFormatter(current) {
 function createdAtColFormatter(current) {
   const { updated_at, created_at } = JSON.parse(current);
 
-  const formatted_created_at = new Date(created_at).toLocaleString();
+  const formatted_created_at = formatDateTime(created_at); //new Date(created_at).toLocaleString();
 
-  const formatted_updated_at = new Date(updated_at).toLocaleString();
+  const formatted_updated_at = formatDateTime(updated_at); //new Date(updated_at).toLocaleString();
 
   const how_long_created_at = getDateAsHowLongFormatted(created_at);
 
@@ -363,6 +363,8 @@ function actionColFormatter(current) {
 
 function getDateAsHowLongFormatted(d) {
   const date = new Date(d);
+  date.setHours(date.getHours() - 3);
+
   const now = new Date();
 
   const diff_seconds = (now.getTime() - date.getTime()) / 1000;
@@ -378,39 +380,4 @@ function getDateAsHowLongFormatted(d) {
   } else {
     return date.toLocaleDateString();
   }
-}
-
-function parseToLocalDateTime(dateString) {
-  // Parse the input string into components
-  const [datePart, timePart] = dateString.split(" ");
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hours, minutes, seconds] = timePart.split(":").map(Number);
-
-  // Create a UTC Date object
-  const utcDate = new Date(
-    Date.UTC(year, month - 1, day, hours, minutes, seconds)
-  );
-
-  // Adjust the time to GMT-3
-  const gmtMinus3Date = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
-
-  return gmtMinus3Date.toLocaleString();
-}
-
-/*
- * Controle dos Modal's de Empréstimo e Devolução
- */
-function showEventDetailsModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarEventDetailsModal")
-  );
-
-  modal.show();
-}
-
-function hideEventDetailsModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarEventDetailsModal")
-  );
-  modal.hide();
 }

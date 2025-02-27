@@ -251,7 +251,8 @@ function placeColFormatter(current) {
           </a>
         </span>
         
-        <span>${lab ?? ""}</span>
+        ${lab ? `<span>(${lab})</span>` : ""}
+       
       </div>`);
 }
 
@@ -340,23 +341,6 @@ function actionColFormatter(current) {
     </div>`;
 
   return html(html_content);
-}
-
-function parseToLocalDateTime(dateString) {
-  // Parse the input string into components
-  const [datePart, timePart] = dateString.split(" ");
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hours, minutes, seconds] = timePart.split(":").map(Number);
-
-  // Create a UTC Date object
-  const utcDate = new Date(
-    Date.UTC(year, month - 1, day, hours, minutes, seconds)
-  );
-
-  // Adjust the time to GMT-3
-  const gmtMinus3Date = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000);
-
-  return gmtMinus3Date.toLocaleString();
 }
 
 function confirmRegister(title = "", text = "", id = null, type = null) {

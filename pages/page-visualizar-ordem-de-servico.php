@@ -335,33 +335,39 @@ get_header(); ?>
                     <table class="table border border-end-0 border-start-0">
                         <tbody>
                         <?php
-                            foreach ( $updates as $update ):
+                            foreach ( $updates as $index => $update ):
                         ?>
- 
-                                <tr>
-                                    <td>Inserido em</td>
-                                    <td class="fw-medium"><?php echo fafar_intranet_format_date_local( $update['created_at'] ); ?></td>
-                                <tr>
-                                <tr>
-                                    <td>Prestador</td>
-                                    <td class="fw-medium"><?php echo $update['owner']['data']->display_name; ?></td>
-                                <tr>
-                                <tr>
-                                    <td>Relatório</td>
-                                    <td class="fw-medium"><?php echo $update['data']['service_report']; ?></td>
-                                <tr>
-                                <tr>
-                                    <td>Status</td>
-                                    <td class="fw-medium"><?php echo fafar_intranet_get_status_badge( $update['data']['status'][0] ); ?></td>
-                                <tr>
-                                <tr>
-                                    <td class="border-top"></td>
-                                    <td class="border-top"></td>
-                                <tr>
+
+                            <tr>
+                                <td class="fw-medium text-decoration-underline">Inserido em</td>
+                                <td class="fw-medium text-decoration-underline"><?php echo fafar_intranet_format_date_local( $update['created_at'] ); ?></td>
+                            <tr>
+                            <tr>
+                                <td>Prestador</td>
+                                <td class="fw-medium"><?php echo $update['owner']['data']->display_name; ?></td>
+                            <tr>
+                            <tr>
+                                <td>Relatório</td>
+                                <td class="fw-medium"><?php echo $update['data']['service_report']; ?></td>
+                            <tr>
+                            <tr>
+                                <td>Status</td>
+                                <td class="fw-medium"><?php echo fafar_intranet_get_status_badge( $update['data']['status'][0] ); ?></td>
+                            <tr>
+                            
+                            <?php if( count( $updates ) > ( $index + 1 ) ): ?>
+
+                            <tr>
+                                <td class="bg-light"></td>
+                                <td class="bg-light"></td>
+                            <tr>
+
+                            <?php endif ?>
+
                                 
-                            <?php
-                                endforeach;
-                            ?>
+                        <?php
+                            endforeach;
+                        ?>
                         </tbody>
                     </table>
                 </div>

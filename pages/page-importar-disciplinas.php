@@ -66,7 +66,11 @@ if ( $_SERVER['REQUEST_METHOD'] === 'POST' && ! empty( $_FILES['class_subjects_f
 
         $allow_to_import = true;
 
-        import_class_subjects( $csv_data );
+        $group_owner = wp_get_current_user()->roles[0];
+        if( isset( $_POST['group_owner'] ) && $_POST['group_owner'] )
+            $group_owner = $_POST['group_owner'];
+
+        import_class_subjects( $csv_data, $group_owner );
 
     } else {
         $csv_data = 'ERRO: Falha ao abrir o arquivo CSV!';
@@ -79,7 +83,7 @@ if ( $_SERVER['REQUEST_METHOD'] === 'POST' && isset( $_POST['class_subjects'] ) 
 
 }
 
-function import_class_subjects( $new_class_subjects ) {
+function import_class_subjects( $new_class_subjects, $group_owner ) {
     global $error_count, $duplicates_count, $not_a_fafar_subject, $success_count, $total_count;
 
     $class_subjects = intranet_fafar_api_get_submissions_by_object_name( 'class_subject' );
@@ -200,7 +204,7 @@ function import_class_subjects( $new_class_subjects ) {
         $result = intranet_fafar_api_create( array( 
             'object_name' => 'class_subject',
             'owner'       => '',
-            'group_owner' => '',
+            'group_owner' => $group_owner,
             'permissions' => '777',
             'data'        => $new_class_subject, 
          ) );
@@ -289,6 +293,12 @@ get_header(); ?>
                 <input class="form-control" type="file" id="class_subjects_file" name="class_subjects_file" />
             </div>
 
+            <div class="mb-3">
+                <label for="group_owner" class="form-label">Grupo Dono</label>
+                <input class="form-control" type="text" id="group_owner" name="group_owner" />
+                <div id="emailHelp" class="form-text">Se você for o dono das disciplinas, não preencha</div>
+            </div>
+
             <button type="submit">
                 <i class="bi bi-file-earmark-arrow-up"></i>
                 Importar
@@ -296,14 +306,15 @@ get_header(); ?>
 
         </form>
 
-        <hr class="mx-1" />
-        
-        <!-- <button class="mb-3 btn btn-success" id="btn_import" <?= $allow_to_import ? '' : 'disabled' ?>>
-            <i class="bi bi-file-earmark-arrow-up"></i>
-            Importar
-        </button> -->
+        <hr />
 
-        <h5><?= ( $success_count ?? '0' ) . '/' . ( $total_count ?? '0' ) ?> itens importados. | Duplicados: <?= ( $duplicates_count ?? '0' ) ?> itens. | Disciplinas Não-FAFAR: <?= ( $not_a_fafar_subject ?? '0' ) ?> | Erros: <?= ( $error_count ?? '0' ) ?> itens</h5>
+        <div class='mb-3' >
+            <h6><strong><?= ( $success_count ?? '0' ) . '/' . ( $total_count ?? '0' ) ?></strong> disciplinas importados</h6>
+            <h6><strong><?= ( $duplicates_count ?? '0' ) ?></strong> disciplinas duplicadas</h6>
+            <h6><strong><?= ( $not_a_fafar_subject ?? '0' ) ?></strong> disciplinas não-FAFAR</h6>
+            <h6><strong><?= ( $error_count ?? '0' ) ?></strong> disciplinas com erro</h6>
+        </div>
+
         <table class="table">
             <thead>
                 <tr>
@@ -338,13 +349,19 @@ get_header(); ?>
             </tbody>
         </table>
 
-        <pre>
-            <?php
 
-                print_r( isset( $csv_data ) ? $csv_data : '' );
-
-            ?>
-        </pre>
+        <?php
+            $user_role = intranet_fafar_get_user_slug_role();
+            if (
+                $user_role === 'tecnologia_da_informacao_e_suporte' || 
+                $user_role === 'administrator'
+            ) {
+                echo '<h5 class="mt-5">Objeto PHP</h5>';
+                echo '<pre>';
+                    print_r( isset( $csv_data ) ? $csv_data : '' );
+                echo '</pre>';
+            }
+        ?>
         
 <!--
     * Conteúdo customizado da página
