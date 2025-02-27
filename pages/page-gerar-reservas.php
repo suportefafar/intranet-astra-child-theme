@@ -171,6 +171,7 @@ function generate_reservations($class_subjects) {
                 $reservation = [
                     'object_name' => 'reservation',
                     'permissions' => '777',
+                    'group_owner' => $subject['group_owner'],
                     'data' => json_encode([
                         'class_subject' => [$subject['id']],
                         'place'         => [$room['id']],
