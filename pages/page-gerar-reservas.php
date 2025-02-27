@@ -19,6 +19,17 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 // wp_enqueue_script( 'intranet-fafar-salas-script', get_stylesheet_directory_uri() . '/assets/js/salas.js', array( 'jquery' ), false, false );
 
+
+// $rs = intranet_fafar_api_get_submissions_by_object_name( 'class_subject' );
+
+// foreach($rs as $r ) {
+
+//     $r['data']['use_on_auto_reservation'] = 'Sim';
+
+//     intranet_fafar_api_update( $r['id'], $r );
+
+// }
+
 $reservation_log = array();
 
 function generate_reservations($class_subjects) {
@@ -117,6 +128,9 @@ function generate_reservations($class_subjects) {
     $failures            = 0;
 
     foreach ( $class_subjects as $subject ) {
+
+        if( $subject['use_on_auto_reservation'] !== 'Sim' ) continue;
+
         $possible_rooms = array_filter($classrooms, fn($room) => $room['data']['capacity'] >= $subject['data']['number_vacancies_offered']);
         $schedules = parse_schedule( $subject['data']['desired_time']);
 
