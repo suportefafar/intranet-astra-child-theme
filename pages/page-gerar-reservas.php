@@ -117,7 +117,9 @@ function generate_reservations($class_subjects) {
 
     foreach ( $class_subjects as $subject ) {
 
-        if( $subject['use_on_auto_reservation'] !== 'Sim' ) continue;
+        if( 
+            isset( $subject['data']['use_on_auto_reservation'] ) && 
+            $subject['data']['use_on_auto_reservation'] !== 'Sim' ) continue;
 
         $possible_rooms = array_filter($classrooms, fn($room) => $room['data']['capacity'] >= $subject['data']['number_vacancies_offered']);
         $schedules = parse_schedule( $subject['data']['desired_time']);
