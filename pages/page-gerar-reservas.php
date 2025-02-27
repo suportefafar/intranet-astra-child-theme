@@ -17,18 +17,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Importanto script JS customizado
  * wp_enqueue_script( 'intranet-fafar-salas-script', get_stylesheet_directory_uri() . '/assets/js/salas.js', array( 'jquery' ), false, false );
  */
-// wp_enqueue_script( 'intranet-fafar-salas-script', get_stylesheet_directory_uri() . '/assets/js/salas.js', array( 'jquery' ), false, false );
-
-
-// $rs = intranet_fafar_api_get_submissions_by_object_name( 'class_subject' );
-
-// foreach($rs as $r ) {
-
-//     $r['data']['use_on_auto_reservation'] = 'Sim';
-
-//     intranet_fafar_api_update( $r['id'], $r );
-
-// }
 
 $reservation_log = array();
 

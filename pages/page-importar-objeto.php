@@ -33,18 +33,17 @@ $combinations        = array();
 
 $new_submissions     = array(); 
 
+echo intranet_fafar_utils_escape_and_clean_to_compare('TOPICOS EM ANALISES CLINICAS E TOXICOLOGICAS C - EMPREENDEDORISMO
+');
+
 if (
     $_SERVER['REQUEST_METHOD'] === 'POST'
 ) {
 
-    $old_users_json     = $_POST["old_users"];
-    $old_accesses_json  = $_POST["old_accesses"];
-    $old_histories_json = $_POST["old_histories"];
+    $old_subjects_json     = $_POST["old_subjects"];
 
     //$json_d = json_decode( preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $json_string), true );
-    $old_users     = json_decode(stripslashes($old_users_json), true);
-    $old_accesses  = json_decode(stripslashes($old_accesses_json), true);
-    $old_histories = json_decode(stripslashes($old_histories_json), true);
+    $old_subjects     = json_decode(stripslashes($old_subjects_json), true);
 
     print_r("<br/>");
     print_r("JSON LAST ERROR: ");
@@ -75,63 +74,65 @@ if (
 
     print_r("<br/>");
 
-    foreach ( $old_accesses as $old_access )
-    {
+    $subjects = intranet_fafar_api_get_submissions_by_object_name( 'class_subject' );
 
-        $new_access = array(
-            'object_name' => 'access_building_request',
-            'owner' => get_fafar_new_user_id_by_old_id( $old_access['user_id'], $old_users ),
-            'permissions' => '774',
-            'created_at' => $old_access['data_solicitacao'],
-            'data' => array(
-                "lab" => $old_access['laboratorio'],
-                "place" => [
-                    get_fafar_user_place( $old_access['sala'] ),
-                ],
-                "end_date" => $old_access['data_fim'],
-                "start_date" => $old_access['data_inicio'],
-                "third_party_name" => "",
-                "request-acceptance" => [
-                    "1"
-                ],
-                "third_party_sector" => "",
-                "justification_for_request" => $old_access['justificativa'],
-                "access_building_request_type" => [
-                    "Acesso Próprio"
-                ]
-            ),
-        );
+    foreach ( $subjects as $subject )
+    {   
 
-        $id_old = $old_access['id'];
+        $nature = 'Obrigatória';
 
-        $histories = array_filter( $old_histories, function ( $old_history ) use ( $id_old ) {
+        $old_subject = get_fafar_old_subject( $subject, $old_subjects );
 
-            return $old_history['id_acessos'] === $id_old;
-
-        } );
-
-        $logs = array();
-
-        foreach($histories as $history) {
-            $logs[] = array(
-                'type' => 'entry',
-                'registered_at' => strtotime( $history['data_entrada'] ),
-            );
-
-            $logs[] = array(
-                'type' => 'exit',
-                'registered_at' => strtotime( $history['data_saida'] ),
-            );
+        if($old_subject) {
+            if( $old_subject['tipo_disciplina'] === 'OP' ) {
+                $nature = 'Optativa';
+            } else {
+                $nature = 'Obrigatória';
+            }
         }
 
-        $new_access['data']['logs'] = $logs;
+        $name_cleaned = intranet_fafar_utils_escape_and_clean_to_compare($subject['data']['name_of_subject']);
+        if (stripos( $name_cleaned, 'topico' ) !== false) $nature = 'Optativa';
 
-        intranet_fafar_api_create( $new_access );
 
-        // $new_submissions[] = $new_access;
+        $subject['data']['nature_of_subject'] = [ $nature ];
+
+        intranet_fafar_api_update( $subject['id'], $subject );
 
     }
     
+
+}
+
+function get_fafar_old_subject( $subject, $old_subjects ) {
+
+
+    foreach( $old_subjects as $old_subject ) {
+
+        $cl_cod_a = intranet_fafar_utils_escape_and_clean_to_compare($old_subject['cod_disciplina']);
+        $cl_cod_b = intranet_fafar_utils_escape_and_clean_to_compare($subject['data']['code']);
+
+        $cl_name_a = intranet_fafar_utils_escape_and_clean_to_compare($old_subject['nome']);
+        $cl_name_b = intranet_fafar_utils_escape_and_clean_to_compare($subject['data']['name_of_subject']);
+
+        $cl_group_a = intranet_fafar_utils_escape_and_clean_to_compare($old_subject['turma']);
+        $cl_group_b = intranet_fafar_utils_escape_and_clean_to_compare($subject['data']['group']);
+
+        if(
+            $cl_cod_a === $cl_cod_b && 
+            $cl_name_a === $cl_name_b && 
+            $cl_group_a === $cl_group_b
+
+        ) {
+
+            return $old_subject;
+
+        }
+
+    } 
+
+    return false;
+
 
 }
 
@@ -602,18 +603,8 @@ get_header(); ?>
         <form class="my-3" action="/importar-objeto" method="POST">
 
             <div class="form-floating mb-3">
-                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_users" rows="15" required></textarea>
-                <label for="floatingTextarea">Usuários</label>
-            </div>
-
-            <div class="form-floating mb-3">
-                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_accesses" rows="15" required></textarea>
-                <label for="floatingTextarea">Acessos</label>
-            </div>
-
-            <div class="form-floating mb-3">
-                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_histories" rows="15" required></textarea>
-                <label for="floatingTextarea">Histórico de acesso</label>
+                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_subjects" rows="15" required></textarea>
+                <label for="floatingTextarea">Disciplinas</label>
             </div>
 
             <button type="submit">
