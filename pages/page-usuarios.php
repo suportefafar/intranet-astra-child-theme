@@ -65,7 +65,7 @@ get_header(); ?>
             </h6>
             <div class="d-flex gap-2">
                 <?php
-                    if( in_array( $sector_slug, array( 'pessoal', 'tecnologia_da_informacao_e_suporte', 'administrator' ) ) ):
+                    if( in_array( $sector_slug, array( 'pessoal', 'administrator' ) ) ):
                 ?>
 
                 <a href="#" id="btn_export_users" class="btn btn-outline-dark text-decoration-none w-lg-button">

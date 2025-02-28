@@ -31,8 +31,8 @@ function generate_reservations($class_subjects) {
     // Filtra disciplinas com mais de 80 vagas, disciplinas práticas e estágio
     $class_subjects = array_filter($class_subjects, function ($subject) {
         return (
-            $subject['data']['number_vacancies_offered'] > 0 && 
-            $subject['data']['number_vacancies_offered'] < 80 &&  
+            ( (int) $subject['data']['number_vacancies_offered'] ) > 0 && 
+            ( (int) $subject['data']['number_vacancies_offered'] ) < 80 &&  
             isset( $subject['data']['desired_time'] ) &&
             is_string( $subject['data']['desired_time'] ) &&  
             ! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'estagio' ) &&  
@@ -112,14 +112,26 @@ function generate_reservations($class_subjects) {
     );
 
     $failed_reservations = [];
+    $no_schedules_failed = [];
     $attempts            = 0;
     $failures            = 0;
 
     foreach ( $class_subjects as $subject ) {
 
         if( 
-            isset( $subject['data']['use_on_auto_reservation'] ) && 
-            $subject['data']['use_on_auto_reservation'] !== 'Sim' ) continue;
+            ! isset( $subject['data']['use_on_auto_reservation'][0] ) ||  
+            ! $subject['data']['use_on_auto_reservation'][0] ||  
+            $subject['data']['use_on_auto_reservation'][0] !== 'Sim' ){
+                $reservation_log[] = array(
+                    'sub_id'    => $subject['id'],
+                    'sub_code'  => $subject['data']['code'],
+                    'scheduale' => '',
+                    'status'    => 'fail',
+                    'desc'      => 'Can not be used',
+                );
+
+                continue;
+            }
 
         $possible_rooms = array_filter($classrooms, fn($room) => $room['data']['capacity'] >= $subject['data']['number_vacancies_offered']);
         $schedules = parse_schedule( $subject['data']['desired_time']);
@@ -212,7 +224,7 @@ function generate_reservations($class_subjects) {
                     'desc'      => $new_reservation['error_msg'],
                 );
 
-                $failed_reservations[] = ['class_subject' => $subject['data']['code'], 'schedule' => $schedule, 'nature_of_subject' => $subject['data']['nature_of_subject']];
+
             } else {
                 $reservation_log[] = array(
                     'sub_id'    => $subject['id'],
