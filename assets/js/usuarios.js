@@ -145,7 +145,7 @@ function renderDataOnTable(users) {
     return [];
   }
 
-  console.log(users);
+  // console.log(users);
 
   updateUsersCounter(users.length);
 
@@ -166,8 +166,6 @@ function renderDataOnTable(users) {
         workplace_place,
         prevent_write,
       } = user;
-
-      console.log(ID);
 
       const nameData = JSON.stringify({
         display_name,
@@ -262,8 +260,6 @@ function positionColFormatter(current) {
 function createdAtColFormatter(current) {
   const { bond_status, user_registered } = JSON.parse(current);
 
-  console.log({ bond_status, user_registered });
-
   const type =
     {
       aposentado: "text-bg-warning",
@@ -290,7 +286,7 @@ function createdAtColFormatter(current) {
 function actionColFormatter(current) {
   const { id, user_login, prevent_write } = JSON.parse(current);
 
-  // Esse objeto é passado de forma global pelo PHP
+  // Esse objeto é passado de forma global pelo page-usuario.php
   const { userLogin } = userLogged;
 
   return html(`

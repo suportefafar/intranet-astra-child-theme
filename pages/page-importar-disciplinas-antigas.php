@@ -33,14 +33,17 @@ $combinations        = array();
 
 $new_submissions     = array(); 
 
+echo intranet_fafar_utils_escape_and_clean_to_compare('TOPICOS EM ANALISES CLINICAS E TOXICOLOGICAS C - EMPREENDEDORISMO
+');
+
 if (
     $_SERVER['REQUEST_METHOD'] === 'POST'
 ) {
 
-    $old_auditoriums_json = $_POST["old_auditoriums"];
+    $old_subjects_json     = $_POST["old_subjects"];
 
     //$json_d = json_decode( preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $json_string), true );
-    $old_auditoriums = json_decode(stripslashes($old_auditoriums_json), true);
+    $old_subjects     = json_decode(stripslashes($old_subjects_json), true);
 
     print_r("<br/>");
     print_r("JSON LAST ERROR: ");
@@ -71,89 +74,65 @@ if (
 
     print_r("<br/>");
 
-    foreach ( $old_auditoriums as $old_auditorium )
-    {
+    $subjects = intranet_fafar_api_get_submissions_by_object_name( 'class_subject' );
 
-        if( $old_auditorium['form_id'] == "40364" ) {
+    foreach ( $subjects as $subject )
+    {   
 
-            $old_auditorium_data = $old_auditorium['data'];
+        $nature = 'Obrigatória';
 
-            echo "<br/>";
-            print_r($old_auditorium_data);
-            echo "<br/>";
+        $old_subject = get_fafar_old_subject( $subject, $old_subjects );
 
-            create_fafar_audi_reservation( $old_auditorium_data );
-
+        if($old_subject) {
+            if( $old_subject['tipo_disciplina'] === 'OP' ) {
+                $nature = 'Optativa';
+            } else {
+                $nature = 'Obrigatória';
+            }
         }
 
+        $name_cleaned = intranet_fafar_utils_escape_and_clean_to_compare($subject['data']['name_of_subject']);
+        if (stripos( $name_cleaned, 'topico' ) !== false) $nature = 'Optativa';
 
-        // $new_submissions[] = $new_equipament;
+
+        $subject['data']['nature_of_subject'] = [ $nature ];
+
+        intranet_fafar_api_update( $subject['id'], $subject );
 
     }
+    
 
 }
 
-function create_fafar_audi_reservation( $reservation ) {
+function get_fafar_old_subject( $subject, $old_subjects ) {
 
-    $base_data = $reservation;
 
-    $event_dates = [];
-    $start_times = [];
-    $end_times   = [];
-    
-    foreach ( $reservation as $key => $value ) {
-        if ( preg_match( '/^event_date__\d+$/', $key ) ) {
-            $event_dates[] = $value;
+    foreach( $old_subjects as $old_subject ) {
 
-            unset($base_data[$key]);
+        $cl_cod_a = intranet_fafar_utils_escape_and_clean_to_compare($old_subject['cod_disciplina']);
+        $cl_cod_b = intranet_fafar_utils_escape_and_clean_to_compare($subject['data']['code']);
+
+        $cl_name_a = intranet_fafar_utils_escape_and_clean_to_compare($old_subject['nome']);
+        $cl_name_b = intranet_fafar_utils_escape_and_clean_to_compare($subject['data']['name_of_subject']);
+
+        $cl_group_a = intranet_fafar_utils_escape_and_clean_to_compare($old_subject['turma']);
+        $cl_group_b = intranet_fafar_utils_escape_and_clean_to_compare($subject['data']['group']);
+
+        if(
+            $cl_cod_a === $cl_cod_b && 
+            $cl_name_a === $cl_name_b && 
+            $cl_group_a === $cl_group_b
+
+        ) {
+
+            return $old_subject;
+
         }
 
-        if ( preg_match( '/^start_time__\d+$/', $key ) ) {
-            $start_times[] = $value;
+    } 
 
-            unset($base_data[$key]);
-        }
+    return false;
 
-        if ( preg_match( '/^end_time__\d+$/', $key ) ) {
-            $end_times[] = $value;
-
-            unset($base_data[$key]);
-        }
-    }
-    
-    if( 
-        count( $event_dates ) !== count( $start_times ) || 
-        count( $event_dates ) !== count( $end_times ) || 
-        count( $start_times ) !== count( $end_times ) 
-      ) {
-
-        return false; // return new WP_Error( 'rest_api_sad', esc_html__( 'Quantidades de datas e horas diferentes!', 'intranet-fafar-api' ), 400 );
-
-    }
-    
-    $reservation = null;
-    
-    for ( $i = 0; $i < count( $event_dates ); $i++ ) {
-
-        $newEntry = $base_data;
-
-        $newEntry["event_date"] = $event_dates[$i];
-
-        $newEntry["start_time"] = $start_times[$i];
-
-        $newEntry["end_time"] = $end_times[$i];
-
-        $reservation = intranet_fafar_api_create_auditorium_reservation( $newEntry );
-
-        if ( isset( $reservation['error_msg'] ) ) {
-
-            return false; // return new WP_Error( 'rest_api_sad', esc_html__( $reservation['error_msg'], 'intranet-fafar-api' ), ( ( $reservation['http_status'] ) ?? 400 ) );
-    
-        }
-    
-    }
-
-    return true;
 
 }
 
@@ -186,7 +165,9 @@ function get_fafar_ip_by_old_id( $old_id ) {
     foreach( $ips as $ip ) {
 
         if( $ip['data']['old_id'] === $old_id ) {
+
             return $ip['id'];
+
         }
 
     } 
@@ -622,8 +603,8 @@ get_header(); ?>
         <form class="my-3" action="/importar-objeto" method="POST">
 
             <div class="form-floating mb-3">
-                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_auditoriums" rows="15" required></textarea>
-                <label for="floatingTextarea">Reservas de auditorio</label>
+                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_subjects" rows="15" required></textarea>
+                <label for="floatingTextarea">Disciplinas</label>
             </div>
 
             <button type="submit">

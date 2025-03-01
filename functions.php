@@ -39,6 +39,8 @@ require_once get_stylesheet_directory() . '/inc/api-functions.php';
 
 require_once get_stylesheet_directory() . '/inc/filters.php';
 
+require_once get_stylesheet_directory() . '/inc/actions.php';
+
 require_once get_stylesheet_directory() . '/inc/class-wp-bootstrap-navwalker.php';
 
 require_once get_stylesheet_directory() . '/inc/enqueue-scripts.php';

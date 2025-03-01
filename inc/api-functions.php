@@ -288,7 +288,7 @@ function intranet_fafar_api_delete_submission_by_id( $id ) {
     if ( isset( $submission['error_msg'] ) )
         return $submission;
 
-    $submission = intranet_fafar_api_delete( $submission, $delete_permanently = false, $check_permissions = true );
+    $submission = intranet_fafar_api_delete( $submission );
 
     return $submission;
 }
@@ -1266,6 +1266,11 @@ function intranet_fafar_api_get_auditorium_reservation_actions( $status ) {
 function intranet_fafar_api_create_or_update_reservation( $form_data ) {
 
     // Verificações iniciais
+
+    $public_servant_bond_category = get_user_meta( get_current_user_id(), 'public_servant_bond_category', true );
+
+    if( strtoupper( $public_servant_bond_category ) === 'DOCENTE' ) return array( 'error_msg' => '[333] Não autorizado!' );
+
     if( ! isset( $form_data['object_name'] ) ) return $form_data;
 
     if ( $form_data['object_name'] !== 'reservation' ) return $form_data;
@@ -1699,7 +1704,7 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
  * @param array $order_by ( 'orderby_column' => '', 'orderby_json' => '', 'order' => 'ASC' | 'DESC', 'inet_aton' => '1' )
  * @return array $submissions 
  */
-function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order_by = array() ) {
+function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order_by = array(), $check_permissions = true, $check_is_active = true ) {
 
     if( ! $object_name ) {
 
@@ -1742,7 +1747,7 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order
 
     }
 
-    $submissions = intranet_fafar_api_read( $query );
+    $submissions = intranet_fafar_api_read( $query, $check_permissions, $check_is_active );
 
     if( ! $submissions || count( $submissions ) == 0 ) {
 
@@ -1915,7 +1920,8 @@ function intranet_fafar_api_get_users() {
             array(
                 'ID' => $user->ID,
                 'display_name' => $user->data->display_name,
-                'user_email' => $user->data->user_email,
+                'user_email'   => $user->data->user_email,
+                'user_login'   => $user->data->user_login,
             )
         );
 
@@ -2221,7 +2227,7 @@ function intranet_fafar_api_get_ips() {
 
     $equipaments = intranet_fafar_api_get_submissions_by_object_name( 'equipament' );
 
-    if ( isset( $equipaments['error_msg'] ) ) return $equipaments;
+    if ( isset( $equipaments['error_msg'] ) ) $equipaments = array();
 
     // Map equipment IPs for quick lookup
     $ip_to_equipament = [];
@@ -2372,7 +2378,7 @@ function intranet_fafar_api_update( $id, $submission, $check_permissions = true 
   
 }
 
-function intranet_fafar_api_delete( $submission, $deactivate = true, $check_permissions = true ) {
+function intranet_fafar_api_delete( $submission, $delete_permanently = false, $check_permissions = true ) {
 
     if ( ! isset( $submission['id'] ) )
         return array( 'error_msg' => 'No ID informed!' );
@@ -2384,7 +2390,7 @@ function intranet_fafar_api_delete( $submission, $deactivate = true, $check_perm
   
     $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
 
-    if ( $deactivate ) {
+    if ( $delete_permanently ) {
 
         $res = $wpdb->delete( $table_name, array( 'id' => $submission['id'] ) );
 

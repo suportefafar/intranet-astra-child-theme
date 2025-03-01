@@ -27,6 +27,8 @@ add_shortcode( 'intranet_fafar_get_user_slug_role', 'intranet_fafar_get_user_slu
 
 add_shortcode( 'intranet_fafar_get_classrooms_as_select_options', 'intranet_fafar_get_classrooms_as_select_options' );
 
+add_shortcode( 'intranet_fafar_get_subjects_as_select_options', 'intranet_fafar_get_subjects_as_select_options' );
+
 add_shortcode( 'intranet_fafar_generate_service_ticket_code', 'intranet_fafar_generate_service_ticket_code' );
 
 add_shortcode( 'intranet_fafar_get_not_classrooms_as_select_options', 'intranet_fafar_get_not_classrooms_as_select_options' );
@@ -452,6 +454,30 @@ function intranet_fafar_get_classrooms_as_select_options() {
             $place['data']['object_sub_type'][0] === 'multimedia_room'
         )
             $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
+
+    }
+
+    return json_encode( $options ); 
+
+}
+
+
+function intranet_fafar_get_subjects_as_select_options() {
+
+    $subjects = intranet_fafar_api_get_submissions_by_object_name( 'class_subject', array(
+        'orderby_json' => 'code',
+    ) );
+
+    $options = array();
+
+    if( isset( $subjects['error_msg'] ) ) return json_encode( $options ); 
+
+    foreach ( $subjects as $subject ) {
+
+        if( isset( $subject['data']['code'] ) ){
+            $options[esc_attr( $subject['id'] )] = esc_html( $subject['data']['code'] ) . 
+                                                   ' (' . esc_html( $subject['data']['group'] ) . ')';
+        }
 
     }
 

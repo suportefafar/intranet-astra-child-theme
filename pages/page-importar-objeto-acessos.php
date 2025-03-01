@@ -37,10 +37,14 @@ if (
     $_SERVER['REQUEST_METHOD'] === 'POST'
 ) {
 
-    $old_auditoriums_json = $_POST["old_auditoriums"];
+    $old_users_json     = $_POST["old_users"];
+    $old_accesses_json  = $_POST["old_accesses"];
+    $old_histories_json = $_POST["old_histories"];
 
     //$json_d = json_decode( preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $json_string), true );
-    $old_auditoriums = json_decode(stripslashes($old_auditoriums_json), true);
+    $old_users     = json_decode(stripslashes($old_users_json), true);
+    $old_accesses  = json_decode(stripslashes($old_accesses_json), true);
+    $old_histories = json_decode(stripslashes($old_histories_json), true);
 
     print_r("<br/>");
     print_r("JSON LAST ERROR: ");
@@ -71,89 +75,63 @@ if (
 
     print_r("<br/>");
 
-    foreach ( $old_auditoriums as $old_auditorium )
+    foreach ( $old_accesses as $old_access )
     {
 
-        if( $old_auditorium['form_id'] == "40364" ) {
+        $new_access = array(
+            'object_name' => 'access_building_request',
+            'owner' => get_fafar_new_user_id_by_old_id( $old_access['user_id'], $old_users ),
+            'permissions' => '774',
+            'created_at' => $old_access['data_solicitacao'],
+            'data' => array(
+                "lab" => $old_access['laboratorio'],
+                "place" => [
+                    get_fafar_user_place( $old_access['sala'] ),
+                ],
+                "end_date" => $old_access['data_fim'],
+                "start_date" => $old_access['data_inicio'],
+                "third_party_name" => "",
+                "request-acceptance" => [
+                    "1"
+                ],
+                "third_party_sector" => "",
+                "justification_for_request" => $old_access['justificativa'],
+                "access_building_request_type" => [
+                    "Acesso Próprio"
+                ]
+            ),
+        );
 
-            $old_auditorium_data = $old_auditorium['data'];
+        $id_old = $old_access['id'];
 
-            echo "<br/>";
-            print_r($old_auditorium_data);
-            echo "<br/>";
+        $histories = array_filter( $old_histories, function ( $old_history ) use ( $id_old ) {
 
-            create_fafar_audi_reservation( $old_auditorium_data );
+            return $old_history['id_acessos'] === $id_old;
 
+        } );
+
+        $logs = array();
+
+        foreach($histories as $history) {
+            $logs[] = array(
+                'type' => 'entry',
+                'registered_at' => strtotime( $history['data_entrada'] ),
+            );
+
+            $logs[] = array(
+                'type' => 'exit',
+                'registered_at' => strtotime( $history['data_saida'] ),
+            );
         }
 
+        $new_access['data']['logs'] = $logs;
 
-        // $new_submissions[] = $new_equipament;
+        intranet_fafar_api_create( $new_access );
 
-    }
-
-}
-
-function create_fafar_audi_reservation( $reservation ) {
-
-    $base_data = $reservation;
-
-    $event_dates = [];
-    $start_times = [];
-    $end_times   = [];
-    
-    foreach ( $reservation as $key => $value ) {
-        if ( preg_match( '/^event_date__\d+$/', $key ) ) {
-            $event_dates[] = $value;
-
-            unset($base_data[$key]);
-        }
-
-        if ( preg_match( '/^start_time__\d+$/', $key ) ) {
-            $start_times[] = $value;
-
-            unset($base_data[$key]);
-        }
-
-        if ( preg_match( '/^end_time__\d+$/', $key ) ) {
-            $end_times[] = $value;
-
-            unset($base_data[$key]);
-        }
-    }
-    
-    if( 
-        count( $event_dates ) !== count( $start_times ) || 
-        count( $event_dates ) !== count( $end_times ) || 
-        count( $start_times ) !== count( $end_times ) 
-      ) {
-
-        return false; // return new WP_Error( 'rest_api_sad', esc_html__( 'Quantidades de datas e horas diferentes!', 'intranet-fafar-api' ), 400 );
+        // $new_submissions[] = $new_access;
 
     }
     
-    $reservation = null;
-    
-    for ( $i = 0; $i < count( $event_dates ); $i++ ) {
-
-        $newEntry = $base_data;
-
-        $newEntry["event_date"] = $event_dates[$i];
-
-        $newEntry["start_time"] = $start_times[$i];
-
-        $newEntry["end_time"] = $end_times[$i];
-
-        $reservation = intranet_fafar_api_create_auditorium_reservation( $newEntry );
-
-        if ( isset( $reservation['error_msg'] ) ) {
-
-            return false; // return new WP_Error( 'rest_api_sad', esc_html__( $reservation['error_msg'], 'intranet-fafar-api' ), ( ( $reservation['http_status'] ) ?? 400 ) );
-    
-        }
-    
-    }
-
-    return true;
 
 }
 
@@ -186,7 +164,9 @@ function get_fafar_ip_by_old_id( $old_id ) {
     foreach( $ips as $ip ) {
 
         if( $ip['data']['old_id'] === $old_id ) {
+
             return $ip['id'];
+
         }
 
     } 
@@ -622,8 +602,18 @@ get_header(); ?>
         <form class="my-3" action="/importar-objeto" method="POST">
 
             <div class="form-floating mb-3">
-                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_auditoriums" rows="15" required></textarea>
-                <label for="floatingTextarea">Reservas de auditorio</label>
+                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_users" rows="15" required></textarea>
+                <label for="floatingTextarea">Usuários</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_accesses" rows="15" required></textarea>
+                <label for="floatingTextarea">Acessos</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_histories" rows="15" required></textarea>
+                <label for="floatingTextarea">Histórico de acesso</label>
             </div>
 
             <button type="submit">

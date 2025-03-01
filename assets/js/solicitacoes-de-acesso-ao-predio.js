@@ -146,7 +146,7 @@ async function fetchDataHandler() {
 
   const submissions = JSON.parse(response.data);
 
-  console.log(submissions);
+  // console.log(submissions);
 
   let table_arr = [];
   for (const submission of Object.values(submissions)) {
@@ -216,7 +216,7 @@ function userColFormatter(current) {
         <div>
           <span class="me-1"><i class="bi bi-person"></i></span>
           <span>
-            <a href="href="/membros/${owner.data.user_login}/"" 
+            <a href="/membros/${owner.data.user_login}/" 
                class="text-decoration-none" 
                target="blank" 
                title="${owner.data.display_name}">
@@ -246,8 +246,8 @@ function placeColFormatter(current) {
           }" 
              class="text-decoration-none" 
              target="blank" 
-             title="Detalhes da sala ${place.data.number}">
-            ${place.data.number}
+             title="Detalhes da sala ${place.data?.number ?? ""}">
+            ${place.data?.number ?? ""}
           </a>
         </span>
         
@@ -400,7 +400,7 @@ async function getAccessBuildingRequestByID(id) {
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
     );
 
-    console.log(response);
+    // console.log(response);
 
     hideAlert();
 

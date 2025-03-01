@@ -28,57 +28,147 @@ function generate_reservations($class_subjects) {
         return 'Nenhuma reserva encontrada!';
     }
 
-    // Filtra disciplinas com mais de 80 vagas, disciplinas práticas e estágio
-    $class_subjects = array_filter($class_subjects, function ($subject) {
+    // Filtra disciplinas com mais de 80 vagas, disciplinas práticas, etc.
+    $filtered_class_subjects = array_filter( $class_subjects, function ( $subject ) {
         return (
             ( (int) $subject['data']['number_vacancies_offered'] ) > 0 && 
             ( (int) $subject['data']['number_vacancies_offered'] ) < 80 &&  
             isset( $subject['data']['desired_time'] ) &&
             is_string( $subject['data']['desired_time'] ) &&  
+            count( parse_schedule( $subject['data']['desired_time'] ) ) > 0 &&
             ! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'estagio' ) &&  
             ! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'monografia' ) &&  
-            ! str_contains( strtoupper( $subject['data']['group']), 'P' )
+            ! str_contains( strtoupper( $subject['data']['group'] ), 'P' ) && 
+            isset( $subject['data']['use_on_auto_reservation'][0] ) &&   
+            strtoupper( $subject['data']['use_on_auto_reservation'][0] ) === 'SIM'
         );
-    });
+    } );
 
     if (empty($class_subjects)) {
         return 'Não há disciplinas cadastradas para reservas.';
     }
 
-    echo '<br />Tentando reservar ' . count($class_subjects) . ' disciplinas.<br />';
+    echo '<br />' . count($class_subjects) . ' disciplinas para reservas.<br />';
 
-    $vacancies = array_column(array_column($class_subjects, 'data'), 'number_vacancies_offered');
-    $durations = array_merge(...array_map(fn($subject) => getDurations($subject['data']['desired_time']), $class_subjects));
+    $pre_reservations_data = get_pre_reservations_data( $filtered_class_subjects );
 
-    $vacancies_average = array_sum($vacancies) / count($vacancies);
-    $duration_average = array_sum($durations) / count($durations);
+    // Adicionar pontuação nas disciplinas
+    $pre_reservations_pointed = set_points_to_subjects( $pre_reservations_data );
+
+    // Ordenar pela pontuação recebida
+    usort( $pre_reservations_pointed, function( $a, $b ) {
+        return $b['score'] <=> $a['score']; // Sort descending
+    } );
     
-    $vacancies_stdev = standardDeviation($vacancies);
-    $durations_stdev = standardDeviation($durations);
+    // Ordenar pela quantidade vagas
+    $classrooms = array_filter(
+        intranet_fafar_api_get_submissions_by_object_name( 'place', ['orderby_json' => 'capacity', 'order' => 'ASC'] ),
+        fn( $place ) => $place['data']['object_sub_type'][0] === 'classroom'
+    );
 
-    echo '<br />';
-    echo 'Vagas: ' . round( $vacancies_average, 2 ) . ' (D.P.:' . round( $vacancies_stdev, 2 ) . ')';
-    echo '<br />';
-    echo 'Duração: ' . round( $duration_average, 2 ) . ' (D.P.:' . round( $durations_stdev, 2 ) . ')';
+    $attempts_counter    = 0;
+    $fails_counter       = 0;
+    $successes_counter   = 0;
 
-    // $groups = array_fill(1, 4, []);
+    foreach( $pre_reservations_pointed as $pre_reservation_pointed ) {
 
-    // foreach ($class_subjects as $subject) {
-    //     $subject_duration = array_sum(getDurations($subject['data']['desired_time']));
-    //     $vacancies = $subject['data']['number_vacancies_offered'];
+        $attempts_counter++;
 
-    //     $group_index = (int)(($vacancies >= $vacancies_average) << 1 | ($subject_duration >= $duration_average)) + 1;
-    //     $groups[$group_index][] = $subject;
+        $possible_rooms = array_filter( 
+            $classrooms, 
+            fn($room) => $room['data']['capacity'] >= $pre_reservation_pointed['class_subject_number_vacancies_offered'] 
+        );
+
+        $made_reservation = false;
+        foreach ($possible_rooms as $room) {
+
+            $data = $pre_reservation_pointed;
+
+            $desc = $data['class_subject_code']  . ' (' .implode( '/', $data['class_subject_group'] ) . ')';
+
+            $new_pre_reservation = [
+                'object_name' => 'reservation',
+                'permissions' => '774',
+                'group_owner' => $data['class_subject_group_owner'],
+                'data' => json_encode([
+                    'class_subject' => [$data['class_subject_id']],
+                    'place'         => [$room['id']],
+                    'frequency'     => ['weekly'],
+                    'weekdays'      => $data['weekdays'],
+                    'start_time'    => $data['start_time'],
+                    'end_time'      => $data['end_time'],
+                    'date'          => convert_date( $data['date'] ),
+                    'end_date'      => convert_date( $data['end_date'] ),
+                    'applicant'     => get_current_user_id(),
+                    'desc'          => $desc, 
+                ] ),
+            ];
+
+            // echo '<br />';
+            // print_r($new_pre_reservation);
+            // echo '<br />';
+            
+            $new_reservation_formatted = intranet_fafar_api_create_or_update_reservation( $new_pre_reservation );
+            
+            if ( ! isset( $new_reservation_formatted['error_msg'] ) ) {
+
+                $new_reservation = intranet_fafar_api_create( $new_reservation_formatted );
+
+                if ( ! isset( $new_reservation['error_msg'] ) ) { 
+
+                    $successes_counter++;
+
+                    $reservation_log[] = array(
+                        'sub_id'    => $data['class_subject_id'],
+                        'sub_code'  => $data['class_subject_code'],
+                        'vacancies' => $data['class_subject_number_vacancies_offered'],
+                        'scheduale' => implode( ' ', array( $data['start_time'], $data['end_time'] , implode( ' ', $data['weekdays'] ) ) ),
+                        'status'    => 'success',
+                        'desc'      => '',
+                        'points'    => $data['score'],
+                        'nature'    => $data['class_subject_nature_of_subject'],
+                    );
+
+                    $made_reservation = true;
+    
+                    break;
+                    
+                }
+            
+            }
+        }
+
+        if( ! $made_reservation  ) {
+
+            $fails_counter++;
+
+            $reservation_log[] = array(
+                'sub_id'    => $data['class_subject_id'],
+                'sub_code'  => $data['class_subject_code'],
+                'vacancies' => $data['class_subject_number_vacancies_offered'],
+                'scheduale' => implode( ' ', array( $data['start_time'], $data['end_time'] , implode( ' ', $data['weekdays'] ) ) ),
+                'status'    => 'fail',
+                'desc'      => 'Sem sala disponível',
+                'points'    => $data['score'],
+                'nature'    => $data['class_subject_nature_of_subject'],
+            );
+
+        }
 
 
-    // }
+    }
 
-    // foreach ($groups as $index => $group) {
-    //     echo "Grupo $index: " . count($group) . '<br />';
-    // }
 
-    foreach ( $class_subjects as &$subject ) {
-        $scheduales     = getDurations( $subject['data']['desired_time'] );
+    echo "<br />" . $attempts_counter . " disciplina/turma<br />" . $successes_counter . " com succeso<br />" . $fails_counter . " falhas<br />";
+    
+    return '';
+}
+
+function set_points_to_subjects( $pre_reservations ) {
+
+
+    foreach ( $pre_reservations as &$pre_reservation ) {
+        $scheduales     = getDurations( $pre_reservation['desired_time'] );
         $scheduales_qtd = count( $scheduales );
 
         /*
@@ -89,159 +179,91 @@ function generate_reservations($class_subjects) {
         $w_t = 65; // Peso para quantidade de horários
         $w_n = 3; // Peso para natureza da disciplina: 'obrigatória' ou 'optativa'
         if(
-            isset( $subject['data']['nature_of_subject'][0] ) && 
-            intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['nature_of_subject'][0] ) === 'optativa' 
+            isset( $pre_reservation['class_subject_nature_of_subject'][0] ) && 
+            intranet_fafar_utils_escape_and_clean_to_compare( $pre_reservation['class_subject_nature_of_subject'][0] ) === 'optativa' 
         ) {
             $w_v = 0.5;
             $w_t = 25;
             $w_n = 1;
         }
 
-        $subject['score'] = ( ( (int) $subject['data']['number_vacancies_offered'] * $w_v ) + ( $scheduales_qtd * $w_t ) ) * $w_n;
+        $pre_reservation['score'] = ( ( (int) $pre_reservation['class_subject_number_vacancies_offered'] * $w_v ) + ( $scheduales_qtd * $w_t ) ) * $w_n;
     }
 
-    usort( $class_subjects, function( $a, $b ) {
-        return $b['score'] <=> $a['score']; // Sort descending
-    } );
+    return $pre_reservations;
 
-    echo '<br />';
+}
 
-    $classrooms = array_filter(
-        intranet_fafar_api_get_submissions_by_object_name( 'place', ['orderby_json' => 'capacity', 'order' => 'ASC'] ),
-        fn( $place ) => $place['data']['object_sub_type'][0] === 'classroom'
-    );
+function get_pre_reservations_data( $class_subjects ) {
 
-    $failed_reservations = [];
-    $no_schedules_failed = [];
-    $attempts            = 0;
-    $failures            = 0;
+    $pre_reservations_data = array();
 
     foreach ( $class_subjects as $subject ) {
 
-        if( 
-            ! isset( $subject['data']['use_on_auto_reservation'][0] ) ||  
-            ! $subject['data']['use_on_auto_reservation'][0] ||  
-            $subject['data']['use_on_auto_reservation'][0] !== 'Sim' ){
-                $reservation_log[] = array(
-                    'sub_id'    => $subject['id'],
-                    'sub_code'  => $subject['data']['code'],
-                    'scheduale' => '',
-                    'status'    => 'fail',
-                    'desc'      => 'Can not be used',
-                );
-
-                continue;
-            }
-
-        $possible_rooms = array_filter($classrooms, fn($room) => $room['data']['capacity'] >= $subject['data']['number_vacancies_offered']);
-        $schedules = parse_schedule( $subject['data']['desired_time']);
-
-        if(count($schedules) === 0) {
-            $reservation_log[] = array(
-                'sub_id'    => $subject['id'],
-                'sub_code'  => $subject['data']['code'],
-                'scheduale' => '',
-                'status'    => 'fail',
-                'desc'      => 'Sem scheduale: ' . print_r( $subject['data']['desired_time'], true ),
-            );
-            continue;
-        } 
+        $schedules = parse_schedule( $subject['data']['desired_time'] );
 
         foreach ($schedules as $schedule) {
-            $attempts++;
 
-            $reservation_obj = array(
-                'class_subject' => [$subject['id']],
-                'start_time'    => $schedule['start'],
-                'end_time'      => $schedule['end'],
-                'weekdays'      => $schedule['weekday'],
+            // Início do semestre
+            $date = '10/03/2025';
+            if(
+                isset($subject['data']['desired_start_date'] ) && $subject['data']['desired_start_date']
+            ) $date = $subject['data']['desired_start_date'];
+
+            // Fim do semestre
+            $end_date = '12/07/2025';
+            if(
+                isset($subject['data']['desired_end_date'] ) && $subject['data']['desired_end_date']
+            ) $end_date = $subject['data']['desired_end_date'];
+
+            $new_pre_reservation_data = array(
+                'class_subject_id'                       => $subject['id'],
+                'class_subject_group'                    => [ $subject['data']['group'] ],
+                'class_subject_code'                     => $subject['data']['code'],
+                'class_subject_number_vacancies_offered' => $subject['data']['number_vacancies_offered'],
+                'class_subject_nature_of_subject'        => $subject['data']['nature_of_subject'],
+                'start_time'                             => $schedule['start'],
+                'end_time'                               => $schedule['end'],
+                'weekdays'                               => $schedule['weekday'],
+                'date'                                   => $date,
+                'end_date'                               => $end_date,
+                'desired_time'                           => $subject['data']['desired_time'],
+                'class_subject_group_owner'              => $subject['group_owner'],
             );
 
-            if (
-                has_reservation_for_another_group( $reservation_obj )
-            ) {
-                $reservation_log[] = array(
-                    'sub_id'    => $subject['id'],
-                    'sub_code'  => $subject['data']['code'],
-                    'scheduale' => print_r( $schedule, true ),
-                    'status'    => 'fail',
-                    'desc'      => 'Existe reserva com mesma disciplina e turma',
-                );
-                continue;
-            } 
-
-            $new_reservation = null;
-
-            foreach ($possible_rooms as $room) {
-
-                $date = '10/03/2025';
-                if(
-                    isset($subject['data']['desired_start_date'] ) && $subject['data']['desired_start_date']
-                ) $date = $subject['data']['desired_start_date'];
-
-                $end_date = '12/07/2025';
-                if(
-                    isset($subject['data']['desired_end_date'] ) && $subject['data']['desired_end_date']
-                ) $end_date = $subject['data']['desired_end_date'];
-
-                $reservation = [
-                    'object_name' => 'reservation',
-                    'permissions' => '777',
-                    'group_owner' => $subject['group_owner'],
-                    'data' => json_encode([
-                        'class_subject' => [$subject['id']],
-                        'place'         => [$room['id']],
-                        'frequency'     => ['weekly'],
-                        'weekdays'      => $schedule['weekday'],
-                        'start_time'    => $schedule['start'],
-                        'end_time'      => $schedule['end'],
-                        'date'          => convert_date( $date ),
-                        'end_date'      => convert_date( $end_date ),
-                        'applicant'     => get_current_user_id()
-                    ])
-                ];
-
-                // echo '<br />';
-                // print_r($reservation);
-                // echo '<br />';
-                
-                $new_reservation = intranet_fafar_api_create_or_update_reservation( $reservation );
-                
-                if ( ! isset( $new_reservation['error_msg'] ) ) {
-                    $new_reservation = intranet_fafar_api_create( $new_reservation );
-                    break;
-                }
-            }
-
-            if ( isset( $new_reservation['error_msg'] ) ) {
-                $failures++;
-
-                $reservation_log[] = array(
-                    'sub_id'    => $subject['id'],
-                    'sub_code'  => $subject['data']['code'],
-                    'scheduale' => print_r( $schedule, true ),
-                    'status'    => 'fail',
-                    'desc'      => $new_reservation['error_msg'],
-                );
-
-
+            $index = index_of_reservation( $new_pre_reservation_data, $pre_reservations_data );
+            if( $index > -1 ) {
+                $pre_reservations_data[$index]['class_subject_number_vacancies_offered'] += (int) $new_pre_reservation_data['class_subject_number_vacancies_offered'];
+                $pre_reservations_data[$index]['class_subject_group'][] = $new_pre_reservation_data['class_subject_group'][0];
             } else {
-                $reservation_log[] = array(
-                    'sub_id'    => $subject['id'],
-                    'sub_code'  => $subject['data']['code'],
-                    'scheduale' => print_r( $schedule, true ),
-                    'status'    => 'success',
-                    'desc'      => '',
-                );
+                $pre_reservations_data[] = $new_pre_reservation_data;
             }
+
         }
     }
 
-    echo "$attempts tentativas<br />$failures falhas<br /><br />Disciplinas com falhas:<br /><pre>";
-    print_r($failed_reservations);
-    echo "</pre><br />" . ($attempts - $failures) . " com sucesso<br />";
+    return $pre_reservations_data;
+
+}
+
+function index_of_reservation( $new_pre_reservation_data, $pre_reservations_data ) {
+
+    foreach( $pre_reservations_data as $index => $pre_reservation_data ) {
+
+        if(
+            $pre_reservation_data['class_subject_id'] !== $new_pre_reservation_data['class_subject_id'] && 
+            $pre_reservation_data['class_subject_group'][0] !== $new_pre_reservation_data['class_subject_group'][0] && 
+            $pre_reservation_data['class_subject_code'] === $new_pre_reservation_data['class_subject_code'] && 
+            $pre_reservation_data['start_time'] === $new_pre_reservation_data['start_time'] && 
+            $pre_reservation_data['end_time'] === $new_pre_reservation_data['end_time'] && 
+            $pre_reservation_data['weekdays'] === $new_pre_reservation_data['weekdays']
+        )
+            return $index;
+
+    }
+
+    return -1;
     
-    return '';
 }
 
 /*
@@ -281,6 +303,7 @@ function has_reservation_for_another_group( $new_reservation ) {
         );
     } );
 
+
     return ( count( $duplicate ) > 0 );
 }
 
@@ -318,7 +341,7 @@ function convert_date($date) {
 }
 
 function getDurations($input) {
-    preg_match_all('/(\d{2}):(\d{2})\s+(\d{2}):(\d{2})/', $input, $matches, PREG_SET_ORDER);
+    preg_match_all('/(\d{1,2}):(\d{2})\s+(\d{1,2}):(\d{2})/', $input, $matches, PREG_SET_ORDER);
     $durations = [];
 
     foreach ($matches as $match) {
@@ -409,6 +432,9 @@ get_header(); ?>
         <thead>
             <tr>
                 <th scope="col">Código Disciplina</th>
+                <th scope="col">Vagas</th>
+                <th scope="col">Pontos</th>
+                <th scope="col">Natureza</th>
                 <th scope="col">Horários</th>
                 <th scope="col">Status</th>
                 <th scope="col">Desc</th>
@@ -420,6 +446,9 @@ get_header(); ?>
                     foreach ( $reservation_log as $row ) {
                         echo '<tr>';
                             echo '<td><a href="/visualizar-objeto?id=' . $row['sub_id'] . '" target="blank">' . $row['sub_code'] . '</td>';
+                            echo '<td>' . $row['vacancies'] . '</td>';
+                            echo '<td>' . $row['points'] . '</td>';
+                            echo '<td>' . print_r( $row['nature'], true ) . '</td>';
                             echo '<td>' . $row['scheduale'] . '</td>';
                             echo '<td>' . $row['status'] . '</td>';
                             echo '<td>' . $row['desc'] . '</td>';
