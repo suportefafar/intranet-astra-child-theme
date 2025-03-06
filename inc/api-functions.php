@@ -1269,11 +1269,11 @@ function intranet_fafar_api_create_or_update_reservation( $form_data ) {
 
     $public_servant_bond_category = get_user_meta( get_current_user_id(), 'public_servant_bond_category', true );
 
-    if( strtoupper( $public_servant_bond_category ) === 'DOCENTE' ) return array( 'error_msg' => '[333] Não autorizado!' );
-
     if( ! isset( $form_data['object_name'] ) ) return $form_data;
 
     if ( $form_data['object_name'] !== 'reservation' ) return $form_data;
+
+    if( strtoupper( $public_servant_bond_category ) === 'DOCENTE' ) return array( 'error_msg' => '[333] Não autorizado!' );
     
     $new_form_data = $form_data;
     $new_form_data['data'] = json_decode( $new_form_data['data'], true );
