@@ -53,7 +53,7 @@ require_once get_stylesheet_directory() . '/inc/custom-user-fields.php';
 
 require_once get_stylesheet_directory() . '/inc/template-tags.php';
 
-//require_once get_stylesheet_directory() . '/inc/logs-hooks.php';
+require_once get_stylesheet_directory() . '/inc/logs-hooks.php';
 
 /*
  * Isso é uma gambiarra para lidar com um problema no CF7:
