@@ -22,7 +22,7 @@ wp_enqueue_script_module( 'intranet-fafar-ordens-de-servico-recebidas-script', g
 $tabs_metadata = array( 
     array(
         'text' => 'Minhas',
-        'url' => '/service_tickets/by_departament?assigned_to=-1'
+        'url' => '/service_tickets/by_departament?assigned_to=-1&status=Nova,Aguardando,Em andamento'
     ),
     array(
         'text' => 'Novas',

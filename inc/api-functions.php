@@ -120,6 +120,13 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_users_by_sector_slug_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/submissions/place/available-for-reservation', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_available_place_for_reservation_handler',
+    ) );
+
     register_rest_route( 'intranet/v1', '/submissions/(?P<place>[\w]+)/reservations', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
@@ -625,12 +632,6 @@ function intranet_fafar_api_get_service_tickets_by_departament_handler( $request
 
         $assigned_to = $query_params['assigned_to'];
 
-        if ( $query_params['assigned_to'] == '-1' ) {
-            
-            $assigned_to = get_current_user_id();
-
-        }
-
         $submissions  = intranet_fafar_api_get_service_tickets_by_departament( null, $status, $assigned_to );
 
     } else if ( isset( $query_params['status'] ) ) {
@@ -643,12 +644,6 @@ function intranet_fafar_api_get_service_tickets_by_departament_handler( $request
                 is_numeric( $query_params['assigned_to'] ) ) {
 
         $assigned_to = $query_params['assigned_to'];
-
-        if ( $query_params['assigned_to'] == '-1' ) {
-            
-            $assigned_to = strval( get_current_user_id() );
-
-        }
 
         // For > PHP 8.0 intranet_fafar_api_get_service_tickets_by_departament( departament: null, status: null, assigned_to: $assigned_to );
         $submissions  = intranet_fafar_api_get_service_tickets_by_departament( null, null, $assigned_to );
@@ -672,11 +667,9 @@ function intranet_fafar_api_get_service_tickets_by_departament_handler( $request
 function intranet_fafar_api_get_service_tickets_by_departament( $departament = null, $status = null, $assigned_to = null ) {
 
     if ( ! $departament ) {
-
         $user        = wp_get_current_user();
         $role_slug   = $user->roles[0];
         $departament = $role_slug;
-
     }
 
     $query = "SELECT * FROM `SET_TABLE_NAME` " . 
@@ -684,7 +677,7 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
               "AND JSON_CONTAINS(data, '\"" . $departament . "\"', '$.departament_assigned_to') " . 
               "ORDER BY created_at DESC";
 
-    $all_service_tickets = intranet_fafar_api_read( $query );
+    $all_service_tickets = intranet_fafar_api_read( $query, false );
 
     if ( isset( $all_service_tickets['error_msg'] ) )
         return $all_service_tickets['error_msg'];
@@ -692,18 +685,19 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
     if ( empty( $all_service_tickets ) )
         return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada para ' . $departament );
 
+    $status_arr = array();
+    if( $status && is_string( $status ) )
+        $status_arr = array_map( fn( $status ) => strtolower( $status ), explode( ',', $status ) );
+
     $service_tickets = array();
     
     for ( $i = 0; $i < count( $all_service_tickets ); $i++ ) {
 
         if ( 
-            isset( $status ) && 
-            strtolower( $status ) !== strtolower( $all_service_tickets[$i]['data']['status'] ) 
-           ) {
-
+            ! empty( $status_arr ) && 
+            ! in_array( strtolower( $all_service_tickets[$i]['data']['status'] ), $status_arr ) 
+           ) 
             continue;
-
-        }
 
         if ( isset( $assigned_to ) ) {
 
@@ -711,7 +705,7 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
 
             if( 
                 ! $all_service_tickets[$i]['data']['assigned_to'] || 
-                $assigned_to !== $all_service_tickets[$i]['data']['assigned_to']
+                (int) $all_service_tickets[$i]['data']['assigned_to'] !== $assigned_to
             ) continue;
 
         }
@@ -746,7 +740,7 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
 
         }
 
-        array_push( $service_tickets, $all_service_tickets[$i] );
+        $service_tickets[]  = $all_service_tickets[$i];
 
     }
 
@@ -950,6 +944,7 @@ function intranet_fafar_api_create_submission_handler( $request ) {
     return rest_ensure_response( json_encode( $submission ) );
 
 }
+
 
 /*
 Array
@@ -1222,6 +1217,77 @@ function intranet_fafar_api_get_auditorium_reservation_actions( $status ) {
     return array_map( fn( $index ) => $actions[$index], $actions_indexes_by_status[$status] ?? $actions_indexes_by_status['Padrão'] );
 }
 
+function intranet_fafar_api_get_available_place_for_reservation_handler( $request ) {
+
+    $query_params = $request->get_query_params();
+
+    $submissions = intranet_fafar_api_get_available_place_for_reservation( $query_params );
+
+    if ( isset( $submissions['error_msg'] ) ) {
+
+        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
+
+    }
+
+    return rest_ensure_response( json_encode( $submissions ) );
+
+}
+
+function intranet_fafar_api_get_available_place_for_reservation( $pre_reservation ) {
+
+
+    if( 
+        ! isset( $pre_reservation['date'] ) || 
+        ! isset( $pre_reservation['start_time'] ) ||
+        ! isset( $pre_reservation['end_time'] ) ||
+        ! isset( $pre_reservation['capacity'] )
+      ) {
+
+        return array( 'error_msg' => 'Faltando atributo(s): data, início, fim e/ou capacidade' );
+
+    }
+
+    $reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
+
+    // Ordenar pela quantidade vagas
+    $places = intranet_fafar_api_get_submissions_by_object_name( 'place', ['orderby_json' => 'capacity', 'order' => 'DESC'] );
+
+    $availables = array();
+
+    foreach ( $places as $place ) {
+
+        if (
+            isset( $place['data']['object_sub_type'][0] ) && 
+            ! in_array( $place['data']['object_sub_type'][0], $reservables )
+        ) continue;
+
+        if ( $place['data']['capacity'] < $pre_reservation['capacity'] ) continue;
+
+        
+        $response = intranet_fafar_api_create_or_update_reservation(
+            array(
+                'object_name' => 'reservation',
+                'data' => json_encode(
+                    array(
+                        'date'       => $pre_reservation['date'],
+                        'start_time' => $pre_reservation['start_time'],
+                        'end_time'   => $pre_reservation['end_time'],
+                        'frequency'  => [ 'once' ],
+                        'place'      => [ $place['id'] ],
+                    )
+                ),
+            )
+        );
+
+        if( isset( $response['error_msg'] ) ) continue;
+        
+        $availables[] = $place;
+
+    }
+
+    return $availables;
+
+}
 
 /*
  * {

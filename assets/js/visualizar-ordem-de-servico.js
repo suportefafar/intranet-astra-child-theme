@@ -158,3 +158,43 @@ function getURLParam(param) {
   const urlParams = new URLSearchParams(queryString);
   return urlParams.get(param);
 }
+
+/*
+ * Copiar dados da ordem de serviço para o DEMAI
+ */
+function copyToClipboard() {
+  var text = "";
+
+  if (!navigator.clipboard) {
+    alert(
+      "ERRO: Erro no recurso 'navigator.clipboard'. Por favor, informe ao setor de Informática."
+    );
+    return;
+  }
+
+  // $(".title-info")
+  //   .toArray()
+  //   .forEach((element, index) => {
+  //     //Retira a informação de "Status" e "Técnico"
+  //     if (index < $(".title-info").toArray().length - 2) {
+  //       text +=
+  //         $(element).text().toUpperCase().trim() +
+  //         ": " +
+  //         $($(".info").toArray()[index])
+  //           .text()
+  //           .trim()
+  //           .replace(/(\r\n|\n|\r)/gm, "") +
+  //         ";          ";
+  //     }
+  //   });
+
+  // navigator.clipboard.writeText(text.trim()).then(
+  //   () => {
+  //     showAlert("Copiado!", "success", true, 3000);
+  //   },
+  //   function (err) {
+  //     console.log(err);
+  //     showAlert("Falha ao copiar!", "danger");
+  //   }
+  // );
+}

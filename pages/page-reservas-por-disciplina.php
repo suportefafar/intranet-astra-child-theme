@@ -51,16 +51,16 @@ function parse_weekday_to_name( $number ) {
 
     if( ! $number ) return 'N/A';
 
-    if( is_string($number) ) return $number;
+    if( ! is_numeric($number) ) return $number;
 
     return array(
-        '0' => 'Dom',
-        '1' => 'Seg',
-        '2' => 'Ter',
-        '3' => 'Qua',
-        '4' => 'Qui',
-        '5' => 'Sex',
-        '6' => 'Sab',
+        0 => 'Dom',
+        1 => 'Seg',
+        2 => 'Ter',
+        3 => 'Qua',
+        4 => 'Qui',
+        5 => 'Sex',
+        6 => 'Sáb',
     )[(int)$number] ?? '--';
 }
 
@@ -110,7 +110,7 @@ get_header(); ?>
                         <td><?= $reservation['data']['place']['data']['number'] ?></td>
                         <td><?= $reservation['data']['start_time'] ?></td>
                         <td><?= $reservation['data']['end_time'] ?></td>
-                        <td><?= implode( ',', (array) array_map( function( $weekday ) { return parse_weekday_to_name( $weekday ); }, (array) $reservation['data']['weekdays'] ) ) ?></td>
+                        <td><?= implode( ', ', array_map( function( $weekday ) { return parse_weekday_to_name( $weekday ); }, (array) $reservation['data']['weekdays'] ) ) ?></td>
                     </tr>
 
                     <?php   

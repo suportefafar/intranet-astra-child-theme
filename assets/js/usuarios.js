@@ -438,11 +438,11 @@ function copyEmailsToClipboard() {
 
   navigator.clipboard.writeText(emails).then(
     function () {
-      showAlert("Email(s) copiado(s) com sucesso!", "success", true);
+      showAlert("Copiado(s) com sucesso!", "success", true);
     },
     function (err) {
       console.error("Async: Could not copy text: ", err);
-      showAlert("Não foi possível copiar os emails!", "danger");
+      showAlert("Falha ao copiar!", "danger");
     }
   );
 }

@@ -146,11 +146,19 @@ get_header(); ?>
                 <button 
                     class="btn btn-info"
                     id="btn_insert_update" 
-                    data-id="<?php echo $ID; ?>" 
+                    data-id="<?= $ID; ?>" 
                     title="Inserir Atualização" >
                         <i class="bi bi-node-plus"></i>
                         Atualizar
                 </button>
+
+                <!-- <button 
+                    class="btn btn-secondary"
+                    id="btn_copy_data" 
+                    title="Copiar dados da OS" >
+                        <i class="bi bi-clipboard"></i>
+                        Copiar
+                </button> -->
             <?php
             endif;
             ?>
@@ -181,6 +189,18 @@ get_header(); ?>
                                 </td>
                             <tr>
                             <tr>
+                                <td>Status</td>
+                                <td class="fw-medium">
+                                <?php 
+                                        echo ( 
+                                            isset( $service_ticket['data']['status'] ) ? 
+                                                fafar_intranet_get_status_badge( $service_ticket['data']['status'] ) : 
+                                                '' 
+                                            ) 
+                                    ?>
+                                </td>
+                            <tr>
+                            <tr>
                                 <td>Número</td>
                                 <td class="fw-medium">
                                     <?php 
@@ -190,18 +210,6 @@ get_header(); ?>
                                                     $service_ticket['data']['number'] .
                                                 '</mark>' 
                                                 : 
-                                                '' 
-                                            ) 
-                                    ?>
-                                </td>
-                            <tr>
-                            <tr>
-                                <td>Status</td>
-                                <td class="fw-medium">
-                                <?php 
-                                        echo ( 
-                                            isset( $service_ticket['data']['status'] ) ? 
-                                                fafar_intranet_get_status_badge( $service_ticket['data']['status'] ) : 
                                                 '' 
                                             ) 
                                     ?>
@@ -218,6 +226,18 @@ get_header(); ?>
                                     '</a>' : 
                                     '' 
                                     ) 
+                                ?>
+                                </td>
+                            <tr>
+                            <tr>
+                                <td>Ramal</td>
+                                <td class="fw-medium">
+                                <?php 
+                                    echo ( 
+                                        ( $service_ticket['owner']['data'] ) ?
+                                            get_the_author_meta( 'workplace_extension', $service_ticket['owner']['data']->ID ) : 
+                                            '' 
+                                        ) 
                                 ?>
                                 </td>
                             <tr>

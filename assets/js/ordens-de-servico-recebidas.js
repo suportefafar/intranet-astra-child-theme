@@ -252,7 +252,7 @@ function descColFormatter(current) {
       <div>
         <span class="text-secondary">
         ${
-          user_report.length > MAX_CHAR_DESC
+          user_report && user_report.length > MAX_CHAR_DESC
             ? user_report.slice(0, MAX_CHAR_DESC) + "..."
             : user_report
         }

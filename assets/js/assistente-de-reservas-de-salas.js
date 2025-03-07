@@ -31,8 +31,7 @@ const ptBR = {
 
 const gridjs = new Grid({
   columns: [
-    "ID",
-    "Numero",
+    { name: "Sala", formatter: descPlaceFormatter },
     "Capacidade",
     {
       name: "Ações",
@@ -50,18 +49,6 @@ const gridjs = new Grid({
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-function formatterHandler(_, row) {
-  const html_content = `
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-primary" href='/adicionar-reserva-por-sala/?id=${row.cells[0].data}'>
-      <i class="bi bi-calendar-week"></i>
-    </a>
-  </div>  
-      `;
-
-  return html(html_content);
-}
-
 /**
  * 'Buscar Salas' FORM HANDLER
  */
@@ -72,17 +59,17 @@ form.addEventListener("submit", onSubmitHandler);
 async function onSubmitHandler(e) {
   e.preventDefault();
 
-  const dia = document.querySelector("input[name='dia_evento']").value;
-  const inicio = document.querySelector("input[name='inicio_evento']").value;
-  const fim = document.querySelector("input[name='fim_evento']").value;
-  const capacidade = document.querySelector("input[name='capacidade']").value;
+  const date = document.querySelector("#event_date").value;
+  const start_time = document.querySelector("#start_time").value;
+  const end_time = document.querySelector("#end_time").value;
+  const capacity = document.querySelector("#capacity").value;
 
-  const data = { dia, inicio, fim, capacidade };
+  const data = { date, start_time, end_time, capacity };
 
   let response = {};
   try {
     response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/sala/available",
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/place/available-for-reservation",
       { params: data }
     );
     console.log(response);
@@ -95,7 +82,14 @@ async function onSubmitHandler(e) {
 
   const salas = [];
   for (const sala of raw_salas) {
-    salas.push([sala["id"], sala["numero"], sala["capacidade"]]);
+    const { id, data } = sala;
+    const { number, block, floor, capacity } = data;
+
+    const descPlaceCol = JSON.stringify({ id, number, block, floor });
+
+    const actionCol = JSON.stringify({ id, number });
+
+    salas.push([descPlaceCol, capacity, actionCol]);
   }
 
   document.getElementById("table-wrapper").classList.remove("d-none");
@@ -106,4 +100,26 @@ async function onSubmitHandler(e) {
       data: salas,
     })
     .forceRender();
+}
+
+function descPlaceFormatter(current) {
+  const { id, number, block, floor } = JSON.parse(current);
+
+  return html(`
+    <a href="/vizualizar-sala?id=${id}" target="blank" title="Detalhes da ${number}">${number}</a> (Bloco: ${block} / Andar: ${floor}º)
+  `);
+}
+
+function formatterHandler(current) {
+  const { id, number } = JSON.parse(current);
+
+  const html_content = `
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="/reservas/?place_id=${id}" title="Reserva na ${number}">
+      <i class="bi bi-calendar-week"></i>
+    </a>
+  </div>  
+      `;
+
+  return html(html_content);
 }

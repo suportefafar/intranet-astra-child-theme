@@ -87,46 +87,46 @@ get_header(); ?>
 
         <form id="form-buscar-salas" class="mb-5">
             <div class="form-group mb-3">
-                <label for="dia-do-evento">* Dia do Evento </label>
+                <label for="event_date">* Dia do Evento </label>
                 <input type="date" 
                     class="form-control" 
-                    id="dia-do-evento" 
-                    name="dia_evento" 
+                    id="event_date" 
+                    name="event_date" 
                     min="2024-09-10" 
                     aria-required="true" 
                     required />
             </div>
             <div class="form-group mb-3">
-                <label for="inicio-evento">* Início </label>
+                <label for="start_time">* Início </label>
                 <input type="time" 
                     class="form-control" 
-                    id="inicio-evento" 
-                    name="inicio_evento" 
+                    id="start_time" 
+                    name="start_time" 
                     aria-required="true" 
                     required />
             </div>
             <div class="form-group mb-3">
-                <label for="fim-evento">* Fim </label>
+                <label for="end_time">* Fim </label>
                 <input type="time" 
                     class="form-control" 
-                    id="fim-evento" 
-                    name="fim_evento" 
+                    id="end_time" 
+                    name="end_time" 
                     aria-required="true" 
                     required />
             </div>
             <div class="form-group mb-3">
-                <label for="capacidade">* Capacidade </label>
+                <label for="capacity">* Capacidade </label>
                 <input type="number" 
                     class="form-control" 
-                    id="capacidade" 
-                    name="capacidade" 
+                    id="capacity" 
+                    name="capacity" 
                     min="1" 
                     max="200" 
                     placeholder="20" 
                     aria-required="true" 
                     required />
             </div>
-            <button type="submit" class="btn btn-outline-secondary">Buscar Salas</button>
+            <button type="submit" class="btn btn-primary">Buscar Salas</button>
         </form>
 
         <!-- TABLES -->
