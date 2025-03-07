@@ -1333,13 +1333,19 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 
     // Verificações iniciais
 
-    $public_servant_bond_category = get_user_meta( get_current_user_id(), 'public_servant_bond_category', true );
-
     if( ! isset( $form_data['object_name'] ) ) return $form_data;
 
     if ( $form_data['object_name'] !== 'reservation' ) return $form_data;
 
-    if( strtoupper( $public_servant_bond_category ) === 'DOCENTE' ) return array( 'error_msg' => '[333] Não autorizado!' );
+    $public_servant_bond_category = get_user_meta( get_current_user_id(), 'public_servant_bond_category', true );
+
+    $role = wp_get_current_user()->roles[0];
+
+    if(
+        strtoupper( $public_servant_bond_category ) === 'DOCENTE' && 
+        $role !== 'colegiado_de_graduacao_biomedicina' && 
+        $role !== 'colegiado_de_graduacao_farmacia'
+    ) return array( 'error_msg' => '[333] Não autorizado!' );
     
     $new_form_data = $form_data;
     $new_form_data['data'] = json_decode( $new_form_data['data'], true );
