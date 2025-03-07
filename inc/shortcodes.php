@@ -564,16 +564,6 @@ function intranet_fafar_generate_code( $n_letters, $n_digits ) {
 
 function intranet_fafar_get_user_slug_role() {
 
-    $user       = wp_get_current_user();
-    $role_slug  = $user->roles[0];
-    $role_slug  = '';
-
-    if ( $user->roles[0] ) {
-
-        $role_slug = $user->roles[0];
-
-    }
-
-    return $role_slug;
+   return ( isset( wp_get_current_user()->roles[0] ) ? wp_get_current_user()->roles[0] : '' );
 
 }

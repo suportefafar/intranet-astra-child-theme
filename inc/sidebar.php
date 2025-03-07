@@ -13,7 +13,7 @@ function intranet_fafar_sidebar_profile() {
 
     $user       = wp_get_current_user();
     $avatar_url = get_avatar_url( $user->get( 'ID' ) );
-    $role_slug  = $user->roles[0];
+    $role_slug  = ( isset( $user->roles[0] ) ? $user->roles[0] : '' );
 
     $role_display_name = '--';
     if ( isset( wp_roles()->roles[ $role_slug ] ) ) {
@@ -59,7 +59,7 @@ function intranet_fafar_sidebar_menu() {
 
     $role_display_name = 'default';
 
-    $role_slug  = wp_get_current_user()->roles[0];
+    $role_slug = ( isset( wp_get_current_user()->roles[0] ) ? wp_get_current_user()->roles[0] : '' );
 
     if (
         in_array( $role_slug,  $roles_with_custom_menu ) && 
