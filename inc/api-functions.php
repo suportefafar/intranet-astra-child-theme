@@ -290,7 +290,7 @@ function intranet_fafar_api_delete_submission_by_id( $id ) {
     if( ! $id ) 
         return array( 'error_msg' => '[0101] ID não informado', 'http_status' => 400 );
 
-    $submission = intranet_fafar_api_get_submission_by_id( $id );
+    $submission = intranet_fafar_api_get_submission_by_id( $id, false );
 
     if ( isset( $submission['error_msg'] ) )
         return $submission;
@@ -1705,10 +1705,6 @@ function intranet_fafar_api_get_submission_by_id_handler( $request ) {
 
 function intranet_fafar_api_get_submission_by_id( $id, $substitute_value = true ) {
 
-    global $wpdb;
-
-    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
-
     if( ! $id ) {
 
         return array( 'error_msg' => '[0101]No "id" found.', 'http_status' => 400 );
@@ -2539,6 +2535,8 @@ function intranet_fafar_api_check_exec_permission( $submission, $user_id = null 
 function intranet_fafar_api_check_permissions( $submission, $permission_digit_values, $user_id = null ) {
 
     $owner                              = (string) ( $submission['owner'] ?? 0 );
+    // Caso receba um objeto submission com o valor do owner substituito pelos dados do owner
+    $owner                              = (string) ( isset( $submission['owner']['ID'] ) ? $submission['owner']['ID'] : $submission['owner'] );
     $group_owner                        = (string) ( $submission['group_owner'] ?? 0 );
     $permissions                        = (string) ( $submission['permissions'] ?? '777' );
 
