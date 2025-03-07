@@ -1263,7 +1263,7 @@ function intranet_fafar_api_get_auditorium_reservation_actions( $status ) {
  * @param $form_data
  * @return FromData | null
 */
-function intranet_fafar_api_create_or_update_reservation( $form_data ) {
+function intranet_fafar_api_create_or_update_reservation( $form_data, $submission_id = null ) {
 
     // Verificações iniciais
 
@@ -1419,10 +1419,8 @@ function intranet_fafar_api_create_or_update_reservation( $form_data ) {
     } else {
 
         // Gerando a prop 'dt_dstart' (Data início + Hora início) só com números
-        $date = new DateTime( $new_form_data['data']['date'] );
-
-        $time = DateTime::createFromFormat( 'H:i', $new_form_data['data']['start_time'] );
-
+        $date     = new DateTime( $new_form_data['data']['date'] );
+        $time     = DateTime::createFromFormat( 'H:i', $new_form_data['data']['start_time'] );
         $dt_start = $date->format( 'Ymd' ) . 'T' . $time->format('His');
 
         /*
@@ -1433,7 +1431,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data ) {
 
         // Gerando a prop 'duration'
         $start = DateTime::createFromFormat('H:i', $new_form_data['data']['start_time']);
-        $end = DateTime::createFromFormat('H:i', $new_form_data['data']['end_time']);
+        $end   = DateTime::createFromFormat('H:i', $new_form_data['data']['end_time']);
 
         // Calculate the difference between the two times
         $interval = $start->diff($end);
@@ -1476,6 +1474,13 @@ function intranet_fafar_api_create_or_update_reservation( $form_data ) {
         foreach ( $new_reservation_timestamps as $new_reservation_timestamp ) {
 
             foreach ( $existing_reservations as $existing_reservation ) { 
+
+                /*
+                 * Essa comparação é para quando estamos fazendo atualização de uma reserva.
+                 * Nesse caso, nenhum 'timestamp' possível dessa reserva deve ser levado em consideração, 
+                 * pois ela será atualizada: suas antigas timestamps não contam mais 
+                 */
+                if( $submission_id && $existing_reservation['id'] === $submission_id ) continue;
 
                 // Aqui estamos gerando as timestamps de cada evento registrado
                 $existing_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $existing_reservation['data']['rrule'] );

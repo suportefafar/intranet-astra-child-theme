@@ -333,15 +333,15 @@ async function deleteSubmission(id) {
 
     showAlert("Excluído com sucesso!", "success", true, 3000);
 
-    loadUI();
+    fetchCalendarData();
   } catch (error) {
     let error_msg = "[1010]Unknow error on try catch";
 
     if (error.response?.data?.message) {
-      // console.log(error.response.data);
+      console.log(error.response.data);
       error_msg = error.response.data.message;
     } else {
-      // console.log(error);
+      console.log(error);
     }
 
     showAlert(error_msg, "danger");

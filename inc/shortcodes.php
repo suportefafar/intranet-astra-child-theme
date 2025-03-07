@@ -445,13 +445,19 @@ function intranet_fafar_get_classrooms_as_select_options() {
         'orderby_json' => 'number',
     ) );
 
+    $reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
+
+
     $options = array();
 
     foreach ( $places as $place ) {
 
         if (
-            $place['data']['object_sub_type'][0] === 'classroom' || 
-            $place['data']['object_sub_type'][0] === 'multimedia_room'
+            ! in_array( $place['data']['object_sub_type'], $reservables ) || 
+           ( 
+             isset( $place['data']['object_sub_type'][0] ) &&
+             ! in_array( $place['data']['object_sub_type'][0], $reservables ) 
+           )
         )
             $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
 
@@ -491,11 +497,19 @@ function intranet_fafar_get_not_classrooms_as_select_options() {
         'orderby_json' => 'number',
     ) );
 
+    $reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
+
     $options = array();
 
     foreach ( $places as $place ) {
 
-        if ( $place['data']['object_sub_type'] !== 'classroom' )
+        if (
+            ! in_array( $place['data']['object_sub_type'], $reservables ) || 
+           ( 
+             isset( $place['data']['object_sub_type'][0] ) &&
+             ! in_array( $place['data']['object_sub_type'][0], $reservables ) 
+           )
+        )
             $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
 
     }

@@ -70,7 +70,7 @@ remove_action( 'wpcf7_swv_create_schema', 'wpcf7_swv_add_select_enum_rules', 20,
 /*
  * Adicionando checagem para criação de reservas
  */
-add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_or_update_reservation', 10, 2 );
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_or_update_reservation', 10, 1 );
 
 /*
  * Adicionando checagem para atualização de reservas
