@@ -106,7 +106,11 @@ get_header(); ?>
                             foreach ( $reservations_by_subject as $reservation ):
                     ?>
                     <tr>
-                        <td><?= $reservation['id'] ?></td>
+                        <td>
+                            <a href="/visualizar-reserva/?id=<?= $reservation['id'] ?>" target="blank" title="Detalhes">
+                                <?= $reservation['id'] ?>
+                            </a>
+                        </td>
                         <td><?= $reservation['data']['place']['data']['number'] ?></td>
                         <td><?= $reservation['data']['start_time'] ?></td>
                         <td><?= $reservation['data']['end_time'] ?></td>
