@@ -226,7 +226,7 @@ function intranet_fafar_api_get_access_building_request_register_handler( $reque
 function intranet_fafar_api_register_entry_and_exit( $id, $type ) {
 
     if ( ! isset( $id ) )
-        return array( 'error_msg' => '[001] ID não informado!' );
+        return array( 'error_msg' => '[001] Nenhum ID informado!' );
 
     if ( ! isset( $type ) )
         return array( 'error_msg' => '[002] Tipo não informado!' );
@@ -287,8 +287,24 @@ function intranet_fafar_api_delete_submission_by_id_handler( $request ) {
 
 function intranet_fafar_api_delete_submission_by_id( $id ) {
 
-    if( ! $id ) 
-        return array( 'error_msg' => '[0101] ID não informado', 'http_status' => 400 );
+    if( ! isset( $id ) || ! $id ) {
+
+        intranet_fafar_logs_register_log(
+            'ERROR',
+            'intranet_fafar_api_delete_submission_by_id',
+            json_encode(
+                array(
+                    'func' => 'intranet_fafar_api_delete_submission_by_id',
+                    'msg'  => 'ID nor set or falsy, received',
+                    'obj'  => $id,
+                ),
+            ),
+        );
+
+        return array( 'error_msg' => 'Nenhum ID informado', 'http_status' => 400 );
+
+    } 
+
 
     $submission = intranet_fafar_api_get_submission_by_id( $id, false );
 
@@ -511,19 +527,27 @@ function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
 
 function intranet_fafar_api_get_loans_by_equipament( $id ) {
 
-    global $wpdb;
+    if( ! isset( $id ) || ! $id ) {
+        
+        intranet_fafar_logs_register_log(
+            'ERROR',
+            'intranet_fafar_api_get_loans_by_equipament',
+            json_encode(
+                array(
+                    'func' => 'intranet_fafar_api_get_loans_by_equipament',
+                    'msg'  => 'ID nor set or falsy, received',
+                    'obj'  => $id,
+                )
+            ),
+        );
 
-    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
-
-    if( ! $id ) {
-
-        return array( 'error_msg' => '[0101] No "id" found.', 'http_status' => 400 );
+        return array( 'error_msg' => 'Nenhum ID informado', 'http_status' => 400 );
 
     }
 
     /* 
      * Montando a query SQL.
-     * Pesquisa por equipamento com o id informado e 
+     * Pesquisa por equipamento com o ID informado e 
      * ordena do empréstimo mais recente ao mais antigo
      */
     $query = "SELECT * FROM `SET_TABLE_NAME` WHERE ";
@@ -537,7 +561,7 @@ function intranet_fafar_api_get_loans_by_equipament( $id ) {
 
     if ( ! $submissions || count( $submissions ) == 0 ) {
 
-        return array( 'error_msg' => '[0102] No submission found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
+        return array( 'error_msg' => 'Nenhum empréstimo encontrado com equipamento de ID "' . ( ( isset( $id ) && $id ) ? $id : 'UNKNOW_ID') . '"', 'http_status' => 400 );
 
     }
 
@@ -811,7 +835,7 @@ function intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler
 function intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $service_ticket_id ) {
 
     if ( ! $service_ticket_id ) 
-        return array( 'error_msg' => '[645] ID não informado!' );
+        return array( 'error_msg' => '[645] Nenhum ID informado!' );
 
     $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket_update' AND JSON_CONTAINS(data, '\"" . $service_ticket_id . "\"', '$.service_ticket') ORDER BY created_at DESC";
 
@@ -844,7 +868,7 @@ function intranet_fafar_api_get_service_ticket_evaluation_by_id( $id ) {
     if(
         ! isset( $id ) && 
         ! $id
-    ) return array( 'error_msg' => 'Nenhum id informado' );
+    ) return array( 'error_msg' => 'Nenhum ID informado' );
 
     $service_evalutations = intranet_fafar_api_get_submissions_by_object_name( 'service_evaluation' );
 
@@ -1705,9 +1729,21 @@ function intranet_fafar_api_get_submission_by_id_handler( $request ) {
 
 function intranet_fafar_api_get_submission_by_id( $id, $substitute_value = true ) {
 
-    if( ! $id ) {
+    if( ! isset( $id ) || ! $id ) {
+        
+        intranet_fafar_logs_register_log(
+            'ERROR',
+            'intranet_fafar_api_get_submission_by_id',
+            json_encode(
+                array(
+                    'func' => 'intranet_fafar_api_get_submission_by_id',
+                    'msg'  => 'ID nor set or falsy, received',
+                    'obj'  => $id,
+                )
+            ),
+        );
 
-        return array( 'error_msg' => '[0101]No "id" found.', 'http_status' => 400 );
+        return array( 'error_msg' => 'Nenhum ID informado', 'http_status' => 400 );
 
     }
     
@@ -1719,19 +1755,37 @@ function intranet_fafar_api_get_submission_by_id( $id, $substitute_value = true 
 
     if( ! $submissions || count( $submissions ) == 0 ) {
 
-        return array( 'error_msg' => '[0102]No submission found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
+        intranet_fafar_logs_register_log(
+            'ERROR',
+            'intranet_fafar_api_get_submission_by_id',
+            json_encode(
+                array(
+                    'func' => 'intranet_fafar_api_get_submission_by_id',
+                    'msg'  => 'No submission found with id',
+                    'obj'  => $id,
+                )
+            ),
+        );
+
+        return array( 'error_msg' => 'Nenhum objeto encontrado com o ID informado "' . ( ( isset( $id ) && $id ) ? $id : 'UNKNOW_ID') . '"', 'http_status' => 400 );
 
     }
 
     if( count( $submissions ) > 1 ) {
 
-        intranet_fafar_logs_register_log( 
-            'ERROR', 
-            'intranet_fafar_api_get_submission_by_id', 
-            '[0102]Submission "id" duplicate:' . ( $id ?? 'UNKNOW_ID')
+        intranet_fafar_logs_register_log(
+            'ERROR',
+            'intranet_fafar_api_get_submission_by_id',
+            json_encode(
+                array(
+                    'func' => 'intranet_fafar_api_get_submission_by_id',
+                    'msg'  => 'Submission with duplicate ID',
+                    'obj'  => $id,
+                )
+            ),
         );
 
-        return array( 'error_msg' => '[0103]Submission "' . ( $id ?? 'UNKNOW_ID') . '" with duplicated "id"' , 'http_status' => 100 );
+        return array( 'error_msg' => 'Objeto com ID duplicado' , 'http_status' => 100 );
 
     }
 
@@ -1781,7 +1835,7 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order
 
     if( ! $object_name ) {
 
-        return array( 'error_msg' => '[0201]Nenhum nome de objeto informado', 'http_status' => 500 );
+        return array( 'error_msg' => 'Nenhum nome de objeto informado', 'http_status' => 500 );
 
     }
 
@@ -1824,7 +1878,7 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order
 
     if( ! $submissions || count( $submissions ) == 0 ) {
 
-        return array( 'error_msg' => '[0202]No submission found with object_name "' . ( $object_name ?? 'UNKNOW_OBJECT_NAME') . '"', 'http_status' => 400 );
+        return array( 'error_msg' => 'Nenhum objeto encontrado com o nome "' . ( $object_name ?? 'UNKNOW_OBJECT_NAME') . '"', 'http_status' => 400 );
 
     }
 
@@ -1866,9 +1920,21 @@ function intranet_fafar_api_get_user_by_id_handler( $request ) {
 
 function intranet_fafar_api_get_user_by_id( $id ) {
 
-    if( ! $id ) {
+    if( ! isset( $id ) || ! $id ) {
+        
+        intranet_fafar_logs_register_log(
+            'ERROR',
+            'intranet_fafar_api_get_user_by_id',
+            json_encode(
+                array(
+                    'func' => 'intranet_fafar_api_get_user_by_id',
+                    'msg'  => 'ID nor set or falsy, received',
+                    'obj'  => $id,
+                )
+            ),
+        );
 
-        return array( 'error_msg' => '[0101]No "id" found.', 'http_status' => 400 );
+        return array( 'error_msg' => 'Nenhum ID informado', 'http_status' => 400 );
 
     }
 
@@ -1876,7 +1942,7 @@ function intranet_fafar_api_get_user_by_id( $id ) {
 
     if ( ! $user ) {
 
-        return array( 'error_msg' => '[0101]No user found.', 'http_status' => 400 );
+        return array( 'error_msg' => 'Nenhum usuário encontrado', 'http_status' => 400 );
 
     }
     
@@ -1969,7 +2035,7 @@ function intranet_fafar_api_get_users() {
 
     if( ! $users || count( $users ) === 0 ) {
 
-        return array( 'error_msg' => '[0101]No user found.', 'http_status' => 400 );
+        return array( 'error_msg' => 'Nenhum usuário encontrado', 'http_status' => 400 );
 
     }
 
@@ -2083,10 +2149,6 @@ function intranet_fafar_api_get_reservation_by_id_handler( $request ) {
 }
 
 function intranet_fafar_api_get_equipaments_handler() {
-
-    global $wpdb;
-
-    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
     
     $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'equipament'";
 
@@ -2094,7 +2156,7 @@ function intranet_fafar_api_get_equipaments_handler() {
 
     if( ! $submissions || count( $submissions ) == 0 ) {
 
-        return array( 'error_msg' => '[0202]No submission found', 'http_status' => 400 );
+        return array( 'error_msg' => 'Nenhum equipamento encontrado', 'http_status' => 400 );
 
     }
 
@@ -2137,7 +2199,7 @@ function intranet_fafar_api_get_equipament_by_id( $id ) {
     $equipmanet = intranet_fafar_api_get_submission_by_id( $id );
 
     if ( ! $equipmanet ) 
-        return array( 'error_msg' => '[0202]No equipmanet found', 'http_status' => 400 );
+        return array( 'error_msg' => 'Nenhum equipamento encontrado', 'http_status' => 400 );
 
     if ( isset( $equipmanet['error_msg'] ) ) 
         return array( 'error_msg' => $equipmanet['error_msg'], 'http_status' => 400 );
@@ -2160,14 +2222,22 @@ function intranet_fafar_api_get_equipament_by_id( $id ) {
 }
 
 function intranet_fafar_api_get_reservation_by_id( $id ) {
-    
-    global $wpdb;
 
-    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
+    if( ! isset( $id ) || ! $id ) {
+        
+        intranet_fafar_logs_register_log(
+            'ERROR',
+            'intranet_fafar_api_get_reservation_by_id',
+            json_encode(
+                array(
+                    'func' => 'intranet_fafar_api_get_reservation_by_id',
+                    'msg'  => 'ID nor set or falsy, received',
+                    'obj'  => $id,
+                )
+            ),
+        );
 
-    if( ! $id ) {
-
-        return array( 'error_msg' => '[0201]No "ID" found.', 'http_status' => 500 );
+        return array( 'error_msg' => 'Nenhum ID informado', 'http_status' => 500 );
 
     }
 
@@ -2179,7 +2249,19 @@ function intranet_fafar_api_get_reservation_by_id( $id ) {
 
     if( ! $reservation || count( $reservation ) == 0 ) {
 
-        return array( 'error_msg' => '[0202]No reservation found with id "' . ( $id ?? 'UNKNOW_ID') . '"', 'http_status' => 400 );
+        intranet_fafar_logs_register_log(
+            'ERROR',
+            'intranet_fafar_api_get_reservation_by_id',
+            json_encode(
+                array(
+                    'func' => 'intranet_fafar_api_get_reservation_by_id',
+                    'msg'  => 'No reservation found with ID',
+                    'obj'  => $id,
+                )
+            ),
+        );
+
+        return array( 'error_msg' => 'Nenhuma reserva encontrada com ID "' . ( ( isset( $id ) && $id ) ? $id : 'UNKNOW_ID') . '"', 'http_status' => 400 );
 
     }
 
@@ -2364,7 +2446,7 @@ function intranet_fafar_api_create( $submission, $check_permissions = true, $do_
   
 }
 
-function intranet_fafar_api_read( $query, $check_permissions = true, $check_is_active = true ){
+function intranet_fafar_api_read( $query, $check_permissions = true, $check_is_active = true ) {
 
     if ( ! $query )
         return array( 'error_msg' => 'No query str on "intranet_fafar_api_read"!' );

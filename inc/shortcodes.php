@@ -439,35 +439,6 @@ function intranet_fafar_get_ips_as_select_options() {
 
 }
 
-function intranet_fafar_get_classrooms_as_select_options() {
-
-    $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array(
-        'orderby_json' => 'number',
-    ) );
-
-    $reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
-
-
-    $options = array();
-
-    foreach ( $places as $place ) {
-
-        if (
-            ! in_array( $place['data']['object_sub_type'], $reservables ) || 
-           ( 
-             isset( $place['data']['object_sub_type'][0] ) &&
-             ! in_array( $place['data']['object_sub_type'][0], $reservables ) 
-           )
-        )
-            $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
-
-    }
-
-    return json_encode( $options ); 
-
-}
-
-
 function intranet_fafar_get_subjects_as_select_options() {
 
     $subjects = intranet_fafar_api_get_submissions_by_object_name( 'class_subject', array(
@@ -491,6 +462,30 @@ function intranet_fafar_get_subjects_as_select_options() {
 
 }
 
+function intranet_fafar_get_classrooms_as_select_options() {
+
+    $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array(
+        'orderby_json' => 'number',
+    ) );
+
+    $reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
+
+    $options = array();
+
+    foreach ( $places as $place ) {
+
+        if (
+            isset( $place['data']['object_sub_type'][0] ) &&  
+            in_array( $place['data']['object_sub_type'][0], $reservables )
+        )
+            $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
+
+    }
+
+    return json_encode( $options ); 
+
+}
+
 function intranet_fafar_get_not_classrooms_as_select_options() {
 
     $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array(
@@ -504,11 +499,8 @@ function intranet_fafar_get_not_classrooms_as_select_options() {
     foreach ( $places as $place ) {
 
         if (
-            ! in_array( $place['data']['object_sub_type'], $reservables ) || 
-           ( 
-             isset( $place['data']['object_sub_type'][0] ) &&
-             ! in_array( $place['data']['object_sub_type'][0], $reservables ) 
-           )
+            ! isset( $place['data']['object_sub_type'][0] ) ||  
+            ! in_array( $place['data']['object_sub_type'][0], $reservables )
         )
             $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
 

@@ -71,21 +71,105 @@ if (
 
     print_r("<br/>");
 
+    // print_r($old_auditoriums);
+
     foreach ( $old_auditoriums as $old_auditorium )
     {
 
-        if( $old_auditorium['form_id'] == "40364" ) {
+        if( $old_auditorium['form_post_id'] != "40364" )
+            continue;
 
-            $old_auditorium_data = $old_auditorium['data'];
+        $old_auditorium_data = unserialize( $old_auditorium['form_value'] );
 
+        /*
+        {
+            "desc": "asdfasd",
+            "status": "Aguardando aprovação",
+            "end_time": "22:00",
+            "technical": "",
+            "event_date": "2025-03-07",
+            "start_time": "18:00",
+            "applicant_name": "asdfasdfasd",
+            "applicant_email": "asdf@asdf.com",
+            "applicant_phone": "(12) 34123-4123",
+            "use_own_notebook": [
+                "Sim"
+            ],
+            "public_prediction": "190",
+            "use_fafar_notebook": [
+                "Não"
+            ],
+            "use_internet_access": [
+                "Não"
+            ],
+            "use_musical_instruments": [
+                "Sim"
+            ]
+        }  
+
+        Array ( 
+            [cfdb7_status] => read 
+            [NomeSolicitante] => Adriano Max Moreira Reis 
+            [EmailSolicitante] => amreis@outlook.com 
+            [TelefoneSolicitante] => (31) 99728-1803 
+            [NomeEvento] => Simpósio Segurança do Paciente e Erros de Medicação 15 anos do ISMP Brasil 
+            [PrevisaoPublico] => 190 
+            [InstrumentosMusicais] => Array ( 
+            [0] => Não ) 
+            [NotebookFafar] => Array ( 
+            [0] => Não ) 
+            [NotebookProprio] => Array ( 
+            [0] => Sim ) 
+            [AcessoInternet] => Array ( 
+            [0] => Sim ) 
+            [DataEvento__1] => 2024-11-25 
+            [HoraInicioEvento__1] => Array ( 
+            [0] => 8:00 ) 
+            [HoraFimEvento__1] => Array ( 
+            [0] => 18:30 ) 
+            [DataEvento__2] => 2024-11-26 
+            [HoraInicioEvento__2] => Array ( 
+            [0] => 8:00 ) 
+            [HoraFimEvento__2] => Array ( 
+            [0] => 18:30 ) 
+            [Status] => Aprovada 
+        )
+
+        Array ( 
+            [cfdb7_status] => read 
+            [far_db_column_submission_url] => https://www.farmacia.ufmg.br/reservaauditorio/ 
+            [far_db_column_remote_ip] => 150.164.110.253 
+            [far_db_column_object_name] => auditorium_reservation 
+            [status] => Aguardando aprovação 
+            [technical] => 
+            [applicant_name] => asdflçkj 
+            [applicant_email] => asdf@asd.com 
+            [applicant_phone] => (23) 32142-3412 
+            [desc] => asdfasdf 
+            [public_prediction] => 9 
+            [use_musical_instruments] => Array ( 
+            [0] => Sim ) 
+            [use_fafar_notebook] => Array ( 
+            [0] => Não ) 
+            [use_own_notebook] => Array ( 
+            [0] => Sim ) 
+            [use_internet_access] => Array ( 
+            [0] => Não ) 
+            [event_date__1] => 2025-03-07 
+            [start_time__1] => 19:00 
+            [end_time__1] => 22:00 
+        )
+        */
+
+        $new_auditorium = array();
+
+        if( isset($old_auditorium_data['applicant_name']) ) {
             echo "<br/>";
-            print_r($old_auditorium_data);
+            print_r($new_auditorium );
             echo "<br/>";
-
-            create_fafar_audi_reservation( $old_auditorium_data );
-
         }
 
+        //create_fafar_audi_reservation( $old_auditorium_data );
 
         // $new_submissions[] = $new_equipament;
 
