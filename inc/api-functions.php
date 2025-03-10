@@ -131,7 +131,7 @@ function intranet_fafar_api_register_submission_routes() {
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_place_reservations',
+        'callback' => 'intranet_fafar_api_get_place_reservations_handler',
     ) );
 
     register_rest_route( 'intranet/v1', '/users/(?P<id>[\w]+)', array(
@@ -316,7 +316,7 @@ function intranet_fafar_api_delete_submission_by_id( $id ) {
     return $submission;
 }
 
-function intranet_fafar_api_get_place_reservations( $request ) {
+function intranet_fafar_api_get_place_reservations_handler( $request ) {
 
     $place_id = (string) $request['place'];
 

@@ -2,8 +2,6 @@
  * LISTENER'S
  */
 
-// console.log(RESERVAS);
-
 /*
  * Aguarda até que a DOM seja carregada para inserir os eventos no calendário
  */
@@ -16,16 +14,32 @@ async function loadUI() {
   const urlParams = new URLSearchParams(queryString);
   const place_id = urlParams.get("id");
 
-  const submissions = RESERVAS;
+  const submissions = await getEventsByPlaceID(place_id);
 
   renderCalendar(submissions);
-  removeScrollBar();
 }
 
-function removeScrollBar() {
-  [...document.querySelectorAll("div.fc-scroller")].forEach((i) => {
-    i.style.overflow = "hidden";
-  });
+/*
+ * GET EVENTS
+ */
+async function getEventsByPlaceID(place_id) {
+  let response;
+  try {
+    response = await axios.get(
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" +
+        place_id +
+        "/reservations"
+    );
+    // response = await axios.get(
+    //   "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/reservation"
+    // );
+    console.log({ response });
+  } catch (error) {
+    console.log(error.response.data.message);
+    return [];
+  }
+
+  return JSON.parse(response.data);
 }
 
 /**
@@ -35,9 +49,12 @@ function removeScrollBar() {
 function renderCalendar(submissions) {
   console.log(submissions);
 
-  let arr = [];
+  const arr = [];
   for (const submission of submissions) {
     const submission_data = submission["data"];
+
+    if (submission_data.frequency[0] && submission_data.frequency[0] === "once")
+      continue;
 
     arr.push({
       id: submission["id"],
@@ -72,8 +89,8 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
   allDaySlot: false,
   initialView: "timeGridWeek",
   slotMinTime: "07:00:00",
-  slotMaxTime: "22:35:00",
-  slotDuration: "00:30:00",
+  slotMaxTime: "22:00:00",
+  slotDuration: "01:00:00",
   dayHeaderFormat: { weekday: "long" },
   slotLabelFormat: {
     hour: "2-digit",
@@ -85,8 +102,5 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
   events: [],
   eventColor: "#000000",
   eventClassNames: "fw-medium",
-  dateClick: function (arg) {
-    console.log(arg.date.toString()); // use *local* methods on the native Date Object
-    // will output something like 'Sat Sep 01 2018 00:00:00 GMT-XX:XX (Eastern Daylight Time)'
-  },
+  todayIndicator: false,
 });

@@ -83,9 +83,9 @@ async function onSubmitHandler(e) {
   const salas = [];
   for (const sala of raw_salas) {
     const { id, data } = sala;
-    const { number, block, floor, capacity } = data;
+    const { number, block, floor, capacity, desc } = data;
 
-    const descPlaceCol = JSON.stringify({ id, number, block, floor });
+    const descPlaceCol = JSON.stringify({ id, number, block, floor, desc });
 
     const actionCol = JSON.stringify({ id, number });
 
@@ -103,10 +103,10 @@ async function onSubmitHandler(e) {
 }
 
 function descPlaceFormatter(current) {
-  const { id, number, block, floor } = JSON.parse(current);
+  const { number, block, floor, desc } = JSON.parse(current);
 
   return html(`
-    <a href="/vizualizar-sala?id=${id}" target="blank" title="Detalhes da ${number}">${number}</a> (Bloco: ${block} / Andar: ${floor}º)
+    ${number}${desc ? " " + desc + " " : ""}(Bloco: ${block} / Andar: ${floor}º)
   `);
 }
 

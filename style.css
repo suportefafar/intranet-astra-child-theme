@@ -140,3 +140,123 @@
   width: 15rem;
   font-size: 0.875rem;
 }
+
+/*
+ * Estilos para a página imprimir-mapa-de-sala
+ */
+
+#calendar {
+  margin: 1rem;
+}
+
+#calendar,
+.footer-container {
+  width: 1080px !important;
+}
+
+.fc-timegrid-slots tbody tr {
+  height: 0.5rem !important;
+}
+
+.fc-timegrid-cols tbody tr {
+  height: 0.5rem !important;
+}
+
+.footer-container {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.numero-sala {
+  display: none;
+}
+
+.logo-fafar {
+  display: none;
+}
+
+table.fc-col-header {
+  margin: 0;
+}
+
+@page {
+  size: auto; /* auto is the initial value */
+  margin: 0; /* this affects the margin in the printer settings */
+}
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important; /* Chrome, Safari 6 – 15.3, Edge */
+    color-adjust: exact !important; /* Firefox 48 – 96 */
+    print-color-adjust: exact !important; /* Firefox 97+, Safari 15.4+ */
+  }
+
+  #secondary,
+  .fc-header-toolbar,
+  .fc-toolbar,
+  .fc-toolbar-ltr,
+  .fc-toolbar-chunk,
+  header {
+    display: none !important;
+  }
+
+  #calendar {
+    height: 800px !important;
+  }
+
+  .fc-scroller,
+  .fc-scroller-liquid-absolute {
+    overflow: hidden !important;
+  }
+
+  #primary,
+  #secondary {
+    margin: 0;
+    padding: 0;
+  }
+
+  div#content > div.ast-container {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Custom CSS to remove the current day highlight */
+  .fc-day-today {
+    background-color: transparent !important;
+    color: inherit !important;
+  }
+
+  .fc-event-main-frame .fc-event-title-container .fc-event-title {
+    font-weight: bolder !important;
+    font-size: 1rem !important;
+  }
+
+  .numero-sala {
+    display: block;
+    position: absolute;
+    top: 25%;
+    left: 0;
+
+    width: 100%;
+
+    text-align: center;
+
+    font-size: 24rem;
+    color: #aaa !important;
+  }
+
+  .logo-fafar {
+    display: block;
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    opacity: 0.75 !important;
+  }
+
+  .content {
+    overflow: hidden; /* Prevent overflowing content */
+    max-height: 100vh; /* Limit content to one page */
+  }
+}

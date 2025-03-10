@@ -93,11 +93,11 @@ get_header(); ?>
         <table class="table">
             <thead>
                 <tr>
-                    <th scope="col">ID</th>
                     <th scope="col">Sala</th>
                     <th scope="col">Início</th>
                     <th scope="col">Fim</th>
                     <th scope="col">Dia da semana</th>
+                    <th scope="col">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -106,15 +106,19 @@ get_header(); ?>
                             foreach ( $reservations_by_subject as $reservation ):
                     ?>
                     <tr>
-                        <td>
-                            <a href="/visualizar-reserva/?id=<?= $reservation['id'] ?>" target="blank" title="Detalhes">
-                                <?= $reservation['id'] ?>
-                            </a>
-                        </td>
                         <td><?= $reservation['data']['place']['data']['number'] ?></td>
                         <td><?= $reservation['data']['start_time'] ?></td>
                         <td><?= $reservation['data']['end_time'] ?></td>
                         <td><?= implode( ', ', array_map( function( $weekday ) { return parse_weekday_to_name( $weekday ); }, (array) $reservation['data']['weekdays'] ) ) ?></td>
+                        <td>
+                            <a 
+                                class="btn btn-outline-secondary" 
+                                href="/visualizar-reserva/?id=<?= $reservation['id'] ?>" 
+                                target="blank" 
+                                title="Detalhes">
+                                <i class="bi bi-info-lg"></i>
+                            </a>
+                        </td>
                     </tr>
 
                     <?php   
