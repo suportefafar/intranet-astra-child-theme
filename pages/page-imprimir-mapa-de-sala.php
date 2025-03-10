@@ -14,7 +14,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $ID           = sanitize_text_field( wp_unslash( $_GET["id"] ) );
 $classroom    = intranet_fafar_api_get_submission_by_id( $ID );
-$reservations = intranet_fafar_api_get_reservations_by_place( $ID );
+$all_reservations = intranet_fafar_api_get_reservations_by_place( $ID );
+
+if( isset($all_reservations['error_msg'] ) ) {
+    $all_reservations = array();
+}
+
+$reservations = array_filter(
+    $all_reservations,
+    function ( $r ) {
+        return ( isset( $r['data']['class_subject'] ) && $r['data']['class_subject'] );
+    }
+);
 
 wp_enqueue_script_module( 'intranet-fafar-imprimir-mapa-de-sala-script', get_stylesheet_directory_uri() . '/assets/js/imprimir-mapa-de-sala.js', array( 'jquery' ), false, false );
 
@@ -26,7 +37,7 @@ get_header(); ?>
 
 <?php if ( astra_page_layout() == 'left-sidebar' ) : ?>
 
-<?php get_sidebar(); ?>
+	<?php get_sidebar(); ?>
 
 <?php endif ?>
 
