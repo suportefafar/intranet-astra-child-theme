@@ -24,6 +24,12 @@ get_header(); ?>
   var RESERVAS = <?= json_encode( $reservations, JSON_UNESCAPED_SLASHES ); ?>; 
 </script>
 
+<?php if ( astra_page_layout() == 'left-sidebar' ) : ?>
+
+<?php get_sidebar(); ?>
+
+<?php endif ?>
+
 <!--
     *
     *

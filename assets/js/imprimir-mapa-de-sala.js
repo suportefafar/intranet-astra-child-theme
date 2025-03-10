@@ -73,7 +73,7 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
   initialView: "timeGridWeek",
   slotMinTime: "07:00:00",
   slotMaxTime: "22:35:00",
-  slotDuration: "00:30:00",
+  slotDuration: "00:35:00",
   dayHeaderFormat: { weekday: "long" },
   slotLabelFormat: {
     hour: "2-digit",

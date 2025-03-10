@@ -144,7 +144,6 @@
 /*
  * Estilos para a página imprimir-mapa-de-sala
  */
-
 #calendar {
   margin: 1rem;
 }
@@ -175,7 +174,11 @@
 }
 
 .logo-fafar {
-  display: none;
+  display: block !important;
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  opacity: 0.75 !important;
 }
 
 table.fc-col-header {
@@ -203,7 +206,7 @@ table.fc-col-header {
   }
 
   #calendar {
-    height: 800px !important;
+    height: 762px !important;
   }
 
   .fc-scroller,
@@ -248,7 +251,7 @@ table.fc-col-header {
   }
 
   .logo-fafar {
-    display: block;
+    display: block !important;
     position: absolute;
     bottom: 24px;
     right: 24px;
