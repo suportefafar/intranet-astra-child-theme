@@ -1,3 +1,5 @@
+console.log("Carregando módulo de alerta....");
+
 /*
  * A div 'intranetFafarLiveAlertPlaceholder' utilizado como âncora nesse arquivo é inserido no 'functions.php'
  */
@@ -7,6 +9,7 @@ function showAlert(
   autohide = false,
   delay = 5000
 ) {
+  console.log("showAlert");
   hideAlert();
 
   let alert_icon_class = "d-none";

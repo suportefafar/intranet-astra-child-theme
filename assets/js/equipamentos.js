@@ -149,7 +149,7 @@ async function fetchDataHandler() {
     return [];
   }
 
-  const submissions = JSON.parse(response.data);
+  const submissions = response.data;
 
   console.log(submissions);
 

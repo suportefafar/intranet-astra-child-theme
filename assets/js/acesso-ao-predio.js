@@ -72,19 +72,19 @@ async function fetchDataHandler() {
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request/mines"
     );
   } catch (error) {
-    //console.log(error.response.data.message);
+    // console.log(error.response.data.message);
     return [];
   }
 
-  const submissions = JSON.parse(response.data);
+  const submissions = response.data;
 
-  console.log(submissions);
+  // console.log(submissions);
 
   let table_arr = [];
   for (const submission of Object.values(submissions)) {
     const submission_data = submission["data"];
 
-    //console.log(JSON.stringify(submission_data));
+    // console.log(JSON.stringify(submission_data));
 
     const prevent_write = submission["prevent_write"] ? "1" : "0";
     const prevent_exec = submission["prevent_exec"] ? "1" : "0";

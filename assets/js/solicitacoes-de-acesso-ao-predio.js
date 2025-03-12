@@ -144,7 +144,7 @@ async function fetchDataHandler() {
     return [];
   }
 
-  const submissions = JSON.parse(response.data);
+  const submissions = response.data;
 
   // console.log(submissions);
 
@@ -428,7 +428,7 @@ async function renderAccessBuildingRequestDetailsModal(id) {
     hideAccessBuildingRequestDetailsModal();
   }
 
-  const access_building_request = JSON.parse(response.data);
+  const access_building_request = response.data;
 
   document.querySelector("#access_building_request_created_at").innerHTML =
     new Date(access_building_request["created_at"]).toLocaleString();

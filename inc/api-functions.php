@@ -1967,7 +1967,7 @@ function intranet_fafar_api_get_user_by_id( $id ) {
  function intranet_fafar_api_get_users_handler($request) {
     // Get pagination parameters from the request
     $offset = $request->get_param('offset') ? intval($request->get_param('offset')) : 0;
-    $limit  = $request->get_param('limit') ? intval($request->get_param('limit')) : 10;
+    $limit  = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
 
     $name     = $request->get_param('name') ? $request->get_param('name') : '';
     $status   = $request->get_param('status') ? $request->get_param('status') : '';

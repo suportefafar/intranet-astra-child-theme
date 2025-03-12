@@ -64,7 +64,7 @@ async function setAssignedToUserProp(user_assigned_to_id) {
 
     console.log(service_ticket_response.data);
 
-    const service_ticket = JSON.parse(service_ticket_response.data);
+    const service_ticket = service_ticket_response.data;
 
     service_ticket.data.assigned_to = user_assigned_to_id;
 

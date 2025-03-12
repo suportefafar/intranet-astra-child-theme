@@ -178,7 +178,7 @@ async function getEventsByPlaceID(place_id) {
     return [];
   }
 
-  return JSON.parse(response.data);
+  return response.data;
 }
 
 /**
@@ -360,7 +360,7 @@ async function getEventByID(id) {
     // console.log(error.response.data.message);
     return false;
   }
-  return JSON.parse(response.data);
+  return response.data;
 }
 
 /*

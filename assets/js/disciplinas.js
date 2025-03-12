@@ -57,7 +57,7 @@ async function fetchDataHandler() {
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/class_subject"
     );
 
-    const submissions = JSON.parse(response.data);
+    const submissions = response.data;
 
     console.log(submissions);
 

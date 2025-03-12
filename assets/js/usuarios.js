@@ -1,27 +1,28 @@
 import { Grid, html } from "https://unpkg.com/gridjs?module";
-
+console.log("carregando usuarios...");
 /*
  * Event Listeners
  */
-let USERS = [];
 
-// Export listed users
-const btn_export_users = document.querySelector("#btn_export_users");
-if (btn_export_users) {
-  btn_export_users.addEventListener("click", () => {
-    exportUsers();
+document.addEventListener("DOMContentLoaded", () => {
+  // Export listed users
+  const btn_export_users = document.querySelector("#btn_export_users");
+  if (btn_export_users) {
+    btn_export_users.addEventListener("click", () => {
+      exportUsers();
+    });
+  }
+
+  // Copy emails of listed users
+  const btn_copy_emails = document.querySelector("#btn_copy_emails");
+  if (btn_copy_emails) {
+    btn_copy_emails.addEventListener("click", copyEmailsToClipboard);
+  }
+
+  // Attach listener on the search button
+  document.querySelector("#search_button").addEventListener("click", () => {
+    grid.forceRender(); // Re-render grid with new filters
   });
-}
-
-// Copy emails of listed users
-const btn_copy_emails = document.querySelector("#btn_copy_emails");
-if (btn_copy_emails) {
-  btn_copy_emails.addEventListener("click", copyEmailsToClipboard);
-}
-
-// Attach listener on the search button
-document.querySelector("#search_button").addEventListener("click", () => {
-  grid.forceRender(); // Re-render grid with new filters
 });
 
 /*
@@ -59,8 +60,6 @@ const grid = new Grid({
     limit: 10,
     server: {
       url: (prev, page, limit) => {
-        //return `${prev}?limit=${limit}&offset=${page * limit}`;
-
         const filters = getCurrentFilters(); // Get current filter values
         return `${prev}?limit=${limit}&offset=${
           page * limit
@@ -258,17 +257,38 @@ function actionColFormatter(current) {
   `);
 }
 
+// Obter usuários para exportar e para copiar emails
+async function getUsers() {
+  const filters = getCurrentFilters(); // Get current filter values
+  const url = `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/users?${new URLSearchParams(
+    filters
+  )}`;
+
+  try {
+    const response = await axios.get(url);
+
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    console.log(error.response.data.message);
+    return [];
+  }
+}
+
 /*
  * Função para exportar os usuários
  */
-function exportUsers() {
+async function exportUsers() {
   showAlert("Por favor, aguarde...", "info");
 
-  if (!Array.isArray(USERS) || USERS.length === 0)
+  const response = await getUsers();
+  const users = response.results;
+
+  if (!Array.isArray(users) || users.length === 0)
     return showAlert("Sem usuários para exportar!", "danger");
 
   // Gerar as linhas de CSV pelo objeto
-  const csvLines = getCsvLinesFromItems(USERS);
+  const csvLines = getCsvLinesFromItems(users);
 
   makeAndDownloadCSV(csvLines);
 
@@ -373,18 +393,27 @@ function makeAndDownloadCSV(csvContent, filenamePrefix = "usuarios") {
 /*
  * Função para copiar os emails
  */
-function copyEmailsToClipboard() {
+async function copyEmailsToClipboard() {
+  console.log("Copiando...");
   showAlert("Por favor, aguarde...", "info");
 
-  if (!Array.isArray(USERS) || USERS.length === 0)
+  const response = await getUsers();
+  const users = response.results;
+
+  if (!Array.isArray(users) || users.length === 0) {
+    console.log("Sem usuários para copiar.");
     return showAlert("Sem usuários para copiar.", "danger");
+  }
 
   if (!navigator.clipboard) {
+    console.log("Funcionalidade não encontrada em seu navegador.");
     showAlert("Funcionalidade não encontrada em seu navegador.", "danger");
     return;
   }
 
-  const emails = USERS.map((user) => user.user_email);
+  const emails = users.map((user) => user.user_email);
+
+  console.log("Copiando " + emails.length + " emails...");
 
   navigator.clipboard.writeText(emails).then(
     function () {

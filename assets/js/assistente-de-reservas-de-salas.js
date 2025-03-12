@@ -78,7 +78,7 @@ async function onSubmitHandler(e) {
     return;
   }
 
-  const raw_salas = JSON.parse(response.data);
+  const raw_salas = response.data;
 
   const salas = [];
   for (const sala of raw_salas) {

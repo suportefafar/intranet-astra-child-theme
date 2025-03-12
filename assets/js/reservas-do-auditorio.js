@@ -426,7 +426,7 @@ async function getEventByID(id) {
       `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/${id}`
     );
 
-    return JSON.parse(response.data);
+    return response.data;
   } catch (error) {
     showAlert("Desculpe, houve um erro!", "danger");
 
@@ -444,7 +444,7 @@ async function getTechnicalUsers(
       `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/users/by_sector/${sector}`
     );
 
-    return JSON.parse(response.data);
+    return response.data;
   } catch (error) {
     showAlert("Desculpe, houve um erro!", "danger");
 
@@ -466,7 +466,7 @@ async function setTechnical(reservation_id, technical_id) {
       }
     );
 
-    return JSON.parse(response.data);
+    return response.data;
   } catch (error) {
     showAlert("Desculpe, houve um erro!", "danger");
 
@@ -487,7 +487,7 @@ async function updateReservation(id, reservation) {
         },
       }
     );
-    return JSON.parse(response.data);
+    return response.data;
   } catch (error) {
     showAlert("Desculpe, houve um erro!", "danger");
 

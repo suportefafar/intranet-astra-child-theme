@@ -68,17 +68,17 @@ get_header(); ?>
                     if( in_array( $sector_slug, array( 'pessoal', 'administrator' ) ) ):
                 ?>
 
-                <a href="#" id="btn_export_users" class="btn btn-outline-dark text-decoration-none w-lg-button">
+                <button type="button" id="btn_export_users" class="btn btn-outline-dark text-decoration-none w-lg-button">
                     <i class="bi bi-arrow-bar-down"></i>
                     Exportar CSV
-                </a>
+                </button>
                 
                 <?php endif; ?>
                 
-                <a href="#" id="btn_copy_emails" class="btn btn-light text-decoration-none w-lg-button" >
+                <button type="button" id="btn_copy_emails" class="btn btn-light text-decoration-none w-lg-button" >
                     <i class="bi bi-clipboard"></i>
                     Copiar e-mails
-                </a>
+                </button>
             </div>
         </div>
 
@@ -137,8 +137,11 @@ get_header(); ?>
                     ) 
                 );
             ?>
-            <button type="button" class="btn btn-primary" id="search_button">
+            <button type="button" class="d-flex gap-1 btn btn-primary" id="search_button">
                 <i class="bi bi-search"></i>
+                <span>
+                    Pesquisar
+                </span>
             </button>
         </div>
 

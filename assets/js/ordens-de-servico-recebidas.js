@@ -88,7 +88,7 @@ async function getServiceTickets(url) {
     return [];
   }
 
-  return JSON.parse(response.data);
+  return response.data;
 }
 
 /*
