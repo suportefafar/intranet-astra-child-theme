@@ -163,13 +163,11 @@ if (
 
         $new_auditorium = array();
 
-        if( isset($old_auditorium_data['applicant_name']) ) {
+        if( isset( $old_auditorium_data['applicant_name'] ) ) {
             echo "<br/>";
-            print_r($new_auditorium );
+            print_r( intranet_fafar_api_pre_create_auditorium_reservation( $old_auditorium_data ) ); 
             echo "<br/>";
         }
-
-        //create_fafar_audi_reservation( $old_auditorium_data );
 
         // $new_submissions[] = $new_equipament;
 

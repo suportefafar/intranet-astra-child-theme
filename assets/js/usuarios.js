@@ -14,17 +14,15 @@ if (btn_export_users) {
 }
 
 // Copy emails of listed users
-document
-  .querySelector("#btn_copy_emails")
-  .addEventListener("click", copyEmailsToClipboard);
+const btn_copy_emails = document.querySelector("#btn_copy_emails");
+if (btn_copy_emails) {
+  btn_copy_emails.addEventListener("click", copyEmailsToClipboard);
+}
 
-// Attach listeners to filter inputs and selects
-document
-  .querySelectorAll("#filters_container input, #filters_container select")
-  .forEach((el) => el.addEventListener("input", filterUsers));
-
-// Initialize fetch on DOMContentLoaded
-document.addEventListener("DOMContentLoaded", initialFetch);
+// Attach listener on the search button
+document.querySelector("#search_button").addEventListener("click", () => {
+  grid.forceRender(); // Re-render grid with new filters
+});
 
 /*
  * Grid.js Setup
@@ -50,17 +48,31 @@ const ptBR = {
   error: "Ocorreu um erro ao buscar os dados",
 };
 
-const grid = new gridjs.Grid({
+const grid = new Grid({
   columns: [
     { name: "Nome", formatter: nameColFormatter },
     { name: "Posição", formatter: positionColFormatter },
     { name: "Admissão", formatter: createdAtColFormatter },
     { name: "Ações", formatter: actionColFormatter },
   ],
-  data: [],
   pagination: {
-    limit: 20,
+    limit: 10,
+    server: {
+      url: (prev, page, limit) => {
+        //return `${prev}?limit=${limit}&offset=${page * limit}`;
+
+        const filters = getCurrentFilters(); // Get current filter values
+        return `${prev}?limit=${limit}&offset=${
+          page * limit
+        }&${new URLSearchParams(filters)}`;
+      },
+    },
     summary: true,
+  },
+  server: {
+    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/users",
+    then: renderDataOnTable,
+    total: (data) => data.count,
   },
   search: false,
   sort: true,
@@ -70,123 +82,61 @@ const grid = new gridjs.Grid({
 }).render(document.getElementById("table-wrapper"));
 
 /*
- * API Functions
+ * Get current filter values from DOM
  */
-
-async function getUsers() {
-  try {
-    const response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/users"
-    );
-    return JSON.parse(response.data);
-  } catch (error) {
-    console.error(
-      "Failed to fetch users:",
-      error.response?.data?.message || error
-    );
-    return [];
-  }
-}
-
-async function initialFetch() {
-  const users = await getUsers();
-  prepareToRenderDataOnTable(users);
-}
-
-/*
- * Filtering and Rendering
- */
-async function filterUsers() {
-  const filters = {
-    user_name: document.querySelector("#input_user_name").value,
-    bond_status: document.querySelector("#select_bond_status").value,
-    bond_categories: document.querySelector("#select_bond_categories").value,
-    public_servant_role: document.querySelector("#select_public_servant_role")
-      .value,
+function getCurrentFilters() {
+  return {
+    name: document.querySelector("#input_user_name").value,
+    status: document.querySelector("#select_bond_status").value,
+    category: document.querySelector("#select_bond_categories").value,
+    role: document.querySelector("#select_public_servant_role").value,
   };
-
-  const users = await getUsers();
-
-  const filtered_users = users.filter((user) => {
-    return (
-      removeAccents(user.display_name)
-        .toLowerCase()
-        .indexOf(removeAccents(filters.user_name.toLowerCase())) > -1 &&
-      (filters.bond_status === "" ||
-        filters.bond_status === user.bond_status) &&
-      (filters.bond_categories === "" ||
-        filters.bond_categories === user.public_servant_bond_category) &&
-      (filters.public_servant_role === "" ||
-        filters.public_servant_role === user.role.slug)
-    );
-  });
-
-  prepareToRenderDataOnTable(filtered_users);
 }
 
-function removeAccents(str) {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-function prepareToRenderDataOnTable(data = []) {
-  if (!Array.isArray(data)) {
-    console.error("Invalid data format. Expected an array.");
-    data = [];
-  }
-
-  USERS = data;
-
-  grid.updateConfig({ data: renderDataOnTable(data) }).forceRender();
-}
-
-function renderDataOnTable(users) {
-  if (!Array.isArray(users)) {
-    console.error("Expected an array of users, got:", users);
+function renderDataOnTable(data) {
+  console.log(data);
+  if (!data) {
     return [];
   }
 
-  // console.log(users);
+  updateUsersCounter(data.count);
 
-  updateUsersCounter(users.length);
+  return data.results.map((user) => {
+    const {
+      ID,
+      display_name,
+      user_email,
+      workplace_extension,
+      avatar_url,
+      user_login,
+      public_servant_bond_category,
+      role,
+      bond_status,
+      user_registered,
+      workplace_place,
+      prevent_write,
+    } = user;
 
-  return users
-    .filter(({ ID }) => ID !== "1") // Exclude user with ID 1
-    .map((user) => {
-      const {
-        ID,
-        display_name,
-        user_email,
-        workplace_extension,
-        avatar_url,
-        user_login,
-        public_servant_bond_category,
-        role,
-        bond_status,
-        user_registered,
-        workplace_place,
-        prevent_write,
-      } = user;
-
-      const nameData = JSON.stringify({
-        display_name,
-        workplace_extension,
-        avatar_url,
-        user_login,
-        workplace_place,
-        user_email,
-      });
-
-      const positionData = JSON.stringify({
-        public_servant_bond_category,
-        role,
-      });
-
-      const registeredData = JSON.stringify({ bond_status, user_registered });
-
-      const actionData = JSON.stringify({ id: ID, prevent_write, user_login });
-
-      return [nameData, positionData, registeredData, actionData];
+    const nameData = JSON.stringify({
+      display_name,
+      workplace_extension,
+      avatar_url,
+      user_login,
+      workplace_place,
+      user_email,
     });
+
+    const positionData = JSON.stringify({
+      public_servant_bond_category,
+      role,
+    });
+
+    const registeredData = JSON.stringify({ bond_status, user_registered });
+
+    const actionData = JSON.stringify({ id: ID, prevent_write, user_login });
+
+    return [nameData, positionData, registeredData, actionData];
+  });
 }
 
 /*
@@ -450,16 +400,33 @@ function copyEmailsToClipboard() {
 /*
  * Atualizador do elemento que mostra a quantidade de usuários
  */
-
 function updateUsersCounter(quantity) {
-  document.querySelector("#users_counter").innerHTML = quantity;
+  const usersCounter = document.querySelector("#users_counter");
+  if (usersCounter) {
+    usersCounter.innerHTML = quantity;
+  }
 }
 
 /*
  * Helper Functions
  */
-
 function capitalizeFirstLetter(value) {
   if (!value) return "";
   return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+}
+
+function showAlert(message, type, autoDismiss = false) {
+  const alertContainer = document.querySelector("#alert-container");
+  if (alertContainer) {
+    const alert = document.createElement("div");
+    alert.className = `alert alert-${type}`;
+    alert.textContent = message;
+    alertContainer.appendChild(alert);
+
+    if (autoDismiss) {
+      setTimeout(() => {
+        alert.remove();
+      }, 3000);
+    }
+  }
 }

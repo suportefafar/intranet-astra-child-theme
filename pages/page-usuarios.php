@@ -137,6 +137,9 @@ get_header(); ?>
                     ) 
                 );
             ?>
+            <button type="button" class="btn btn-primary" id="search_button">
+                <i class="bi bi-search"></i>
+            </button>
         </div>
 
         <div id="table-wrapper"></div>
