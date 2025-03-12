@@ -25,5 +25,5 @@ function custom_page_template_hierarchy( $templates ) {
 }
 
 function set_session_to_browser_close() {
-    return DAY_IN_SECONDS; // Session expires when the browser is closed
+    return YEAR_IN_SECONDS; // Session expires when the browser is closed
 }
