@@ -4,11 +4,11 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-/*
- * Mudando o caminho dos arquivos template 'page-NOME_DA_PAGINA.php'
- */
+// Mudando o caminho dos arquivos template 'page-NOME_DA_PAGINA.php'
 add_filter( 'page_template_hierarchy', 'custom_page_template_hierarchy' );
 
+// Mudando o tempo de expiração de uma sessão para até o browser ser fechado 
+add_filter( 'auth_cookie_expiration', 'set_session_to_browser_close' );
 
 function custom_page_template_hierarchy( $templates ) {
     $new_templates = array();
@@ -22,4 +22,8 @@ function custom_page_template_hierarchy( $templates ) {
     $new_templates = array_merge( $new_templates, $templates );
 
     return $new_templates;
+}
+
+function set_session_to_browser_close() {
+    return 0; // Session expires when the browser is closed
 }
