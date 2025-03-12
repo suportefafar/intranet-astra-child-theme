@@ -2008,55 +2008,40 @@ function intranet_fafar_api_get_user_by_id( $id ) {
     $role     = $request->get_param('role') ? $request->get_param('role') : '';
     $place    = $request->get_param('place') ? $request->get_param('place') : '';
 
-    $meta_query                 = array();
-    $meta_query_status_category = array();
-    if( $status && $category ) {
-        $meta_query_status_category = array(
-            'relation' => 'AND',
-            array(
-                'key' => 'public_servant_bond_category',
-                'value' => $category,
-                'compare' => '=',
-            ),
-            array(
-                'key' => 'bond_status',
-                'value' => $status,
-                'compare' => '=',
-            ),
-        );
-    } else if( $status || $category ) {
-        $meta_query_status_category = array(
-            'relation' => 'OR',
-            array(
-                'key' => 'public_servant_bond_category',
-                'value' => $category,
-                'compare' => '=',
-            ),
-            array(
-                'key' => 'bond_status',
-                'value' => $status,
-                'compare' => '=',
-            ),
+    $meta_query = array();
+    if( $status ) {
+        $meta_query[] = array(
+            'key' => 'bond_status',
+            'value' => $status,
+            'compare' => '=',
         );
     }
 
-    $meta_query = $meta_query_status_category;
-
-    if ( $place ) {
-        $match_places = intranet_fafar_api_search_place( $place );
-
-        $places_ids = array_map( fn( $place ) => $place['id'], $match_places );
-
-        $meta_query = array(
-            'relation' => 'OR',
-            array(
-                'key' => 'workplace_place',
-                'value' => $places_ids,
-                'compare' => 'IN',
-            ),
-            $meta_query_status_category
+    if( $category ) {
+        $meta_query[] = array(
+            'key' => 'public_servant_bond_category',
+            'value' => $category,
+            'compare' => '=',
         );
+    }
 
+    if( $place ) {
+        $match_places = intranet_fafar_api_search_place( $place );
+        $places_ids   = array_map( fn( $place ) => $place['id'], $match_places );
+        $meta_query[] = array(
+            'key' => 'workplace_place',
+            'value' => $places_ids,
+            'compare' => 'IN',
+        );
+    }
+    
+    $meta_query_count = count( $meta_query );
+
+    if( $meta_query_count >= 2 )
+        $meta_query['relation'] = 'AND';
+    else if( $meta_query_count == 1 ) {
+        $meta_query['relation'] = 'OR';
+        $meta_query[] = array();
     }
 
     // Query users with pagination

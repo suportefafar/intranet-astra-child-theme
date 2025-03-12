@@ -321,7 +321,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                 <?php
                     $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array( 'orderby_json' => 'number' ) );
                     $rooms = array_filter( $places, function ( $place ) {
-                        return $place['data']['object_sub_type'] === 'general';
+                        return $place['data']['object_sub_type'] === [ 'general' ];
                     } );
                     $rooms_numbers = array_map( function ( $room ) {
                         return $room['data']['number'];
