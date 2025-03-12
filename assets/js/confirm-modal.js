@@ -81,3 +81,9 @@ function hideConfirmModal() {
     bootstrap.Modal.getInstance(modalEl)?.hide();
   }
 }
+
+// Attach to the global window object
+window.showConfirmModal = showConfirmModal;
+window.hideConfirmModal = hideConfirmModal;
+
+//console.log("Módulo de modal carregado!");

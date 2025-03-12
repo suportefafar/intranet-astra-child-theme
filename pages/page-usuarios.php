@@ -24,7 +24,7 @@ $sector_slug = $user->roles[0];
  * Importanto script JS customizado
  * wp_enqueue_script( 'intranet-fafar-usuarios-script', get_stylesheet_directory_uri() . '/assets/js/usuarios.js', array( 'jquery' ), false, false );
  */
-wp_enqueue_script_module( 'intranet-fafar-usuarios-script', get_stylesheet_directory_uri() . '/assets/js/usuarios.js', array( 'jquery' ), false, true );
+wp_enqueue_script_module( 'intranet-fafar-usuarios-script', get_stylesheet_directory_uri() . '/assets/js/usuarios.js', array( 'intranet-fafar-alert' ), false, true );
 
 $user_logged_params = array(
     'displayName' => $user->display_name,
@@ -83,7 +83,8 @@ get_header(); ?>
         </div>
 
         <div id="filters_container" class="d-flex gap-3 mb-2">
-            <input type="text" id="input_user_name" class="form-control" placeholder="Pesquise pelo nome" aria-label="Nome" aria-describedby="Campo para busca pelo nome">
+            <input type="text" id="input_keyword" class="form-control" placeholder="Pesquise por palavra-chave..." aria-label="Nome" aria-describedby="Campo para busca por palavra-chave">
+            <input type="text" id="input_place" class="form-control" placeholder="Pesquise por sala...." aria-label="Sala" aria-describedby="Campo para busca por sala">
             <?php
                 $bond_status = get_option('bond_status', []);
             
@@ -93,7 +94,8 @@ get_header(); ?>
                         'options_values' => $bond_status,
                         'name'           => 'select_bond_status',
                         'id'             => 'select_bond_status',
-                        'placeholder'    => 'Selecione um status'
+                        'placeholder'    => 'Todos os status',
+                        'selected'       => 'ATIVO',
                     ) 
                 );
             ?>
@@ -106,7 +108,7 @@ get_header(); ?>
                         'options_values' => $bond_categories,
                         'name'           => 'select_bond_categories',
                         'id'             => 'select_bond_categories',
-                        'placeholder'    => 'Selecione uma categoria'
+                        'placeholder'    => 'Todos as categorias'
                     ) 
                 );
             ?>
@@ -133,7 +135,7 @@ get_header(); ?>
                         'options_values' => $roles_slugs,
                         'name'           => 'select_public_servant_role',
                         'id'             => 'select_public_servant_role',
-                        'placeholder'    => 'Selecione um setor',
+                        'placeholder'    => 'Todos os setores',
                     ) 
                 );
             ?>

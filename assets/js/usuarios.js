@@ -1,9 +1,6 @@
 import { Grid, html } from "https://unpkg.com/gridjs?module";
-console.log("carregando usuarios...");
-/*
- * Event Listeners
- */
 
+// Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
   // Export listed users
   const btn_export_users = document.querySelector("#btn_export_users");
@@ -23,6 +20,15 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelector("#search_button").addEventListener("click", () => {
     grid.forceRender(); // Re-render grid with new filters
   });
+
+  // Attach listener to 'Enter' keyboard for search
+  document.querySelectorAll("#filters_container input").forEach((el) =>
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        grid.forceRender(); // Re-render grid with new filters
+      }
+    })
+  );
 });
 
 /*
@@ -85,7 +91,8 @@ const grid = new Grid({
  */
 function getCurrentFilters() {
   return {
-    name: document.querySelector("#input_user_name").value,
+    keyword: document.querySelector("#input_keyword").value,
+    place: document.querySelector("#input_place").value,
     status: document.querySelector("#select_bond_status").value,
     category: document.querySelector("#select_bond_categories").value,
     role: document.querySelector("#select_public_servant_role").value,
@@ -413,7 +420,7 @@ async function copyEmailsToClipboard() {
 
   const emails = users.map((user) => user.user_email);
 
-  console.log("Copiando " + emails.length + " emails...");
+  // console.log("Copiando " + emails.length + " emails...");
 
   navigator.clipboard.writeText(emails).then(
     function () {
@@ -442,20 +449,4 @@ function updateUsersCounter(quantity) {
 function capitalizeFirstLetter(value) {
   if (!value) return "";
   return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-}
-
-function showAlert(message, type, autoDismiss = false) {
-  const alertContainer = document.querySelector("#alert-container");
-  if (alertContainer) {
-    const alert = document.createElement("div");
-    alert.className = `alert alert-${type}`;
-    alert.textContent = message;
-    alertContainer.appendChild(alert);
-
-    if (autoDismiss) {
-      setTimeout(() => {
-        alert.remove();
-      }, 3000);
-    }
-  }
 }

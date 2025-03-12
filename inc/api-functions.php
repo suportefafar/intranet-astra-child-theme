@@ -1327,6 +1327,39 @@ function intranet_fafar_api_get_available_place_for_reservation( $pre_reservatio
 
 }
 
+/**
+ * Search for places based on a search term.
+ *
+ * @param string $search The search term.
+ * @return array Array of matching places.
+ */
+function intranet_fafar_api_search_place($search) {
+
+    error_log('searching....');
+
+    // Get all places, ordered by 'number' in ascending order
+    $places = intranet_fafar_api_get_submissions_by_object_name('place', ['orderby_json' => 'number', 'order' => 'ASC']);
+
+    // Prepare the search term for comparison
+    $search_esc = intranet_fafar_utils_escape_and_clean_to_compare($search);
+
+    // Filter places that match the search term
+    $matches = array_filter($places, function ($place) use ($search_esc) {
+        // Extract and clean place data
+        $number_esc = intranet_fafar_utils_escape_and_clean_to_compare( $place['data']['number'] ?? '' );
+        $desc_esc   = intranet_fafar_utils_escape_and_clean_to_compare( $place['data']['desc'] ?? '' );
+
+        // Check if the search term matches the number or description
+        return str_contains($number_esc, $search_esc) || str_contains($desc_esc, $search_esc);
+    });
+
+    error_log( print_r( count( $matches ) , true));
+
+    // Return the matches as a numerically indexed array
+    return array_values($matches);
+
+}
+
 /*
  * {
  *   title: "my recurring STRING event",
@@ -1969,14 +2002,16 @@ function intranet_fafar_api_get_user_by_id( $id ) {
     $offset = $request->get_param('offset') ? intval($request->get_param('offset')) : 0;
     $limit  = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
 
-    $name     = $request->get_param('name') ? $request->get_param('name') : '';
+    $keyword  = $request->get_param('keyword') ? $request->get_param('keyword') : '';
     $status   = $request->get_param('status') ? $request->get_param('status') : '';
     $category = $request->get_param('category') ? $request->get_param('category') : '';
     $role     = $request->get_param('role') ? $request->get_param('role') : '';
+    $place    = $request->get_param('place') ? $request->get_param('place') : '';
 
-    $meta_query = array();
+    $meta_query                 = array();
+    $meta_query_status_category = array();
     if( $status && $category ) {
-        $meta_query = array(
+        $meta_query_status_category = array(
             'relation' => 'AND',
             array(
                 'key' => 'public_servant_bond_category',
@@ -1990,7 +2025,7 @@ function intranet_fafar_api_get_user_by_id( $id ) {
             ),
         );
     } else if( $status || $category ) {
-        $meta_query = array(
+        $meta_query_status_category = array(
             'relation' => 'OR',
             array(
                 'key' => 'public_servant_bond_category',
@@ -2005,11 +2040,30 @@ function intranet_fafar_api_get_user_by_id( $id ) {
         );
     }
 
+    $meta_query = $meta_query_status_category;
+
+    if ( $place ) {
+        $match_places = intranet_fafar_api_search_place( $place );
+
+        $places_ids = array_map( fn( $place ) => $place['id'], $match_places );
+
+        $meta_query = array(
+            'relation' => 'OR',
+            array(
+                'key' => 'workplace_place',
+                'value' => $places_ids,
+                'compare' => 'IN',
+            ),
+            $meta_query_status_category
+        );
+
+    }
+
     // Query users with pagination
     $user_query = new WP_User_Query(array(
         'number'     => $limit,
         'offset'     => $offset,
-        'search'     => '*' . $name . '*', // Search for users with "john" in their username, email, or display name
+        'search'     => '*' . $keyword . '*', // Search for users with "john" in their username, email, or display name
         'role'       => $role,
         'meta_query' => $meta_query,
         'orderby'    => 'display_name',
