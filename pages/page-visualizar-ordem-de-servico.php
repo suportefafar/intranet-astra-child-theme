@@ -325,7 +325,7 @@ get_header(); ?>
                                     <?php
                                         if ( ! isset( $service_ticket['data']['assigned_to'] ) ) $service_ticket['data']['assigned_to'] = 0;
 
-                                        $users_by_departament = intranet_fafar_get_user_by_departament( $service_ticket_departament_role_slug );
+                                        $users_by_departament = intranet_fafar_get_user_by_departament( $service_ticket_departament_role_slug, 'ATIVO' );
                                     ?>
 
                                         <option value="0" <?php selected( strval( $service_ticket['data']['assigned_to'] ), 0 ); ?> >Selecione um</option>

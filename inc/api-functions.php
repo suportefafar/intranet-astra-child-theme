@@ -2511,7 +2511,7 @@ function intranet_fafar_api_set_reservation_technical( $reservation_id, $technic
 
 }
 
-function intranet_fafar_get_user_by_departament( $role_slug = null ) {
+function intranet_fafar_get_user_by_departament( $role_slug = null, $status = '' ) {
 
     if ( ! $role_slug )
         return array();
@@ -2528,6 +2528,11 @@ function intranet_fafar_get_user_by_departament( $role_slug = null ) {
     $options = array();
 
     foreach ( $users as $user ) {
+        if(
+            $status && 
+            strtolower( $status ) !== strtolower( get_user_meta( $user->ID, 'bond_status', true ) )
+        ) continue;
+
         $options[esc_attr( $user->ID )] = esc_html( $user->display_name );
     }
 
