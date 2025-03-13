@@ -1135,7 +1135,7 @@ function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
     // Get all query parameters
     $query_params = $request->get_query_params();
 
-    error_log(print_r($query_params, true));
+    // error_log(print_r($query_params, true));
 
     $submissions = intranet_fafar_api_get_auditorium_reservations( 
         ( $query_params['status'] ?? null ), 
@@ -1335,7 +1335,7 @@ function intranet_fafar_api_get_available_place_for_reservation( $pre_reservatio
  */
 function intranet_fafar_api_search_place($search) {
 
-    error_log('searching....');
+    // error_log('searching....');
 
     // Get all places, ordered by 'number' in ascending order
     $places = intranet_fafar_api_get_submissions_by_object_name('place', ['orderby_json' => 'number', 'order' => 'ASC']);
@@ -1353,7 +1353,7 @@ function intranet_fafar_api_search_place($search) {
         return str_contains($number_esc, $search_esc) || str_contains($desc_esc, $search_esc);
     });
 
-    error_log( print_r( count( $matches ) , true));
+    // error_log( print_r( count( $matches ) , true));
 
     // Return the matches as a numerically indexed array
     return array_values($matches);
@@ -1778,17 +1778,17 @@ function intranet_fafar_api_get_submission_by_id( $id, $substitute_value = true 
 
     if( ! isset( $id ) || ! $id ) {
         
-        intranet_fafar_logs_register_log(
-            'ERROR',
-            'intranet_fafar_api_get_submission_by_id',
-            json_encode(
-                array(
-                    'func' => 'intranet_fafar_api_get_submission_by_id',
-                    'msg'  => 'ID nor set or falsy, received',
-                    'obj'  => $id,
-                )
-            ),
-        );
+        // intranet_fafar_logs_register_log(
+        //     'ERROR',
+        //     'intranet_fafar_api_get_submission_by_id',
+        //     json_encode(
+        //         array(
+        //             'func' => 'intranet_fafar_api_get_submission_by_id',
+        //             'msg'  => 'ID nor set or falsy, received',
+        //             'obj'  => $id,
+        //         )
+        //     ),
+        // );
 
         return array( 'error_msg' => 'Nenhum ID informado', 'http_status' => 400 );
 
@@ -1878,7 +1878,7 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
  * @param array $order_by ( 'orderby_column' => '', 'orderby_json' => '', 'order' => 'ASC' | 'DESC', 'inet_aton' => '1' )
  * @return array $submissions 
  */
-function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order_by = array(), $check_permissions = true, $check_is_active = true ) {
+function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order_by = array(), $check_permissions = true, $check_is_active = true, $offset = 0, $limit = null, $count = false ) {
 
     if( ! $object_name ) {
 
@@ -1888,7 +1888,11 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order
 
     $object_name = sanitize_text_field( wp_unslash( $object_name ) );
     
-    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = '" . $object_name . "'";
+    $columns = '*';
+    // Se quiser apenas o números de linhas da consulta
+    if( $count ) $columns = 'COUNT(*)';
+
+    $query = "SELECT " . $columns . " FROM `SET_TABLE_NAME` WHERE `object_name` = '" . $object_name . "'";
 
     if ( ! empty( $order_by ) ) {
 
@@ -1921,7 +1925,16 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order
 
     }
 
+    if( ! empty( $limit ) ) $query .= ' LIMIT ' . $limit;
+
+    if( ! empty( $offset ) ) $query .= ' OFFSET ' . $offset;
+
+    // error_log( $query );
+
     $submissions = intranet_fafar_api_read( $query, $check_permissions, $check_is_active );
+
+    // Não é necessário o resto do tratamento, porque estamos recebendo um int
+    if( $count ) return $submissions;
 
     if( ! $submissions || count( $submissions ) == 0 ) {
 
@@ -2322,31 +2335,106 @@ function intranet_fafar_api_get_reservation_by_id_handler( $request ) {
 
 }
 
-function intranet_fafar_api_get_equipaments_handler() {
-    
-    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'equipament'";
+function intranet_fafar_api_get_equipaments_handler($request) {
+    // Get pagination parameters from the request
+    $offset  = $request->get_param('offset') ? intval($request->get_param('offset')) : 0;
+    $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : false;
+    $keyword = $request->get_param('keyword') ? $request->get_param('keyword') : null;
 
-    $submissions = intranet_fafar_api_read( $query ); 
+    error_log($keyword);
 
-    if( ! $submissions || count( $submissions ) == 0 ) {
+    // Fetch equipments with pagination
+    $equipaments = intranet_fafar_api_get_equipaments( $offset, $limit );
 
-        return array( 'error_msg' => 'Nenhum equipamento encontrado', 'http_status' => 400 );
+    // Get total count of equipments (without pagination)
+    $total_equipaments = intranet_fafar_api_get_submissions_by_object_name( 'equipament', array(), true, true, 0, null, true );
 
+    if( $keyword ) {
+        // Prepare the keyword term for comparison
+        $keyword_esc = intranet_fafar_utils_escape_and_clean_to_compare( $keyword );
+
+        // Filter equipments that match the keyword term
+        $equipaments = array_filter($equipaments, function ( $equipament ) use ( $keyword_esc ) {
+            // Define fields to search
+            
+            $fields = [
+                $equipament['data']['desc'] ?? '',
+                $equipament['data']['asset'] ?? '',
+                $equipament['data']['brand'] ?? '',
+                $equipament['data']['model'] ?? '',
+                $equipament['data']['status'][0] ?? '',
+                $equipament['data']['internal_asset'] ?? '',
+                $equipament['data']['object_sub_type'][0] ?? '',
+                $equipament['data']['place'][0]['data']['number'] ?? '',
+
+                $equipament['data']['gpu_brand'][0] ?? '',
+                $equipament['data']['gpu_model'] ?? '',
+                $equipament['data']['gpu_ram'] ?? '',
+                $equipament['data']['gpu_frequency'] ?? '',
+
+                $equipament['data']['os_type'][0] ?? '',
+                $equipament['data']['os_version'] ?? '',
+
+                $equipament['data']['disk_type_1'][0] ?? '',
+                $equipament['data']['disk_type_2'][0] ?? '',
+                $equipament['data']['disk_type_3'][0] ?? '',
+                $equipament['data']['disk_type_4'][0] ?? '',
+                $equipament['data']['disk_capacity_1'] ?? '',
+                $equipament['data']['disk_capacity_2'] ?? '',
+                $equipament['data']['disk_capacity_3'] ?? '',
+                $equipament['data']['disk_capacity_4'] ?? '',
+
+                $equipament['data']['ip'][0]['data']['address'] ?? '',
+                $equipament['data']['mac_address'] ?? '',
+
+                $equipament['data']['ram_type'][0] ?? '',
+                $equipament['data']['ram_capacity'] ?? '',
+
+                $equipament['data']['cpu_brand'][0] ?? '',
+                $equipament['data']['cpu_model'] ?? '',
+                $equipament['data']['cpu_frequency'] ?? '',
+                
+                $equipament['data']['applicant']['data']['display_name'] ?? '',
+            ];
+
+            // Combine fields into a single string
+            $full_desc = implode(' ', array_filter($fields));
+            $full_desc_esc = intranet_fafar_utils_escape_and_clean_to_compare( $full_desc );
+
+            error_log($full_desc);
+
+            // Check if the keyword term matches the combined string
+            return str_contains( $full_desc_esc, $keyword_esc );
+        });
+
+        $equipaments = array_values( $equipaments );
+
+        $total_equipaments = count( $equipaments );
     }
+
+    // Return the response
+    return rest_ensure_response(array(
+        'count'    => $total_equipaments,
+        'next'     => null,
+        'previous' => null,
+        'results'  => $equipaments,
+    ));
+}
+
+function intranet_fafar_api_get_equipaments( $offset = 0, $limit = null ) {
+
+    $equipaments = intranet_fafar_api_get_submissions_by_object_name( 'equipament', array(), true, true, $offset, $limit ); 
+
+    if( empty( $equipaments ) ) 
+        return array( 'error_msg' => 'Nenhum equipamento encontrado' );
 
     /*
      * Substituir os campos que tem ID de outro objeto,
      * pelo objeto de mesmo ID
      */ 
-    $submissions_joined = array_map( function ( $s ) {
+    $equipaments = array_map( function ( $s ) {
 
-        if( is_array( $s['data']['place'] ) && count( $s['data']['place'] ) > 0 ){
-
-            $s['data']['place'] = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
-        
-        }
-
-        if( is_array( $s['data']['applicant'] ) && count( $s['data']['applicant'] ) > 0 ){
+        if( isset( $s['data']['applicant'][0] ) ){
 
             $applicant = get_userdata( $s['data']['applicant'][0] );
 
@@ -2354,7 +2442,7 @@ function intranet_fafar_api_get_equipaments_handler() {
         
         }
 
-        if( is_array( $s['data']['ip'] ) && count( $s['data']['ip'] ) > 0 ){
+        if( isset( $s['data']['ip'][0] ) ){
 
             $s['data']['ip'] = intranet_fafar_api_get_submission_by_id( $s['data']['ip'][0] );
         
@@ -2362,9 +2450,9 @@ function intranet_fafar_api_get_equipaments_handler() {
 
         return $s;
         
-    }, $submissions );
+    }, $equipaments );
 
-    return rest_ensure_response( $submissions_joined );
+    return $equipaments;
 
 }
 
@@ -2638,9 +2726,14 @@ function intranet_fafar_api_read( $query, $check_permissions = true, $check_is_a
     
     $submissions = $wpdb->get_results( $query_completed, 'ARRAY_A' );
 
+    // error_log(print_r($submissions, true));
+
     if ( $submissions === null ) return array();
 
-    if( empty( $submissions ) ) return array();
+    if ( empty( $submissions ) ) return array();
+
+    // No caso de ser um SELECT COUNT(*) ...
+    if ( isset( $submissions[0]['COUNT(*)'] ) ) return $submissions[0]['COUNT(*)'];
 
     $submissions_checked = array();
     foreach( $submissions as $submission ) {

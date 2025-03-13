@@ -56,7 +56,7 @@ document.addEventListener("click", (event) => {
  */
 document.addEventListener("onLoanSuccess", () => {
   hideLoanOrReturnoEquipamentModal("intranetFafarLoanModal");
-  renderGridJS();
+  grid.forceRender();
 });
 
 /*
@@ -65,7 +65,7 @@ document.addEventListener("onLoanSuccess", () => {
  */
 document.addEventListener("onReturnLoanSuccess", () => {
   hideLoanOrReturnoEquipamentModal("intranetFafarLoanReturnModal");
-  renderGridJS();
+  grid.forceRender();
 });
 
 /*
@@ -115,46 +115,51 @@ const grid = new gridjs.Grid({
       formatter: actionColFormatter,
     },
   ],
-  data: fetchDataHandler,
-  pagination: {
-    limit: 20,
-    summary: true,
+  search: {
+    server: {
+      url: (prev, keyword) => {
+        const url = `${prev}?keyword=${keyword}`;
+        console.log(url); // Debugging: Log the search URL
+        return url;
+      },
+    },
   },
-  search: true,
+  pagination: {
+    limit: 10, // Number of rows per page
+    server: {
+      url: (prev, page, limit) => {
+        let url = `${prev}?limit=${limit}&offset=${page * limit}`;
+        if (url.indexOf("keyword") > -1)
+          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+        console.log(url);
+        return url;
+      },
+    },
+    summary: true, // Show pagination summary
+  },
+  server: {
+    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/equipaments",
+    then: renderDataOnTable,
+    total: (data) => data.count,
+  },
   sort: true,
   resizable: true,
   autoWidth: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-async function renderGridJS(data = []) {
-  if (!data) data = [];
+function renderDataOnTable(data) {
+  console.log(data);
 
-  if (data.length === 0) data = await fetchDataHandler();
-
-  grid
-    .updateConfig({
-      data,
-    })
-    .forceRender();
-}
-
-async function fetchDataHandler() {
-  let response;
-
-  try {
-    response = await axios.get("/wp-json/intranet/v1/submissions/equipaments");
-  } catch (error) {
-    console.log(error.response.data.message);
+  if (!data) {
     return [];
   }
 
-  const submissions = response.data;
+  if (!Array.isArray(data.results)) {
+    return [];
+  }
 
-  console.log(submissions);
-
-  let table_arr = [];
-  for (const submission of submissions) {
+  return data.results.map((submission) => {
     const { id, data } = submission;
     const {
       status,
@@ -173,6 +178,7 @@ async function fetchDataHandler() {
       disk_capacity_1,
       os_type,
       os_version,
+      desc,
     } = data;
 
     const asset_column_data = JSON.stringify({
@@ -192,6 +198,7 @@ async function fetchDataHandler() {
       disk_capacity_1,
       os_type,
       os_version,
+      desc,
     });
 
     const status_column_data = JSON.stringify({
@@ -208,17 +215,15 @@ async function fetchDataHandler() {
       permissions,
     });
 
-    table_arr.push([
+    return [
       asset_column_data,
       desc_column_data,
       place.data?.number ?? "",
       applicant ?? "",
       status_column_data,
       action_column_data,
-    ]);
-  }
-
-  return table_arr;
+    ];
+  });
 }
 
 function assetColFormatter(current) {
@@ -269,15 +274,16 @@ function descColFormatter(current) {
     disk_capacity_1,
     os_type,
     os_version,
+    desc,
   } = JSON.parse(current);
 
-  let desc = "";
-  if (brand && model) desc = `${brand} ${model}`;
-  else if (brand) desc = brand;
-  else if (model) desc = model;
+  let custom_desc = "";
+  if (brand && model) custom_desc = `${brand} ${model}`;
+  else if (brand) custom_desc = brand;
+  else if (model) custom_desc = model;
 
   if (object_sub_type[0] && object_sub_type[0].toLowerCase() === "computador") {
-    desc = `${cpu_brand[0] ?? "--"} ${cpu_model ?? "--"} | ${
+    custom_desc = `${cpu_brand[0] ?? "--"} ${cpu_model ?? "--"} | ${
       ram_capacity ?? "--"
     } GB | ${disk_capacity_1 ?? "--"} GB`;
   }
@@ -296,7 +302,7 @@ function descColFormatter(current) {
         <div>
           <span class="me-1"><i class="bi bi-body-text"></i></span>
           <span class="text-secondary">
-            ${desc}
+            ${custom_desc}
           </span>
         </div>
 
@@ -320,6 +326,18 @@ function descColFormatter(current) {
           </span>
         </div>
       </div>`
+            : ""
+        }
+
+        ${
+          desc
+            ? `<div>
+              <span class="me-1"><i class="bi bi-info"></i></span>
+              <span class="text-secondary">
+                ${desc}
+              </span>
+            </div>
+          </div>`
             : ""
         }
       `);
@@ -443,7 +461,7 @@ async function deleteSubmission(id) {
 
     showAlert("Excluído com sucesso!", "success", true, 3000);
 
-    renderGridJS();
+    grid.forceRender();
   } catch (error) {
     let error_msg = "[1010]Unknow error on try catch";
 
