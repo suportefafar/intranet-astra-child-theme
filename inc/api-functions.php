@@ -226,10 +226,10 @@ function intranet_fafar_api_get_access_building_request_register_handler( $reque
 function intranet_fafar_api_register_entry_and_exit( $id, $type ) {
 
     if ( ! isset( $id ) )
-        return array( 'error_msg' => '[001] Nenhum ID informado!' );
+        return array( 'error_msg' => 'Nenhum ID informado!' );
 
     if ( ! isset( $type ) )
-        return array( 'error_msg' => '[002] Tipo não informado!' );
+        return array( 'error_msg' => 'Tipo não informado!' );
 
     $submission = intranet_fafar_api_get_submission_by_id( $id, false );
 
@@ -380,15 +380,15 @@ function intranet_fafar_api_create_new_loan( $form_data ) {
     $form_data['data'] = json_decode( $form_data['data'], true );
 
     if ( ! isset( $form_data['data']['loan_date'] ) )
-        return array( 'error_msg' => '[001] Data de empréstimo não informada!' );
+        return array( 'error_msg' => 'Data de empréstimo não informada!' );
 
     $equipament = intranet_fafar_api_get_submission_by_id( $form_data['data']['equipament'], false );
 
     if ( ! $equipament )
-        return array( 'error_msg' => '[001] Equipamento não existe!' );
+        return array( 'error_msg' => 'Equipamento não existe!' );
 
     if ( isset( $equipament['data']['on_loan'] ) && $equipament['data']['on_loan'] )
-        return array( 'error_msg' => '[002] Equipamento está emprestado!' );
+        return array( 'error_msg' => 'Equipamento está emprestado!' );
 
     $equipament['data']['on_loan'] = '1';
 
@@ -415,12 +415,12 @@ function intranet_fafar_api_register_loan_return( $form_data ) {
     $form_data['data'] = json_decode( $form_data['data'], true );
 
     if ( ! isset( $form_data['data']['return_date'] ) )
-        return array( 'error_msg' => '[001] Data de retorno não informada!' );
+        return array( 'error_msg' => 'Data de retorno não informada!' );
 
     $equipament = intranet_fafar_api_get_submission_by_id( $form_data['data']['equipament'], false );
 
     if ( ! $equipament )
-        return array( 'error_msg' => '[001] Equipamento não existe!' );
+        return array( 'error_msg' => 'Equipamento não existe!' );
 
     $equipament['data']['on_loan'] = 0;
 
@@ -435,7 +435,7 @@ function intranet_fafar_api_register_loan_return( $form_data ) {
     $loan = $loans[0];
 
     if ( ! $loan )
-        return array( 'error_msg' => '[001] Equipamento atualizado. Porém, ' . $loan['error_msg'] );
+        return array( 'error_msg' => 'Equipamento atualizado. Porém, ' . $loan['error_msg'] );
 
     $loan['data']['returned']    = '1';
     $loan['data']['return_date'] = $form_data['data']['return_date']; // Verificado no topo
@@ -444,7 +444,7 @@ function intranet_fafar_api_register_loan_return( $form_data ) {
     $loan = intranet_fafar_api_update( $loan['id'], $loan );
 
     if ( isset( $loan['error_msg'] ) )
-        return array( 'error_msg' => '[001] Equipamento atualizado. Porém, ' . $loan['error_msg'] );
+        return array( 'error_msg' => 'Equipamento atualizado. Porém, ' . $loan['error_msg'] );
 
     // Retorna uma obj genérico para concluir a submissão com sucesso
     return array( 'far_prevent_submit' => true );
@@ -503,7 +503,7 @@ function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
        
         // Atualizando a propriedade 'status' da ordem de serviço
         if ( ! isset( $form_data['data']['status'][0] ) )
-            return array( 'error_msg' => '[001] Status não informado!' );
+            return array( 'error_msg' => 'Status não informado!' );
    
         $service_ticket = intranet_fafar_api_get_submission_by_id( $form_data['data']['service_ticket'], false );
    
@@ -602,7 +602,7 @@ function intranet_fafar_api_get_service_tickets_by_user() {
         return $service_tickets['error_msg'];
 
     if ( empty( $service_tickets ) )
-        return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada do usuário atual!' );
+        return array( 'error_msg' => 'Nenhuma ordem de serviço encontrada do usuário atual!' );
     
     for ( $i = 0; $i < count( $service_tickets ); $i++ ) {
 
@@ -707,7 +707,7 @@ function intranet_fafar_api_get_service_tickets_by_departament( $departament = n
         return $all_service_tickets['error_msg'];
 
     if ( empty( $all_service_tickets ) )
-        return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada para ' . $departament );
+        return array( 'error_msg' => 'Nenhuma ordem de serviço encontrada para ' . $departament );
 
     $status_arr = array();
     if( $status && is_string( $status ) )
@@ -780,7 +780,7 @@ function intranet_fafar_api_get_service_ticket_by_id( $id ) {
         return array( 'error_msg' => $service_ticket['error_msg'] );
 
     if ( empty( $service_ticket ) )
-        return array( 'error_msg' => '[323] Nenhuma ordem de serviço encontrada!' );
+        return array( 'error_msg' => 'Nenhuma ordem de serviço encontrada!' );
     
     /*
      * Substituir os campos que tem ID de outro objeto,
@@ -835,7 +835,7 @@ function intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler
 function intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $service_ticket_id ) {
 
     if ( ! $service_ticket_id ) 
-        return array( 'error_msg' => '[645] Nenhum ID informado!' );
+        return array( 'error_msg' => 'Nenhum ID informado!' );
 
     $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket_update' AND JSON_CONTAINS(data, '\"" . $service_ticket_id . "\"', '$.service_ticket') ORDER BY created_at DESC";
 
@@ -845,7 +845,7 @@ function intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $servi
         return $service_ticket_updates['error_msg'];
 
     if ( empty( $service_ticket_updates ) )
-        return array( 'error_msg' => '[323] Nenhuma atualização da ordem de serviço encontrada do usuário atual!' );
+        return array( 'error_msg' => 'Nenhuma atualização da ordem de serviço encontrada do usuário atual!' );
     
     for ( $i = 0; $i < count( $service_ticket_updates ); $i++ ) {
 
@@ -1412,25 +1412,32 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 
     $role = wp_get_current_user()->roles[0];
 
+    // Professores que não são de colegiados não podem usar reservar
     if(
         strtoupper( $public_servant_bond_category ) === 'DOCENTE' && 
         $role !== 'colegiado_de_graduacao_biomedicina' && 
         $role !== 'colegiado_de_graduacao_farmacia'
-    ) return array( 'error_msg' => '[333] Não autorizado!' );
+    ) return array( 'error_msg' => 'Não autorizado!' );
     
     $new_form_data = $form_data;
     $new_form_data['data'] = json_decode( $new_form_data['data'], true );
 
     // Verificar se dados necessários foram informados
-    if ( ! isset( $new_form_data['data']['date'] )  ||
-         ! isset( $new_form_data['data']['start_time'] ) || 
-         ! isset( $new_form_data['data']['end_time'] ) || 
-         ! isset( $new_form_data['data']['frequency'][0] ) || 
-         ! isset( $new_form_data['data']['place'][0] ) 
+    if ( empty( $new_form_data['data']['date'] )  ||
+         empty( $new_form_data['data']['start_time'] ) || 
+         empty( $new_form_data['data']['end_time'] ) || 
+         empty( $new_form_data['data']['frequency'] ) || 
+         empty( $new_form_data['data']['place'] ) 
        ) {
             
-        return array( 'error_msg' => '[001] Data, tempo, frenquência ou lugar não informado!' );
+        return array( 'error_msg' => 'Data, tempo, frequência ou lugar não informado!' );
         
+    }
+
+    // Validando formato de data
+    $date = DateTime::createFromFormat( 'Y-m-d', $new_form_data['data']['date'] );
+    if ( ! $date || $date->format('Y-m-d') !== $new_form_data['data']['date'] ) {
+        return array( 'error_msg' => 'Data de início inválida!' );
     }
 
     // Verificar se *hora* de fim é posterior ao de início
@@ -1438,21 +1445,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
     $e = new DateTime( $new_form_data['data']['end_time'] );
     if ( $s >= $e ) {
 
-        return array( 'error_msg' => '[001] Horário de início não pode ser depois de fim!' );
-
-    }
-
-    // Verircar se *data* de fim é posterior ao de início, se houver data de fim
-    if ( $new_form_data['data']['frequency'][0] !== 'once' && isset( $new_form_data['data']['end_date'] ) ) {
-
-        $s = new DateTime( $new_form_data['data']['date'] );
-        $e = new DateTime( $new_form_data['data']['end_date'] );
-
-        if ( $s >= $e ) {
-
-            return array( 'error_msg' => '[001] Data de início não pode ser depois de fim!' );
-        
-        }
+        return array( 'error_msg' => 'Horário de início não pode ser depois de fim!' );
 
     }
 
@@ -1462,7 +1455,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
     $place = intranet_fafar_api_get_submission_by_id( $new_form_data['data']['place'][0], false );
 
     if( isset( $place['error_msg'] ) ) {
-        return array( 'error_msg' => '[421] Lugar/sala não existe com este ID' );
+        return array( 'error_msg' => 'Lugar/sala não existe com este ID' );
     }
 
     /* 
@@ -1473,21 +1466,37 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
             $place
         )
     ) {
-        return array( 'error_msg' => '[765] Não autorizado!' );
+        return array( 'error_msg' => 'Não autorizado!' );
     }
 
+    // Verircar se *data* de fim é posterior ao de início, se houver data de fim
+    if ( $new_form_data['data']['frequency'][0] !== 'once' ) {
 
+        if ( empty( $new_form_data['data']['end_date'] ) ) {
+            return array( 'error_msg' => 'Data de término não informada!' );
+        }
+
+        // Validando formato de data
+        $end_date = DateTime::createFromFormat( 'Y-m-d', $new_form_data['data']['end_date'] );
+        if ( ! $end_date || $end_date->format('Y-m-d') !== $new_form_data['data']['end_date'] ) {
+            return array( 'error_msg' => 'Data de término inválida!' );
+        }
+
+        $s = new DateTime( $new_form_data['data']['date'] );
+        $e = new DateTime( $new_form_data['data']['end_date'] );
+
+        if ( $s >= $e ) {
+            return array( 'error_msg' => 'Data de início não pode ser depois de fim!' );
+        }
+    }
 
     $title = 'Reserva ' . time();
 
-    if( isset( $new_form_data['data']['desc'] ) && 
-        $new_form_data['data']['desc'] !== '' 
-      ) {
+    if( ! empty( $new_form_data['data']['desc'] ) ) {
 
         $title = $new_form_data['data']['desc'];
 
     } else if ( isset( $new_form_data['data']['class_subject'][0] ) ) {
-
         $class_subject = intranet_fafar_api_get_submission_by_id( $new_form_data['data']['class_subject'][0]  );
 
         if ( $class_subject ) {
@@ -1495,7 +1504,6 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
             $title = $class_subject['data']['code'] . ' (' . $class_subject['data']['group'] . ')';
 
         }
-
     }
 
     // Setando a prop 'title'
@@ -1503,12 +1511,17 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 
     if ( $new_form_data['data']['frequency'][0] === 'weekly' ) {
 
-        if ( ! isset( $new_form_data['data']['weekdays'] ) || 
-             ! isset( $new_form_data['data']['end_date'] ) 
-           ) {
+        if ( ! isset( $new_form_data['data']['weekdays'][0] ) ) {
 
-            return array( 'error_msg' => '[001] Dia de semana e/ou data de término não informado(s)!' );
+            return array( 'error_msg' => 'Dia(s) de semana não informado(s)!' );
 
+        }
+
+        // Validando weekdays
+        foreach ( $new_form_data['data']['weekdays'] as $day ) {
+            if ( ! is_numeric( $day ) || $day < 1 || $day > 7 ) {
+                return array( 'error_msg' => 'Dia da semana inválido!' );
+            }
         }
 
         // Gerando a prop 'dt_dstart' (Data início + Hora início) só com números
@@ -1520,15 +1533,11 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 
         // Gerando a prop 'byday' com o array retornado pelos checkboxes do CF7
         $byday = [];
-
-        foreach ( $new_form_data['data']['weekdays'] as $day ) {
-
-            $date = new DateTime();
-
-            $date->setISODate( 2024, 1, $day ); // Using week 1 of 2024
-
-            $byday[] = strtoupper( substr( $date->format('l'), 0, 2 ) ); // Get the first two letters and convert to uppercase
-            
+        $weekday_map = [1 => 'MO', 2 => 'TU', 3 => 'WE', 4 => 'TH', 5 => 'FR', 6 => 'SA', 7 => 'SU'];
+        foreach ($new_form_data['data']['weekdays'] as $day) {
+            if (isset($weekday_map[$day])) {
+                $byday[] = $weekday_map[$day];
+            }
         }
 
         // Gerando a prop 'until' só com números
@@ -1547,7 +1556,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
          * Gerando RRULE string com a: 
          * 'DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201;BYDAY=MO,FR'
          */
-        $new_rrule = 'DTSTART:' . $dt_start . '\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=' . $until . ';BYDAY=' . implode( ',', $byday );
+        $new_rrule = 'DTSTART:' . $dt_start . '\\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=' . $until . ';BYDAY=' . implode(',', $byday);
 
         // Gerando a prop 'duration'
         $start = DateTime::createFromFormat('H:i', $new_form_data['data']['start_time']);
@@ -1586,7 +1595,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 
 
     $skip_check_overlap = false;
-    if ( isset( $new_form_data['data']['rrule'] ) && $new_form_data['data']['rrule'] == $new_rrule ) {
+    if ( ! empty( $new_form_data['data']['rrule'] ) && $new_form_data['data']['rrule'] == $new_rrule ) {
     
         $skip_check_overlap = true;
 
@@ -1613,6 +1622,10 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
         */ 
         $new_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $new_form_data['data']['rrule'] );
 
+        if ( empty( $new_reservation_timestamps ) ) {
+            return array( 'error_msg' => 'RRULE inválido ou sem ocorrências!' );
+        }
+
         // Aqui temos timestamps das reservas à ser registradas
         foreach ( $new_reservation_timestamps as $new_reservation_timestamp ) {
 
@@ -1628,14 +1641,17 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
                 // Aqui estamos gerando as timestamps de cada evento registrado
                 $existing_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $existing_reservation['data']['rrule'] );
 
+                if ( empty( $existing_reservation_timestamps ) ) {
+                    continue; // Pula RRULEs inválidas
+                }
+
                 foreach ( $existing_reservation_timestamps as $existing_reservation_timestamp ) {
 
                     $existing = intranet_fafar_api_get_event_start_and_end( $existing_reservation_timestamp, $existing_reservation['data']['duration'] );
-
                     $new      = intranet_fafar_api_get_event_start_and_end( $new_reservation_timestamp, $new_form_data['data']['duration'] );
 
                     if ( intranet_fafar_api_does_reservations_overlaps( $existing, $new ) )
-                        return array( 'error_msg' => '[423] Sala indisponível nesse horário!' );
+                        return array( 'error_msg' => 'Sala indisponível nesse horário!' );
 
                 }
 
@@ -1645,10 +1661,13 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
     }
 
     // Se tudo deu certo, então devolve o objeto para ser inserido pelo plugin 'fafar-cf7crud'
-    $form_data['data'] = json_encode( $new_form_data['data'] );
+    $json_data = json_encode($new_form_data['data']);
+    if ( $json_data === false ) {
+        return array( 'error_msg' => '[001] Erro ao codificar dados para JSON!' );
+    }
+    $form_data['data'] = $json_data;
 
     return $form_data;
-
 }
 
 

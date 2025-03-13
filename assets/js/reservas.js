@@ -1,4 +1,4 @@
-console.log("FOI O JS");
+// console.log("FOI O JS");
 let EVENTS = [];
 let CURRENT_CLASSROOM = { id: null, number: null };
 
@@ -65,7 +65,7 @@ function onLoadCalendarByUrlParams() {
   // Update the current place details
   CURRENT_CLASSROOM.id = place_id;
 
-  console.log({ place_id });
+  // console.log({ place_id });
 
   // Activate the clicked tab
   changeActiveTab();
@@ -104,7 +104,8 @@ function onClickTabHandler(e) {
 
 // Asynchronously fetch calendar data and render the table
 async function fetchCalendarData() {
-  console.log("CURRENT_CLASSROOM:", CURRENT_CLASSROOM);
+  showAlert("Carregando...", "warning");
+  // console.log("CURRENT_CLASSROOM:", CURRENT_CLASSROOM);
 
   // If CURRENT_CLASSROOM.id is missing, attempt to set it from the active tab
   if (!CURRENT_CLASSROOM.id) {
@@ -137,7 +138,9 @@ async function fetchCalendarData() {
 
   // Assuming getEventsByPlaceID is defined and returns a Promise with the submissions data
   const submissions = await getEventsByPlaceID(CURRENT_CLASSROOM.id);
+
   renderTable(submissions);
+  hideAlert();
 }
 
 // Toggle the active class on tabs based on the provided reservation status
@@ -357,7 +360,7 @@ async function getEventByID(id) {
     );
     // console.log({ response });
   } catch (error) {
-    // console.log(error.response.data.message);
+    console.log(error.response.data.message);
     return false;
   }
   return response.data;
