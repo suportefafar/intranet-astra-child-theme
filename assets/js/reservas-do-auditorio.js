@@ -322,14 +322,12 @@ function applicantColFormatter(current) {
 function executionColFormatter(current) {
   const { event_date, start_time, end_time, technical } = JSON.parse(current);
 
-  const event_date_locale = new Date(event_date).toLocaleDateString();
-
   return html(`
     <div class="d-flex flex-column gap-1">
       <div>
         <strong>
           <span class="me-1"><i class="bi bi-calendar3"></i></span>
-          <span>${event_date_locale}</span>
+          <span>${formatDateToDDMMYYYY(event_date)}</span>
         </strong>
       </div>
 
@@ -566,9 +564,9 @@ async function showDetails(id, status) {
   document.querySelector("#modal_event_use_musical_instruments").innerHTML =
     reservation.data.use_musical_instruments[0];
 
-  document.querySelector("#modal_event_created_at").innerHTML = new Date(
+  document.querySelector("#modal_event_created_at").innerHTML = formatDateTime(
     reservation.created_at
-  ).toLocaleString();
+  );
 
   hideAlert();
 

@@ -72,7 +72,8 @@ if (
     print_r("<br/>");
 
     // print_r($old_auditoriums);
-
+    $nc = 0;
+    $c = 0;
     foreach ( $old_auditoriums as $old_auditorium )
     {
 
@@ -163,15 +164,77 @@ if (
 
         $new_auditorium = array();
 
-        if( isset( $old_auditorium_data['applicant_name'] ) ) {
-            echo "<br/>";
-            print_r( intranet_fafar_api_pre_create_auditorium_reservation( $old_auditorium_data ) ); 
-            echo "<br/>";
+        if(
+            isset( $old_auditorium_data['NomeEvento'] )
+        ) {
+
+            $new_auditorium_data = array(
+                'far_db_column_submission_url' => 'https://www.farmacia.ufmg.br/reservaauditorio/',
+                'far_db_column_object_name' => 'auditorium_reservation',
+                'status' => 'Aguardando aprovação',
+                'technical' => '',
+                'applicant_name' => $old_auditorium_data['NomeSolicitante'],
+                'applicant_email' => $old_auditorium_data['EmailSolicitante'],
+                'applicant_phone' => $old_auditorium_data['TelefoneSolicitante'],
+                'desc' => $old_auditorium_data['NomeEvento'],
+                'public_prediction' => $old_auditorium_data['PrevisaoPublico'],
+                'use_musical_instruments' => $old_auditorium_data['InstrumentosMusicais'],
+                'use_fafar_notebook' => $old_auditorium_data['NotebookFafar'],
+                'use_own_notebook' => $old_auditorium_data['NotebookProprio'],
+                'use_internet_access' => $old_auditorium_data['AcessoInternet'],
+                'event_date__1' => $old_auditorium_data['DataEvento__1'],
+                'start_time__1' => $old_auditorium_data['HoraInicioEvento__1'],
+                'end_time__1' => $old_auditorium_data['HoraFimEvento__1'],
+            );
+
+            if(
+                ! empty( $old_auditorium_data['DataEvento__2'] ) &&
+                ! empty( $old_auditorium_data['HoraInicioEvento__2'] ) &&
+                ! empty( $old_auditorium_data['HoraFimEvento__2'] )
+            ) {
+                $new_auditorium_data['event_date__2'] = $old_auditorium_data['DataEvento__2'];
+                $new_auditorium_data['start_time__2'] = $old_auditorium_data['HoraInicioEvento__2'];
+                $new_auditorium_data['end_time__2'] = $old_auditorium_data['HoraFimEvento__2'];
+            }
+
+            if(
+                ! empty( $old_auditorium_data['DataEvento__3']) &&
+                ! empty( $old_auditorium_data['HoraInicioEvento__3']) &&
+                ! empty( $old_auditorium_data['HoraFimEvento__3'])
+            ) {
+                $new_auditorium_data['event_date__3'] = $old_auditorium_data['DataEvento__3'];
+                $new_auditorium_data['start_time__3'] = $old_auditorium_data['HoraInicioEvento__3'];
+                $new_auditorium_data['end_time__3'] = $old_auditorium_data['HoraFimEvento__3'];
+            }
+
+            if(
+                ! empty( $old_auditorium_data['DataEvento__4']) &&
+                ! empty( $old_auditorium_data['HoraInicioEvento__4']) &&
+                ! empty( $old_auditorium_data['HoraFimEvento__4'])
+            ) {
+                $new_auditorium_data['event_date__4'] = $old_auditorium_data['DataEvento__4'];
+                $new_auditorium_data['start_time__4'] = $old_auditorium_data['HoraInicioEvento__4'];
+                $new_auditorium_data['end_time__4'] = $old_auditorium_data['HoraFimEvento__4'];
+            }
+
+            // 43
+            $arr = intranet_fafar_api_pre_create_auditorium_reservation( $new_auditorium_data );
+            $c += count( $arr );
+        } else if( isset( $old_auditorium_data['desc'] ) ) {
+            // 85
+            $arr = intranet_fafar_api_pre_create_auditorium_reservation( $old_auditorium_data );
+            $nc += count( $arr );
         }
 
+        //128
         // $new_submissions[] = $new_equipament;
 
     }
+
+    echo "<br/>";
+    echo $c . " / " . $nc;
+    echo "<br/>";
+
 
 }
 

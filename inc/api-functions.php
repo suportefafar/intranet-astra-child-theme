@@ -1039,9 +1039,13 @@ function intranet_fafar_api_create_auditorium_reservation_handler( $request ) {
 
     $request_data = $request->get_json_params();
 
-    $reservations = intranet_fafar_api_pre_create_auditorium_reservation( $request_data );
+    $data = json_decode( $request_data, true );
 
-    if( isset( $reservations) ) {
+    error_log(print_r( $data, true ) ); 
+
+    $reservations = intranet_fafar_api_pre_create_auditorium_reservation( $data );
+
+    if( isset( $reservations['error_msg'] ) ) {
         new WP_Error( 'rest_api_sad', esc_html__( $reservations['error_msg'], 'intranet-fafar-api' ), ( ( $reservations['http_status'] ) ?? 400 ) );
     }
 
@@ -1111,7 +1115,7 @@ function intranet_fafar_api_pre_create_auditorium_reservation( $raw_reservation 
     
     }
 
-    return $new_reservation;
+    return $reservations;
 
 }
 
@@ -1797,17 +1801,17 @@ function intranet_fafar_api_get_submission_by_id( $id, $substitute_value = true 
 
     if( ! isset( $id ) || ! $id ) {
         
-        intranet_fafar_logs_register_log(
-            'ERROR',
-            'intranet_fafar_api_get_submission_by_id',
-            json_encode(
-                array(
-                    'func' => 'intranet_fafar_api_get_submission_by_id',
-                    'msg'  => 'ID nor set or falsy, received',
-                    'obj'  => $id,
-                )
-            ),
-        );
+        // intranet_fafar_logs_register_log(
+        //     'ERROR',
+        //     'intranet_fafar_api_get_submission_by_id',
+        //     json_encode(
+        //         array(
+        //             'func' => 'intranet_fafar_api_get_submission_by_id',
+        //             'msg'  => 'ID nor set or falsy, received',
+        //             'obj'  => $id,
+        //         )
+        //     ),
+        // );
 
         return array( 'error_msg' => 'Nenhum ID informado', 'http_status' => 400 );
 
@@ -1988,17 +1992,17 @@ function intranet_fafar_api_get_user_by_id( $id ) {
 
     if( ! isset( $id ) || ! $id ) {
         
-        intranet_fafar_logs_register_log(
-            'ERROR',
-            'intranet_fafar_api_get_user_by_id',
-            json_encode(
-                array(
-                    'func' => 'intranet_fafar_api_get_user_by_id',
-                    'msg'  => 'ID nor set or falsy, received',
-                    'obj'  => $id,
-                )
-            ),
-        );
+        // intranet_fafar_logs_register_log(
+        //     'ERROR',
+        //     'intranet_fafar_api_get_user_by_id',
+        //     json_encode(
+        //         array(
+        //             'func' => 'intranet_fafar_api_get_user_by_id',
+        //             'msg'  => 'ID nor set or falsy, received',
+        //             'obj'  => $id,
+        //         )
+        //     ),
+        // );
 
         return array( 'error_msg' => 'Nenhum ID informado', 'http_status' => 400 );
 
@@ -2184,8 +2188,8 @@ function intranet_fafar_api_get_users_by_sector_slug( $sector ) {
     }
 
     $submissions_by_sector = array_filter( $submissions, function ( $submission ) use ( $sector ) {
-        
-        return ( strtolower( $submission['role']['slug'] ) === strtolower( $sector ) );
+        $lower_slug_sector = strtolower( ( ! empty( $submission['role']['slug'] ) ? $submission['role']['slug'] : '' ) );
+        return ( $lower_slug_sector === strtolower( $sector ) );
 
     } );
 

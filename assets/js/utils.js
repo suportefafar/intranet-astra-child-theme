@@ -15,6 +15,27 @@ function formatDateTime(datetimeStr) {
   }).format(date);
 }
 
+function formatDateToDDMMYYYY(dateString) {
+  // Split the input string into year, month, and day
+  const [year, month, day] = dateString.split("-");
+
+  // Create a Date object in UTC to avoid timezone issues
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    throw new Error("Invalid date string");
+  }
+
+  // Extract day, month, and year in UTC
+  const utcDay = String(date.getUTCDate()).padStart(2, "0");
+  const utcMonth = String(date.getUTCMonth() + 1).padStart(2, "0"); // Months are 0-based
+  const utcYear = date.getUTCFullYear();
+
+  // Return the date in DD/MM/YYYY format
+  return `${utcDay}/${utcMonth}/${utcYear}`;
+}
+
 function removeAccents(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
