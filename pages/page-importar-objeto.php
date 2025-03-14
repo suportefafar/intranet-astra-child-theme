@@ -162,7 +162,7 @@ if (
         )
         */
 
-        $new_auditorium = array();
+        $new_auditorium_data = $old_auditorium_data;
 
         if(
             isset( $old_auditorium_data['NomeEvento'] )
@@ -171,7 +171,6 @@ if (
             $new_auditorium_data = array(
                 'far_db_column_submission_url' => 'https://www.farmacia.ufmg.br/reservaauditorio/',
                 'far_db_column_object_name' => 'auditorium_reservation',
-                'status' => 'Aguardando aprovação',
                 'technical' => '',
                 'applicant_name' => $old_auditorium_data['NomeSolicitante'],
                 'applicant_email' => $old_auditorium_data['EmailSolicitante'],
@@ -186,6 +185,18 @@ if (
                 'start_time__1' => $old_auditorium_data['HoraInicioEvento__1'],
                 'end_time__1' => $old_auditorium_data['HoraFimEvento__1'],
             );
+
+            // Get the current date in 'Y-m-d' format
+            $currentDate = date('Y-m-d');
+    
+            // Compare the dates
+            if ($old_auditorium_data['DataEvento__1'] < $currentDate) {
+                $new_auditorium_data['status'] = 'Finalizada';
+                $new_auditorium_data['technical'] = '2078';
+            } else {
+                $new_auditorium_data['status'] = 'Aguardando início';
+                $new_auditorium_data['technical'] = '2078';
+            }
 
             if(
                 ! empty( $old_auditorium_data['DataEvento__2'] ) &&
@@ -221,12 +232,25 @@ if (
             $arr = intranet_fafar_api_pre_create_auditorium_reservation( $new_auditorium_data );
             $c += count( $arr );
         } else if( isset( $old_auditorium_data['desc'] ) ) {
+            $new_auditorium_data['status'] = 'Aguardando aprovação';
+
+            // Get the current date in 'Y-m-d' format
+            $currentDate = date('Y-m-d');
+    
+            // Compare the dates
+            if ($old_auditorium_data['event_date__1'] < $currentDate) {
+                $new_auditorium_data['status'] = 'Finalizada';
+                $new_auditorium_data['technical'] = '2078';
+            } else {
+                $new_auditorium_data['status'] = 'Aguardando início';
+                $new_auditorium_data['technical'] = '2078';
+            }
             // 85
-            $arr = intranet_fafar_api_pre_create_auditorium_reservation( $old_auditorium_data );
+            $arr = intranet_fafar_api_pre_create_auditorium_reservation( $new_auditorium_data );
             $nc += count( $arr );
         }
 
-        //128
+        // 128
         // $new_submissions[] = $new_equipament;
 
     }
