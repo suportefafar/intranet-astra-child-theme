@@ -477,8 +477,10 @@ function intranet_fafar_get_classrooms_as_select_options() {
         if (
             isset( $place['data']['object_sub_type'][0] ) &&  
             in_array( $place['data']['object_sub_type'][0], $reservables )
-        )
-            $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
+        ) {
+            $desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
+            $options[esc_attr( $place['id'] )] = esc_html( $desc );
+        }
 
     }
 
@@ -501,8 +503,10 @@ function intranet_fafar_get_not_classrooms_as_select_options() {
         if (
             ! isset( $place['data']['object_sub_type'][0] ) ||  
             ! in_array( $place['data']['object_sub_type'][0], $reservables )
-        )
-            $options[esc_attr( $place['id'] )] = esc_html( $place['data']['number'] );
+        ) {
+            $desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
+            $options[esc_attr( $place['id'] )] = esc_html( $desc );
+        }
 
     }
 
