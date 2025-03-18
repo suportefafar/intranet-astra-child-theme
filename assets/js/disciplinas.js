@@ -40,29 +40,48 @@ const grid = new gridjs.Grid({
     "Vagas",
     { name: "Ações", formatter: actionColFormatter },
   ],
-  data: fetchDataHandler,
-  pagination: {
-    limit: 25,
-    summary: true,
+ search: {
+    server: {
+      url: (prev, keyword) => {
+        const url = `${prev}?keyword=${keyword}`;
+        console.log(url); // Debugging: Log the search URL
+        return url;
+      },
+    },
   },
-  search: true,
+  pagination: {
+    limit: 10, // Number of rows per page
+    server: {
+      url: (prev, page, limit) => {
+        let url = `${prev}?limit=${limit}&offset=${page * limit}`;
+        if (url.indexOf("keyword") > -1)
+          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+        console.log(url);
+        return url;
+      },
+    },
+    summary: true, // Show pagination summary
+  },
+  server: {
+    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/class_subject",
+    then: renderDataOnTable,
+    total: (data) => data.count,
+  },
   sort: true,
   resizable: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-async function fetchDataHandler() {
-  try {
-    const response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/class_subject"
-    );
+function renderDataOnTable(data) {
+  // Early return if data is invalid or empty
+  if (!data || !Array.isArray(data.results)) {
+    return [];
+  }
 
-    const submissions = response.data;
-
-    console.log(submissions);
-
-    return submissions.map(({ id, data }) => {
-      const {
+  // Map through the results and transform each submission
+  return data.results.map((submission) => {
+    const {id, data} = submission;  
+    const {
         code = "N/A",
         name_of_subject = "N/A",
         group = "N/A",
@@ -85,13 +104,7 @@ async function fetchDataHandler() {
         JSON.stringify({ id, permissions }),
       ];
     });
-  } catch (error) {
-    console.error(
-      "Erro ao buscar dados:",
-      error.response?.data?.message || error
-    );
-    return [];
-  }
+
 }
 
 async function renderGridJS(data = []) {
