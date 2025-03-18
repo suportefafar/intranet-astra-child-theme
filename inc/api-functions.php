@@ -307,6 +307,7 @@ function intranet_fafar_api_get_reservable_places() {
         array(
             'orderby_json' => 'number',
         ),
+        array(),
         false
     );
 
@@ -328,6 +329,7 @@ function intranet_fafar_api_get_not_reservable_places() {
         array(
             'orderby_json' => 'number',
         ),
+        array(),
         false
     );
 
