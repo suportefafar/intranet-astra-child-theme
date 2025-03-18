@@ -317,7 +317,7 @@ function intranet_fafar_api_get_reservable_places() {
 
     return array_filter( $places['data'], function ( $place ) use ( $reservables ) {
         return (
-            isset( $place['data']['object_sub_types'][0] ) &&   
+            ! empty( $place['data']['object_sub_type'][0] ) &&   
             in_array( $place['data']['object_sub_type'][0], $reservables )
         );
     } );
@@ -339,7 +339,7 @@ function intranet_fafar_api_get_not_reservable_places() {
 
     return array_filter( $places['data'], function ( $place ) use ( $reservables ) {
         return (
-            ! isset( $place['data']['object_sub_type'][0] ) ||   
+            empty( $place['data']['object_sub_type'][0] ) ||   
             ! in_array( $place['data']['object_sub_type'][0], $reservables )
         );
     } );

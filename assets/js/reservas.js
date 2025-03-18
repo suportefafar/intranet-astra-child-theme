@@ -266,6 +266,11 @@ function dateClickHandler(info) {
   document.querySelector("#end_time").value =
     parseToTimeInputFormat(date_selected);
 
+  // const defaultTab = getActiveTab();
+  // const { classroomId, classroomNumber } = defaultTab.dataset;
+  // CURRENT_CLASSROOM.id = classroomId;
+  // CURRENT_CLASSROOM.number = classroomNumber;
+
   if (CURRENT_CLASSROOM.number)
     document.querySelector("#place").value = CURRENT_CLASSROOM.number;
 

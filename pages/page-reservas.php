@@ -89,7 +89,7 @@ get_header(); ?>
                             ( $first ? ' aria-current="page"' : '' ) . ' 
                             href="#"  
                             data-classroom-id="' . $classroom['id'] . '" 
-                            data-classroom-number="' . $classroom['data']['number'] . '">' . 
+                            data-classroom-number="' . $classroom['data']['number'] . ( $classroom['data']['desc'] ? ' ' . $classroom['data']['desc'] : '' ) . '">' . 
                             $classroom['data']['number'] .
                             ' </a>
                         </li>';

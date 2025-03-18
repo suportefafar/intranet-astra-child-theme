@@ -465,6 +465,8 @@ function intranet_fafar_get_subjects_as_select_options() {
 function intranet_fafar_get_classrooms_as_select_options() {
     $places = intranet_fafar_api_get_reservable_places();
 
+    error_log(print_r($places, true));
+
     $options = array();
 
     foreach ( $places as $place ) {
