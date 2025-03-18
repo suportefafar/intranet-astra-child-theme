@@ -56,7 +56,7 @@ document.addEventListener("click", (event) => {
  */
 document.addEventListener("onLoanSuccess", () => {
   hideLoanOrReturnoEquipamentModal("intranetFafarLoanModal");
-  renderGridJS();
+  grid.forceRender();
 });
 
 /*
@@ -65,7 +65,7 @@ document.addEventListener("onLoanSuccess", () => {
  */
 document.addEventListener("onReturnLoanSuccess", () => {
   hideLoanOrReturnoEquipamentModal("intranetFafarLoanReturnModal");
-  renderGridJS();
+  grid.forceRender();
 });
 
 /*
@@ -115,47 +115,50 @@ const grid = new gridjs.Grid({
       formatter: actionColFormatter,
     },
   ],
-  data: fetchDataHandler,
-  pagination: {
-    limit: 20,
-    summary: true,
+  search: {
+    server: {
+      url: (prev, keyword) => {
+        const url = `${prev}?keyword=${keyword}`;
+        console.log(url); // Debugging: Log the search URL
+        return url;
+      },
+    },
   },
-  search: true,
+  pagination: {
+    limit: 10, // Number of rows per page
+    server: {
+      url: (prev, page, limit) => {
+        let url = `${prev}?limit=${limit}&offset=${page * limit}`;
+        if (url.indexOf("keyword") > -1)
+          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+        console.log(url);
+        return url;
+      },
+    },
+    summary: true, // Show pagination summary
+  },
+  server: {
+    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/equipaments",
+    then: renderDataOnTable,
+    total: (data) => data.count,
+  },
   sort: true,
   resizable: true,
   autoWidth: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-async function renderGridJS(data = []) {
-  if (!data) data = [];
-
-  if (data.length === 0) data = await fetchDataHandler();
-
-  grid
-    .updateConfig({
-      data,
-    })
-    .forceRender();
-}
-
-async function fetchDataHandler() {
-  let response;
-
-  try {
-    response = await axios.get("/wp-json/intranet/v1/submissions/equipaments");
-  } catch (error) {
-    console.log(error.response.data.message);
+function renderDataOnTable(data) {
+  // Early return if data is invalid or empty
+  if (!data || !Array.isArray(data.results)) {
     return [];
   }
 
-  const submissions = response.data;
+  // Map through the results and transform each submission
+  return data.results.map((submission) => {
+    const { id, data: submissionData } = submission;
 
-  console.log(submissions);
-
-  let table_arr = [];
-  for (const submission of submissions) {
-    const { id, data } = submission;
+    // Destructure the submission data
     const {
       status,
       on_loan,
@@ -173,15 +176,20 @@ async function fetchDataHandler() {
       disk_capacity_1,
       os_type,
       os_version,
-    } = data;
+      desc,
+      prevent_write,
+      prevent_exec,
+    } = submissionData;
 
-    const asset_column_data = JSON.stringify({
+    // Construct the asset column data
+    const assetColumnData = JSON.stringify({
       id,
       asset,
       internal_asset,
     });
 
-    const desc_column_data = JSON.stringify({
+    // Construct the description column data
+    const descColumnData = JSON.stringify({
       object_sub_type,
       brand,
       model,
@@ -192,33 +200,36 @@ async function fetchDataHandler() {
       disk_capacity_1,
       os_type,
       os_version,
+      desc,
     });
 
-    const status_column_data = JSON.stringify({
+    // Construct the status column data
+    const statusColumnData = JSON.stringify({
       status,
       on_loan,
     });
 
-    const prevent_write = data.prevent_write ? "1" : "0";
-    const prevent_exec = data.prevent_exec ? "1" : "0";
-    const permissions = prevent_write + prevent_exec;
+    // Construct the permissions string
+    const permissions = `${prevent_write ? "1" : "0"}${
+      prevent_exec ? "1" : "0"
+    }`;
 
-    const action_column_data = JSON.stringify({
-      id: submission.id,
+    // Construct the action column data
+    const actionColumnData = JSON.stringify({
+      id,
       permissions,
     });
 
-    table_arr.push([
-      asset_column_data,
-      desc_column_data,
-      place.data?.number ?? "",
-      applicant ?? "",
-      status_column_data,
-      action_column_data,
-    ]);
-  }
-
-  return table_arr;
+    // Return the row data as an array
+    return [
+      assetColumnData,
+      descColumnData,
+      place?.data?.number ?? "", // Use optional chaining and nullish coalescing for safety
+      applicant ?? "", // Use nullish coalescing for safety
+      statusColumnData,
+      actionColumnData,
+    ];
+  });
 }
 
 function assetColFormatter(current) {
@@ -258,6 +269,7 @@ function assetColFormatter(current) {
 }
 
 function descColFormatter(current) {
+  // Parse the input JSON string
   const {
     object_sub_type,
     brand,
@@ -269,60 +281,92 @@ function descColFormatter(current) {
     disk_capacity_1,
     os_type,
     os_version,
+    desc,
   } = JSON.parse(current);
 
-  let desc = "";
-  if (brand && model) desc = `${brand} ${model}`;
-  else if (brand) desc = brand;
-  else if (model) desc = model;
+  // Helper function to safely access array elements
+  const getFirstElement = (arr) => (arr && arr.length > 0 ? arr[0] : "--");
 
-  if (object_sub_type[0] && object_sub_type[0].toLowerCase() === "computador") {
-    desc = `${cpu_brand[0] ?? "--"} ${cpu_model ?? "--"} | ${
+  // Construct the custom description
+  let custom_desc = "";
+  if (brand && model) {
+    custom_desc = `${brand} ${model}`;
+  } else if (brand) {
+    custom_desc = brand;
+  } else if (model) {
+    custom_desc = model;
+  }
+
+  // Override custom_desc for "computador" type
+  if (getFirstElement(object_sub_type)?.toLowerCase() === "computador") {
+    custom_desc = `${getFirstElement(cpu_brand)} ${cpu_model ?? "--"} | ${
       ram_capacity ?? "--"
     } GB | ${disk_capacity_1 ?? "--"} GB`;
   }
 
-  const os_icon = getOsIconByOsType(os_type ? os_type[0] : null);
+  // Get the OS icon based on the OS type
+  const os_icon = getOsIconByOsType(getFirstElement(os_type));
 
-  return html(`
-      <div class="d-flex flex-column gap-1">
-        <div>
-          <span class="me-1"><i class="bi bi-motherboard"></i></span>
-          <span>
-            ${object_sub_type[0] ?? "--"}
-          </span>
-        </div>
-  
-        <div>
-          <span class="me-1"><i class="bi bi-body-text"></i></span>
-          <span class="text-secondary">
-            ${desc}
-          </span>
-        </div>
+  // Generate HTML content
+  const htmlContent = `
+    <div class="d-flex flex-column gap-1">
+      <!-- Object Type -->
+      <div>
+        <span class="me-1"><i class="bi bi-motherboard"></i></span>
+        <span>${getFirstElement(object_sub_type)}</span>
+      </div>
 
-        ${
-          os_type
-            ? `<div>
+      <!-- Custom Description -->
+      <div>
+        <span class="me-1"><i class="bi bi-body-text"></i></span>
+        <span class="text-secondary">${custom_desc}</span>
+      </div>
+
+      <!-- OS Information -->
+      ${
+        os_type
+          ? `
+        <div>
           <span class="me-1"><i class="bi ${os_icon}"></i></span>
           <span class="text-secondary">
-          ${os_type[0] ?? "--"} ${os_version ?? "--"}
+            ${getFirstElement(os_type)} ${os_version ?? "--"}
           </span>
-        </div>`
-            : ""
-        }
+        </div>
+      `
+          : ""
+      }
 
-        ${
-          ip.data
-            ? `<div>
+      <!-- IP Address -->
+      ${
+        ip?.data
+          ? `
+        <div>
           <span class="me-1"><i class="bi bi-hdd-network"></i></span>
           <span class="text-secondary">
             ${ip.data?.address ?? ""}
           </span>
         </div>
-      </div>`
-            : ""
-        }
-      `);
+      `
+          : ""
+      }
+
+      <!-- Description -->
+      ${
+        desc
+          ? `
+        <div>
+          <span class="me-1"><i class="bi bi-info"></i></span>
+          <span class="text-secondary">
+            ${desc}
+          </span>
+        </div>
+      `
+          : ""
+      }
+    </div>
+  `;
+
+  return html(htmlContent);
 }
 
 function getOsIconByOsType(type) {
@@ -443,7 +487,7 @@ async function deleteSubmission(id) {
 
     showAlert("Excluído com sucesso!", "success", true, 3000);
 
-    renderGridJS();
+    grid.forceRender();
   } catch (error) {
     let error_msg = "[1010]Unknow error on try catch";
 

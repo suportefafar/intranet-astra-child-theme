@@ -155,13 +155,6 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_submission_by_id_handler',
     ) );
 
-    register_rest_route( 'intranet/v1', '/lista-teste', array(
-        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
-        'methods'  => WP_REST_Server::READABLE,
-        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'lista_teste',
-    ) );
-
     // EDITABLE
 
     register_rest_route( 'intranet/v1', '/submissions/reservations/(?P<id>[\w]+)/set_technical', array(
@@ -175,7 +168,7 @@ function intranet_fafar_api_register_submission_routes() {
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::EDITABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-        'callback' => 'intranet_fafar_api_get_access_building_request_register_handler',
+        'callback' => 'intranet_fafar_api_register_entry_and_exit_handler',
     ) );
 
     register_rest_route( 'intranet/v1', '/submissions/(?P<id>[\w]+)', array(
@@ -196,15 +189,7 @@ function intranet_fafar_api_register_submission_routes() {
 
 }
 
-function lista_teste( $request ) {
-
-    $submissions = array( array( 'text' => 'Olá', 'value' => 'ola' ) );
-
-    return rest_ensure_response( $submissions );
-
-}
-
-function intranet_fafar_api_get_access_building_request_register_handler( $request ) {
+function intranet_fafar_api_register_entry_and_exit_handler( $request ) {
 
     $id = (string) $request['id'];
 
@@ -316,8 +301,50 @@ function intranet_fafar_api_delete_submission_by_id( $id ) {
     return $submission;
 }
 
-function intranet_fafar_api_get_place_reservations_handler( $request ) {
+function intranet_fafar_api_get_reservable_places() {
+    $places = intranet_fafar_api_get_submissions_by_object_name(
+        'place', 
+        array(
+            'orderby_json' => 'number',
+        ),
+        false
+    );
 
+    if( empty( $places ) || empty( $places['data'] ) ) return [];
+
+    $reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
+
+    return array_filter( $places['data'], function ( $place ) use ( $reservables ) {
+        return (
+            isset( $place['data']['object_sub_types'][0] ) &&   
+            in_array( $place['data']['object_sub_type'][0], $reservables )
+        );
+    } );
+}
+
+function intranet_fafar_api_get_not_reservable_places() {
+    $places = intranet_fafar_api_get_submissions_by_object_name(
+        'place', 
+        array(
+            'orderby_json' => 'number',
+        ),
+        false
+    );
+
+    if( empty( $places ) || empty( $places['data'] ) ) return [];
+
+    $reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
+
+    return array_filter( $places['data'], function ( $place ) use ( $reservables ) {
+        return (
+            ! isset( $place['data']['object_sub_type'][0] ) ||   
+            ! in_array( $place['data']['object_sub_type'][0], $reservables )
+        );
+    } );
+}
+
+
+function intranet_fafar_api_get_place_reservations_handler( $request ) {
     $place_id = (string) $request['place'];
 
     $submissions = intranet_fafar_api_get_reservations_by_place( $place_id );
@@ -408,8 +435,6 @@ function intranet_fafar_api_register_loan_return( $form_data ) {
     if ( ! isset( $form_data['object_name'] ) ) return $form_data;
 
     if ( $form_data['object_name'] !== 'equipament_loan_return' ) return $form_data;
-
-    
 
     // Atualizando a propriedade 'on_loan' do equipamento
     $form_data['data'] = json_decode( $form_data['data'], true );
@@ -644,132 +669,137 @@ function intranet_fafar_api_get_service_tickets_by_user() {
 }
 
 function intranet_fafar_api_get_service_tickets_by_departament_handler( $request ) {
+    $keyword     = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
+    $offset      = $request->get_param('offset') ? intval($request->get_param('offset')) : 1;
+    $limit       = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
+    $status      = $request->get_param('status') ? sanitize_text_field($request->get_param('status') ) : null;
+    $assigned_to = $request->get_param('assigned_to') && is_numeric( $request->get_param('assigned_to') ) ? intval($request->get_param('assigned_to')) : null;
+    $departament = $request->get_param('departament') ? sanitize_text_field( $request->get_param('departament') ) : null;
 
-    // Get all query parameters
-    $query_params = $request->get_query_params();
+    $submissions = intranet_fafar_api_get_service_tickets_by_departament( $departament, $status, $assigned_to, $keyword, $offset, $limit );
 
-    if( isset( $query_params['status'] ) && 
-        isset( $query_params['assigned_to'] ) && 
-        is_numeric( $query_params['assigned_to'] ) ) {
-
-        $status = $query_params['status'];
-
-        $assigned_to = $query_params['assigned_to'];
-
-        $submissions  = intranet_fafar_api_get_service_tickets_by_departament( null, $status, $assigned_to );
-
-    } else if ( isset( $query_params['status'] ) ) {
-    
-        $status = $query_params['status'];
-
-        $submissions  = intranet_fafar_api_get_service_tickets_by_departament( null, $status, null );
-
-    } else if ( isset( $query_params['assigned_to'] ) &&
-                is_numeric( $query_params['assigned_to'] ) ) {
-
-        $assigned_to = $query_params['assigned_to'];
-
-        // For > PHP 8.0 intranet_fafar_api_get_service_tickets_by_departament( departament: null, status: null, assigned_to: $assigned_to );
-        $submissions  = intranet_fafar_api_get_service_tickets_by_departament( null, null, $assigned_to );
-
-    } else {
-
-        $submissions  = intranet_fafar_api_get_service_tickets_by_departament();
-
+    if( ! $submissions ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 500 ),
+        );
     }
 
-    if ( isset( $submissions['error_msg'] ) ) {
-
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
-
+    if( count( $submissions ) == 0 ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+        );
     }
 
-    return rest_ensure_response( $submissions );
-
+    return rest_ensure_response(
+        array(
+            'count'    => $submissions['pagination']['total_items'],
+            'next'     => null,
+            'previous' => null,
+            'results'  => $submissions['data'],
+        )
+    );
 }
 
-function intranet_fafar_api_get_service_tickets_by_departament( $departament = null, $status = null, $assigned_to = null ) {
-
+function intranet_fafar_api_get_service_tickets_by_departament(
+    $departament = null, 
+    $status = null, 
+    $assigned_to = null, 
+    $keyword = '', 
+    $offset = 1, 
+    $limit = -1, 
+    $substitute_value = true
+) {
     if ( ! $departament ) {
         $user        = wp_get_current_user();
         $role_slug   = $user->roles[0];
         $departament = $role_slug;
     }
 
-    $query = "SELECT * FROM `SET_TABLE_NAME` " . 
-              "WHERE `object_name` = 'service_ticket' " .  
-              "AND JSON_CONTAINS(data, '\"" . $departament . "\"', '$.departament_assigned_to') " . 
-              "ORDER BY created_at DESC";
+    $query_params = array(
+        'filters'  => array(
+            array(
+                'column'   => 'object_name',
+                'value'    => 'service_ticket',
+                'operator' => '=',
+            ),
+            array(
+                'column'   => 'data->departament_assigned_to',
+                'value'    => '["' . $departament . '"]',
+                'operator' => '=',
+            ),
+        ),
+        'order_by' => array(
+            'orderby_column' => 'created_at',
+            'order'          => 'DESC',
+        ),
+        'page'     => $offset,   
+        'per_page' => $limit,
+        'keyword'  => $keyword, 
+    );
 
-    $all_service_tickets = intranet_fafar_api_read( $query, false );
+    if ( isset( $assigned_to ) ) {
+        if( $assigned_to == -1 ) $assigned_to = get_current_user_id();
 
-    if ( isset( $all_service_tickets['error_msg'] ) )
-        return $all_service_tickets['error_msg'];
+        $query_params['filters'][] = array(
+            'column'   => 'data->assigned_to',
+            'value'    => $assigned_to,
+            'operator' => '=',
+        );
+    }
 
-    if ( empty( $all_service_tickets ) )
-        return array( 'error_msg' => 'Nenhuma ordem de serviço encontrada para ' . $departament );
+    if ( ! empty( $status ) && is_string( $status ) ) {
+        $status_arr = array_map( fn( $s ) => strtolower($s), explode( ',', $status ) );
 
-    $status_arr = array();
-    if( $status && is_string( $status ) )
-        $status_arr = array_map( fn( $status ) => strtolower( $status ), explode( ',', $status ) );
-
-    $service_tickets = array();
+        $query_params['filters'][] = array(
+            'column'         => 'data->status',
+            'value'          => $status_arr,
+            'operator'       => 'IN',
+            'case_sensitive' => false,
+        );
+    }
     
-    for ( $i = 0; $i < count( $all_service_tickets ); $i++ ) {
+    $submissions = intranet_fafar_api_read( args: $query_params );
 
-        if ( 
-            ! empty( $status_arr ) && 
-            ! in_array( strtolower( $all_service_tickets[$i]['data']['status'] ), $status_arr ) 
-           ) 
-            continue;
+    // null ou []
+    if ( empty( $submissions ) ) return $submissions;
+    
+    if ( ! $substitute_value ) return $submissions;
+    
+    $submissions['data'] = array_map( function ( $submission ) {
+        if ( isset( $submission['owner'] ) && is_numeric( $submission['owner'] ) )
+            $submission['owner'] = intranet_fafar_api_get_user_by_id( $submission['owner'] );
 
-        if ( isset( $assigned_to ) ) {
+        if ( isset( $submission['data']['place'][0] ) )
+            $submission['data']['place'] = intranet_fafar_api_get_submission_by_id( $submission['data']['place'][0] );
 
-            if( $assigned_to == -1 ) $assigned_to = get_current_user_id();
-
-            if( 
-                ! $all_service_tickets[$i]['data']['assigned_to'] || 
-                (int) $all_service_tickets[$i]['data']['assigned_to'] !== $assigned_to
-            ) continue;
-
-        }
-
-       /*
-        * Substituir os campos que tem ID de outro objeto,
-        * pelo objeto de mesmo ID
-        */ 
-        if ( isset( $all_service_tickets[$i]['owner'] ) && is_numeric( $all_service_tickets[$i]['owner'] ) )
-            $all_service_tickets[$i]['owner'] = intranet_fafar_api_get_user_by_id( $all_service_tickets[$i]['owner'] );
-
-        if ( isset( $all_service_tickets[$i]['data']['place'][0] ) )
-            $all_service_tickets[$i]['data']['place'] = intranet_fafar_api_get_submission_by_id( $all_service_tickets[$i]['data']['place'][0] );
-
-        if ( isset( $all_service_tickets[$i]['data']['departament_assigned_to'][0] ) ) {
+        if ( isset( $submission['data']['departament_assigned_to'][0] ) ) {
 
             // Get the display name of the role
-            $role_slug = $all_service_tickets[$i]['data']['departament_assigned_to'][0];
+            $role_slug = $submission['data']['departament_assigned_to'][0];
                 
             $role_display_name = '--';
                 
             if ( isset( wp_roles()->roles[ $role_slug ] ) )
                 $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
 
-            $all_service_tickets[$i]['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
+            $submission['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
 
         }
 
-        if ( isset( $all_service_tickets[$i]['data']['assigned_to'] ) ) {
+        if ( isset( $submission['data']['assigned_to'] ) ) {
 
-            $all_service_tickets[$i]['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $all_service_tickets[$i]['data']['assigned_to'] );
+            $submission['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $submission['data']['assigned_to'] );
 
         }
 
-        $service_tickets[]  = $all_service_tickets[$i];
+        return $submission;
+    }, $submissions['data'] );
 
-    }
-
-    return $service_tickets;      
-
+    return $submissions;
 }
 
 function intranet_fafar_api_get_service_ticket_by_id( $id ) {
@@ -885,61 +915,128 @@ function intranet_fafar_api_get_service_ticket_evaluation_by_id( $id ) {
 }
 
 function intranet_fafar_api_get_access_building_request_handler( $request ) {
+    // Get pagination parameters from the request
+    $offset  = $request->get_param('offset') ? intval($request->get_param('offset')) : 1;
+    $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
+    $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
+    
+    $submissions = intranet_fafar_api_get_access_building_request( false, $keyword, $offset, $limit, true ); 
 
-    $submissions = intranet_fafar_api_get_access_building_request();
-
-    if ( isset( $submissions['error_msg'] ) ) {
-
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
-
+    if ( ! $submissions ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 500 ),
+        );
     }
 
-    return rest_ensure_response( $submissions );
+    if ( count( $submissions ) == 0 ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+        );
+    }
 
+    return rest_ensure_response(
+        array(
+            'count'    => $submissions['pagination']['total_items'],
+            'next'     => null,
+            'previous' => null,
+            'results'  => $submissions['data'],
+        )
+    );
 }
 
 function intranet_fafar_api_get_access_building_request_by_owner_handler( $request ) {
+    // Get pagination parameters from the request
+    $offset  = $request->get_param('offset') ? intval($request->get_param('offset')) : 1;
+    $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
+    $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
+    
+    $submissions = intranet_fafar_api_get_access_building_request( true, $keyword, $offset, $limit, true ); 
 
-    $submissions = intranet_fafar_api_get_access_building_request( true );
-
-    if ( isset( $submissions['error_msg'] ) ) {
-
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
-
+    if ( ! $submissions ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 500 ),
+        );
     }
 
-    return rest_ensure_response( $submissions );
+    if ( count( $submissions ) == 0 ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+        );
+    }
 
+    return rest_ensure_response(
+        array(
+            'count'    => $submissions['pagination']['total_items'],
+            'next'     => null,
+            'previous' => null,
+            'results'  => $submissions['data'],
+        )
+    );
 }
 
-function intranet_fafar_api_get_access_building_request( $by_owner = false ) {
+function intranet_fafar_api_get_access_building_request( $by_owner = false, $keyword = '', $offset = 1, $limit = -1, $substitute_value = true ) {
+    $query_params = array(
+        'filters'  => array(
+            array(
+                'column'   => 'object_name',
+                'value'    => 'access_building_request',
+                'operator' => '=',
+            ),
+        ),
+        'order_by' => array(
+            'orderby_column' => 'created_at',
+            'order'          => 'DESC',
+        ),
+        'page'     => $offset,   
+        'per_page' => $limit,
+        'keyword'  => $keyword, 
+    );
+    
+    if ( $by_owner ) {
+        $query_params['filters'][] = array(
+            'column'   => 'owner',
+            'value'    => strval( get_current_user_id() ),
+            'operator' => '=',
+        );
+    }
 
-    $submissions = intranet_fafar_api_get_submissions_by_object_name( 'access_building_request', array( 'orderby_column' => 'created_at', 'order' => 'DESC' ) );
+    $submissions = intranet_fafar_api_read(
+        args: $query_params
+    );
 
-    if( isset( $submissions['error_msg'] ) ) return $submissions;
-
-    $submissions_filtered = array_filter( $submissions, function ( $submission ) use ( $by_owner ) {
-        
-        return ( $submission['owner'] && strval( $submission['owner']['ID'] ) === strval( get_current_user_id() ) || ! $by_owner );
-
-    } );
+    // null ou []
+    if ( empty( $submissions ) ) return $submissions;
+    
+    if ( ! $substitute_value ) return $submissions;
 
     /*
      * Substituir os campos que tem ID de outro objeto,
      * pelo objeto de mesmo ID
      */ 
-    $submissions_joined = array_map( function ( $s ) {
+    $submissions['data'] = array_map ( function ( $s ) {
 
-        $s['data']['place'] = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
+        if ( is_array( $s['data']['place'] ) && count( $s['data']['place'] ) > 0 ){
+            $s['data']['place'] = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
+        }
+
+        if ( isset( $s['owner'] ) && is_numeric( $s['owner'] ) ) {
+            $s['owner'] = intranet_fafar_api_get_user_by_id( $s['owner'] );
+        }
 
         return $s;
         
-    }, $submissions_filtered );
+    }, $submissions['data'] );
 
-    return $submissions_joined;
-
+    return $submissions;
 }
-
 
 function intranet_fafar_api_create_submission_handler( $request ) {
 
@@ -1094,7 +1191,6 @@ function intranet_fafar_api_pre_create_auditorium_reservation( $raw_reservation 
     $reservations = array();
     
     for ( $i = 0; $i < count( $event_dates ); $i++ ) {
-
         $newEntry = $base_data;
 
         $newEntry["event_date"] = $event_dates[$i];
@@ -1112,7 +1208,6 @@ function intranet_fafar_api_pre_create_auditorium_reservation( $raw_reservation 
         }
 
         $reservations[] = $new_reservation;
-    
     }
 
     return $reservations;
@@ -1797,76 +1892,38 @@ function intranet_fafar_api_get_submission_by_id_handler( $request ) {
 
 }
 
-function intranet_fafar_api_get_submission_by_id( $id, $substitute_value = true ) {
+function intranet_fafar_api_get_submission_by_id(
+    $id, 
+    $substitute_value = true,
+    $check_permissions = true, 
+    $check_is_active = true,
+) {
 
-    if( ! isset( $id ) || ! $id ) {
-        
-        // intranet_fafar_logs_register_log(
-        //     'ERROR',
-        //     'intranet_fafar_api_get_submission_by_id',
-        //     json_encode(
-        //         array(
-        //             'func' => 'intranet_fafar_api_get_submission_by_id',
-        //             'msg'  => 'ID nor set or falsy, received',
-        //             'obj'  => $id,
-        //         )
-        //     ),
-        // );
-
-        return array( 'error_msg' => 'Nenhum ID informado', 'http_status' => 400 );
-
-    }
-    
-    $id = sanitize_text_field( wp_unslash( $id ) );
-
-    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `id` = '" . $id . "'";
-
-    $submissions = intranet_fafar_api_read( $query );
-
-    if( ! $submissions || count( $submissions ) == 0 ) {
-
-        intranet_fafar_logs_register_log(
-            'ERROR',
-            'intranet_fafar_api_get_submission_by_id',
-            json_encode(
+    $submissions = intranet_fafar_api_read(
+        args: array(
+            'filters'  => array(
                 array(
-                    'func' => 'intranet_fafar_api_get_submission_by_id',
-                    'msg'  => 'No submission found with id',
-                    'obj'  => $id,
-                )
+                    'column'   => 'id',
+                    'value'    => $id,
+                    'operator' => '=',
+                ),
             ),
-        );
-
-        return array( 'error_msg' => 'Nenhum objeto encontrado com o ID informado "' . ( ( isset( $id ) && $id ) ? $id : 'UNKNOW_ID') . '"', 'http_status' => 400 );
-
-    }
-
-    if( count( $submissions ) > 1 ) {
-
-        intranet_fafar_logs_register_log(
-            'ERROR',
-            'intranet_fafar_api_get_submission_by_id',
-            json_encode(
-                array(
-                    'func' => 'intranet_fafar_api_get_submission_by_id',
-                    'msg'  => 'Submission with duplicate ID',
-                    'obj'  => $id,
-                )
-            ),
-        );
-
-        return array( 'error_msg' => 'Objeto com ID duplicado' , 'http_status' => 100 );
-
-    }
-
-    $submission = $submissions[0];
-
+            'check_permissions' => $check_permissions,
+            'check_is_active'   => $check_is_active,
+        )
+    );
     
+    if ( empty( $submissions ) )
+        return [];
+
+    $submission = ( isset( $submissions['data'][0] ) ?  $submissions['data'][0] : [] );
+    
+    if ( empty( $submission ) || ! $substitute_value )
+        return $submission;
+
     if( $substitute_value ) {
         if ( isset( $submission['owner'] ) && is_numeric( $submission['owner'] ) ) {
-
             $submission['owner'] = intranet_fafar_api_get_user_by_id( $submission['owner'] );
-
         }
 
         if ( isset( $submission['data']['place'] ) && 
@@ -1881,19 +1938,59 @@ function intranet_fafar_api_get_submission_by_id( $id, $substitute_value = true 
 }
 
 function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
-
-    $object_name = (string) $request['object'];
-
-    $submissions = intranet_fafar_api_get_submissions_by_object_name( $object_name );
-
-    if ( isset( $submissions['error_msg'] ) ) {
-
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
-
+    if ( ! $request->get_param('object') ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Nenhum objeto informado', 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
     }
 
-    return rest_ensure_response( $submissions );
+    $object_name = (string) $request->get_param('object');
 
+    // Get pagination parameters from the request
+    $offset  = $request->get_param('offset') ? intval($request->get_param('offset')) : 1;
+    $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
+    $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
+    
+    $submissions = intranet_fafar_api_get_submissions_by_object_name(
+        $object_name, 
+        array(
+            'orderby_column' => 'created_at',
+            'order'          => 'DESC',
+        ),
+        array(
+            'keyword' => $keyword,
+            'offset'  => $offset,
+            'limit'   => $limit,
+        ),
+        false
+    ); 
+
+    if ( ! $submissions ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 500 ),
+        );
+    }
+
+    if ( count( $submissions ) == 0 ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+        );
+    }
+
+    return rest_ensure_response(
+        array(
+            'count'    => $submissions['pagination']['total_items'],
+            'next'     => null,
+            'previous' => null,
+            'results'  => $submissions['data'],
+        )
+    );
 }
 
 /*
@@ -1901,62 +1998,64 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
  * @param array $order_by ( 'orderby_column' => '', 'orderby_json' => '', 'order' => 'ASC' | 'DESC', 'inet_aton' => '1' )
  * @return array $submissions 
  */
-function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order_by = array(), $check_permissions = true, $check_is_active = true ) {
+function intranet_fafar_api_get_submissions_by_object_name(
+    $object_name, 
+    $order_by = array(), 
+    $args = array(),
+    $old = true
+) {
+    // Default parameters
+    $defaults = array(
+        'order_by'          => array(), 
+        'check_permissions' => true, 
+        'check_is_active'   => true,
+        'offset'            => 1,
+        'limit'             => -1,
+        'keyword'           => '',
+        'substitute_value'  => true,
+    );
 
-    if( ! $object_name ) {
+    // Merge user-provided arguments with defaults
+    $args = wp_parse_args( $args, $defaults );
 
-        return array( 'error_msg' => 'Nenhum nome de objeto informado', 'http_status' => 500 );
-
-    }
-
-    $object_name = sanitize_text_field( wp_unslash( $object_name ) );
+    $submissions = intranet_fafar_api_read(
+        args: array(
+            'filters'  => array(
+                array(
+                    'column'   => 'object_name',
+                    'value'    => $object_name,
+                    'operator' => '=',
+                ),
+            ),
+            'order_by'          => $order_by,
+            'check_permissions' => $args['check_permissions'],
+            'check_is_active'   => $args['check_is_active'],
+            'page'              => $args['offset'],   
+            'per_page'          => $args['limit'],
+            'keyword'           => $args['keyword'], 
+        )
+    );
     
-    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = '" . $object_name . "'";
 
-    if ( ! empty( $order_by ) ) {
-
-        $order = 'ASC';
-        if ( isset( $order_by['order'] ) && $order_by['order'] === 'DESC' ) {
-            $order = 'DESC';
-        }
-
-        if ( isset( $order_by['orderby_column'] ) ) {
-
-            $query .= ' ORDER BY ' . $order_by['orderby_column'] . ' ' . $order;
-
-        } else if ( isset( $order_by['orderby_json'] ) ) {
-
-            $prop = $order_by['orderby_json'];
-
-            /* 
-             * A propriedade 'inet_aton' é usada para 
-             * informar ao MySQL que deve-se considerar 
-             * a propriedade como número
-             */ 
-            $inet_function_str = ( ( isset( $order_by['inet_aton'] ) ) ? 'INET_ATON' : '' );
-
-            $query = 'SELECT *, ' . $inet_function_str . '(JSON_UNQUOTE(JSON_EXTRACT(data, "$.' . $prop . '"))) AS json_prop' .
-                        ' FROM `SET_TABLE_NAME` ' . 
-                        ' WHERE `object_name` = "' . $object_name . '" ' . 
-                        ' ORDER BY json_prop ' . $order;
-
-        }
-
+    if ( empty( $submissions ) ) {
+        if( $old ) return array('error_msg' => 'Erro ao processar');
+        
+        return $submissions;
     }
 
-    $submissions = intranet_fafar_api_read( $query, $check_permissions, $check_is_active );
-
-    if( ! $submissions || count( $submissions ) == 0 ) {
-
-        return array( 'error_msg' => 'Nenhum objeto encontrado com o nome "' . ( $object_name ?? 'UNKNOW_OBJECT_NAME') . '"', 'http_status' => 400 );
-
+    if ( ! $args['substitute_value'] ) {
+        if( $old ) $submissions['data'];
+        
+        return $submissions;
     }
+
+
 
     /*
      * Substituir os campos que tem ID de outro objeto,
      * pelo objeto de mesmo ID
      */ 
-    $submissions_joined = array_map( function ( $s ) {
+    $submissions['data'] = array_map( function ( $s ) {
 
         if ( isset( $s['owner'] ) && is_numeric( $s['owner'] ) ) {
 
@@ -1966,9 +2065,9 @@ function intranet_fafar_api_get_submissions_by_object_name( $object_name, $order
 
         return $s;
         
-    }, $submissions );
+    }, $submissions['data'] );
 
-    return $submissions_joined;
+    return $old ? $submissions['data'] : $submissions;
 
 }
 
@@ -1989,31 +2088,14 @@ function intranet_fafar_api_get_user_by_id_handler( $request ) {
 }
 
 function intranet_fafar_api_get_user_by_id( $id ) {
-
     if( ! isset( $id ) || ! $id ) {
-        
-        // intranet_fafar_logs_register_log(
-        //     'ERROR',
-        //     'intranet_fafar_api_get_user_by_id',
-        //     json_encode(
-        //         array(
-        //             'func' => 'intranet_fafar_api_get_user_by_id',
-        //             'msg'  => 'ID nor set or falsy, received',
-        //             'obj'  => $id,
-        //         )
-        //     ),
-        // );
-
         return array( 'error_msg' => 'Nenhum ID informado', 'http_status' => 400 );
-
     }
 
     $user = (array) get_userdata( intval( $id ) );
 
     if ( ! $user ) {
-
         return array( 'error_msg' => 'Nenhum usuário encontrado', 'http_status' => 400 );
-
     }
     
     return $user;
@@ -2330,65 +2412,100 @@ function intranet_fafar_api_get_roles( $slug = null ) {
 }
 
 function intranet_fafar_api_get_reservation_by_id_handler( $request ) {
-
     $id = (string) $request['id'];
 
     $reservation = intranet_fafar_api_get_reservation_by_id( $id );
 
     if ( isset( $reservation['error_msg'] ) ) {
-
         return new WP_Error( 'rest_api_sad', esc_html__( $reservation['error_msg'], 'intranet-fafar-api' ), ( ( $reservation['http_status'] ) ?? 400 ) );
-
     }
 
     return rest_ensure_response( $reservation );
-
 }
 
-function intranet_fafar_api_get_equipaments_handler() {
+function intranet_fafar_api_get_equipaments_handler( $request ) {
+    // Get pagination parameters from the request
+    $offset  = $request->get_param('offset') ? intval($request->get_param('offset')) : 1;
+    $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
+    $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
     
-    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'equipament'";
+    $submissions = intranet_fafar_api_get_equipaments( $keyword, $offset, $limit, false ); 
 
-    $submissions = intranet_fafar_api_read( $query ); 
-
-    if( ! $submissions || count( $submissions ) == 0 ) {
-
-        return array( 'error_msg' => 'Nenhum equipamento encontrado', 'http_status' => 400 );
-
+    if ( ! $submissions ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 500 ),
+        );
     }
+
+    if ( count( $submissions ) == 0 ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+        );
+    }
+
+    return rest_ensure_response(
+        array(
+            'count'    => $submissions['pagination']['total_items'],
+            'next'     => null,
+            'previous' => null,
+            'results'  => $submissions['data'],
+        )
+    );
+}
+
+function intranet_fafar_api_get_equipaments( $keyword = '', $offset = 1, $limit = -1, $substitute_value = true ) {
+    $submissions = intranet_fafar_api_read(
+        args: array(
+            'filters'  => array(
+                array(
+                    'column'   => 'object_name',
+                    'value'    => 'equipament',
+                    'operator' => '=',
+                ),
+            ),
+            'order_by' => array(
+                'orderby_column' => 'created_at',
+                'order'          => 'DESC',
+            ),
+            'page'     => $offset,   
+            'per_page' => $limit,
+            'keyword'  => $keyword, 
+        )
+    );
+
+    // null ou []
+    if ( empty( $submissions ) ) return $submissions;
+    
+    if ( ! $substitute_value ) return $submissions;
 
     /*
      * Substituir os campos que tem ID de outro objeto,
      * pelo objeto de mesmo ID
      */ 
-    $submissions_joined = array_map( function ( $s ) {
+    $submissions['data'] = array_map ( function ( $s ) {
 
-        if( is_array( $s['data']['place'] ) && count( $s['data']['place'] ) > 0 ){
-
+        if ( is_array( $s['data']['place'] ) && count( $s['data']['place'] ) > 0 ){
             $s['data']['place'] = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
-        
         }
 
-        if( is_array( $s['data']['applicant'] ) && count( $s['data']['applicant'] ) > 0 ){
-
+        if ( is_array( $s['data']['applicant'] ) && count( $s['data']['applicant'] ) > 0 ){
             $applicant = get_userdata( $s['data']['applicant'][0] );
-
             $s['data']['applicant'] = ( $applicant ? $applicant->get( 'display_name' ) : '' );
-        
         }
 
-        if( is_array( $s['data']['ip'] ) && count( $s['data']['ip'] ) > 0 ){
-
+        if ( is_array( $s['data']['ip'] ) && count( $s['data']['ip'] ) > 0 ){
             $s['data']['ip'] = intranet_fafar_api_get_submission_by_id( $s['data']['ip'][0] );
-        
         }
 
         return $s;
         
-    }, $submissions );
+    }, $submissions['data'] );
 
-    return rest_ensure_response( $submissions_joined );
-
+    return $submissions;
 }
 
 function intranet_fafar_api_get_equipament_by_id( $id ) {
@@ -2580,7 +2697,7 @@ function intranet_fafar_api_get_ips_handler( $request ) {
 function intranet_fafar_api_get_ips() {
     $ips = intranet_fafar_api_get_submissions_by_object_name( 'ip', array( 'orderby_json' => 'address' ) );
 
-    if ( isset( $ips['error_msg'] ) ) return $ips;
+    if ( isset( $ips['error_msg'] ) ) return ['error_msg' => 'aqui'];
 
     $equipaments = intranet_fafar_api_get_submissions_by_object_name( 'equipament' );
 
@@ -2648,7 +2765,283 @@ function intranet_fafar_api_create( $submission, $check_permissions = true, $do_
   
 }
 
-function intranet_fafar_api_read( $query, $check_permissions = true, $check_is_active = true ) {
+/**
+ * Retrieves and processes submissions from the custom database table with advanced filtering, ordering, and pagination.
+ * Supports searching for a keyword across all JSON properties.
+ *
+ * @since 1.0.0
+ *
+ * @param array $args {
+ *     An array of arguments for customizing the query and behavior of the function.
+ *
+ *     @type bool   $check_permissions Optional. Whether to check permissions for each submission. Default true.
+ *     @type bool   $check_is_active   Optional. Whether to filter out inactive submissions. Default true.
+ *     @type int    $page              Optional. The current page number for pagination. Default 1.
+ *     @type int    $per_page          Optional. The number of items to return per page. Default 10.
+ *     @type array  $filters           Optional. An array of filters to apply to the query. Each filter is an associative array
+ *                                    with the keys 'column', 'operator', 'value', and 'case_sensitive'.
+ *                                    For JSON data, use 'column' as 'data->key'.
+ *                                    The 'value' can be a single value or an array of values for the 'IN' operator.
+ *                                    The 'case_sensitive' key determines if the comparison is case-sensitive (default: true).
+ *     @type array  $order_by          Optional. An array specifying the ordering of results. Supports ordering by columns or JSON data.
+ *                                    Example: array( 'orderby_column' => 'created_at', 'order' => 'DESC' ) or
+ *                                    array( 'orderby_json' => 'age', 'order' => 'ASC', 'inet_aton' => true ).
+ *     @type string $keyword           Optional. A keyword to search across all JSON properties.
+ *     @type bool   $return_count_only Optional. If true, returns only the row count and pagination metadata. Default false.
+ * }
+ *
+ * @return array {
+ *     An array containing the processed submissions and pagination metadata.
+ *
+ *     @type array $data {
+ *         An array of processed submissions. Empty if `return_count_only` is true.
+ *
+ *         @type array $submission {
+ *             A single submission with decoded data and optional permission flags.
+ *
+ *             @type array  $data          The decoded JSON data from the submission.
+ *             @type bool   $prevent_write Optional. Set to true if write permission is denied.
+ *             @type bool   $prevent_exec  Optional. Set to true if execute permission is denied.
+ *         }
+ *     }
+ *     @type array $pagination {
+ *         Pagination metadata.
+ *
+ *         @type int $page        The current page number.
+ *         @type int $per_page    The number of items per page.
+ *         @type int $total_items The total number of items available.
+ *         @type int $total_pages The total number of pages.
+ *     }
+ * }
+ */
+function intranet_fafar_api_read( $query = '', $check_permissions = true, $check_is_active = true, $args = array() ) {
+
+    if ( empty( $args ) ) return intranet_fafar_api_old_read( $query, $check_permissions, $check_is_active );
+
+    // Default parameters
+    $defaults = array(
+        'check_permissions' => true, // Whether to check permissions
+        'check_is_active'   => true, // Whether to check if submissions are active
+        'page'              => 1,    // Current page for pagination
+        'per_page'          => -1,   // Number of items per page. -1: unlimited
+        'filters'           => array(), // Filters for table columns and JSON data
+        'order_by'          => array(), // Ordering configuration
+        'keyword'           => '',    // Keyword to search across all JSON properties
+        'return_count_only' => false, // If true, returns only the row count
+    );
+
+    // Merge user-provided arguments with defaults
+    $args = wp_parse_args( $args, $defaults );
+
+    global $wpdb;
+
+    // Construct the table name
+    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
+
+    // Base query
+    $query_completed = "SELECT SQL_CALC_FOUND_ROWS * FROM $table_name";
+
+    // Build the WHERE clause from filters
+    $where_clause = '';
+    if ( ! empty( $args['filters'] ) ) {
+        $where_conditions = array();
+        foreach ( $args['filters'] as $filter ) {
+            $column = $filter['column'];
+            $operator = strtoupper( $filter['operator'] );
+            $value = $filter['value'];
+            $case_sensitive = isset( $filter['case_sensitive'] ) ? (bool) $filter['case_sensitive'] : true;
+
+            // Validate operator
+            if ( ! in_array( $operator, array( '=', '!=', '>', '<', 'LIKE', 'IN' ) ) ) {
+                continue; // Skip invalid operators
+            }
+
+            // Handle JSON data filtering
+            if ( strpos( $column, 'data->' ) === 0 ) {
+                $json_key = substr( $column, 6 ); // Extract the JSON key
+
+                if ( $operator === 'IN' ) {
+                    // Handle IN operator for JSON data
+                    if ( ! is_array( $value ) ) {
+                        continue; // Skip if value is not an array
+                    }
+
+                    // Escape and prepare values for IN clause
+                    $escaped_values = array_map( function( $val ) use ( $wpdb ) {
+                        return $wpdb->prepare( '%s', $val );
+                    }, $value );
+
+                    $in_values = implode( ',', $escaped_values );
+
+                    if ( $case_sensitive ) {
+                        $where_conditions[] = "JSON_UNQUOTE(JSON_EXTRACT(data, '$.$json_key')) IN ($in_values)";
+                    } else {
+                        $where_conditions[] = "LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.$json_key'))) IN ($in_values)";
+                    }
+                } else {
+                    // Handle other operators for JSON data
+                    $escaped_value = $wpdb->prepare( '%s', $value );
+
+                    if ( $case_sensitive ) {
+                        $where_conditions[] = "JSON_UNQUOTE(JSON_EXTRACT(data, '$.$json_key')) $operator $escaped_value";
+                    } else {
+                        $where_conditions[] = "LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.$json_key'))) $operator LOWER($escaped_value)";
+                    }
+                }
+            } else {
+                // Handle regular column filtering
+                if ( $operator === 'IN' ) {
+                    // Handle IN operator for regular columns
+                    if ( ! is_array( $value ) ) {
+                        continue; // Skip if value is not an array
+                    }
+
+                    // Escape and prepare values for IN clause
+                    $escaped_values = array_map( function( $val ) use ( $wpdb ) {
+                        return $wpdb->prepare( '%s', $val );
+                    }, $value );
+
+                    $in_values = implode( ',', $escaped_values );
+
+                    if ( $case_sensitive ) {
+                        $where_conditions[] = "$column IN ($in_values)";
+                    } else {
+                        $where_conditions[] = "LOWER($column) IN ($in_values)";
+                    }
+                } else {
+                    // Handle other operators for regular columns
+                    $escaped_value = $wpdb->prepare( '%s', $value );
+
+                    if ( $case_sensitive ) {
+                        $where_conditions[] = "$column $operator $escaped_value";
+                    } else {
+                        $where_conditions[] = "LOWER($column) $operator LOWER($escaped_value)";
+                    }
+                }
+            }
+        }
+
+        if ( ! empty( $where_conditions ) ) {
+            $where_clause = ' WHERE ' . implode( ' AND ', $where_conditions );
+        }
+    }
+
+    // Add case-insensitive keyword search
+    if ( ! empty( $args['keyword'] ) ) {
+        $keyword = $wpdb->esc_like( strtolower( $args['keyword'] ) ); // Convert keyword to lowercase
+        $keyword_condition = "JSON_SEARCH(LOWER(data), 'one', '%$keyword%') IS NOT NULL";
+
+        if ( empty( $where_clause ) ) {
+            $where_clause = " WHERE $keyword_condition";
+        } else {
+            $where_clause .= " AND $keyword_condition";
+        }
+    }
+
+    // Build the ORDER BY clause
+    $order_by_clause = '';
+    if ( ! empty( $args['order_by'] ) ) {
+        $order = isset( $args['order_by']['order'] ) && strtoupper( $args['order_by']['order'] ) === 'DESC' ? 'DESC' : 'ASC';
+
+        if ( isset( $args['order_by']['orderby_column'] ) ) {
+            // Order by table column
+            $order_by_clause = ' ORDER BY ' . $args['order_by']['orderby_column'] . ' ' . $order;
+        } elseif ( isset( $args['order_by']['orderby_json'] ) ) {
+            // Order by JSON data
+            $json_key = $args['order_by']['orderby_json'];
+            $inet_function = isset( $args['order_by']['inet_aton'] ) && $args['order_by']['inet_aton'] ? 'INET_ATON' : '';
+
+            // Modify the query to include the JSON property for ordering
+            $query_completed = "SELECT SQL_CALC_FOUND_ROWS *, $inet_function(JSON_UNQUOTE(JSON_EXTRACT(data, '$.$json_key'))) AS json_prop FROM $table_name";
+            $order_by_clause = ' ORDER BY json_prop ' . $order;
+        }
+    }
+
+    $pagination_query = $query_completed . $where_clause . $order_by_clause;
+
+    // Add pagination to the query
+    if ( $args['per_page'] > -1 && ! $args['return_count_only'] ) {
+        $offset = ( $args['page'] - 1 ) * $args['per_page'];
+        $pagination_query .= " LIMIT {$args['per_page']} OFFSET $offset";
+    }
+
+    error_log($pagination_query);
+
+    // Execute the query
+    if ( ! $args['return_count_only'] ) {
+        $submissions = $wpdb->get_results( $pagination_query, 'ARRAY_A' );
+
+        // Handle query errors or empty results
+        if ( $submissions === null ) {
+            error_log( 'Database query failed!' );
+            return false;
+        }
+
+        if ( empty( $submissions ) ) {
+            return array();
+        }
+    }
+
+    // Get the total number of submissions using FOUND_ROWS()
+    $total_submissions = $wpdb->get_var( 'SELECT FOUND_ROWS()' );
+    $total_pages = ceil( $total_submissions / $args['per_page'] );
+
+    // If only the count is requested, return early
+    if ( $args['return_count_only'] ) {
+        return array(
+            'data'          => array(), // Empty data array
+            'pagination'    => array(
+                'page'        => $args['page'],
+                'per_page'    => $args['per_page'],
+                'total_items' => $total_submissions,
+                'total_pages' => $total_pages,
+            ),
+        );
+    }
+
+    // Process submissions
+    $submissions_checked = array();
+    foreach ( $submissions as $submission ) {
+        // Decode the JSON data field
+        $submission['data'] = json_decode( $submission['data'], true );
+
+        // Skip inactive submissions if $check_is_active is true
+        if ( $args['check_is_active'] && $submission['is_active'] != 1 ) {
+            continue;
+        }
+
+        // Check read permission
+        if ( $args['check_permissions'] && ! intranet_fafar_api_check_read_permission( $submission ) ) {
+            continue;
+        }
+
+        // Check write permission and set 'prevent_write' flag
+        if ( $args['check_permissions'] && ! intranet_fafar_api_check_write_permission( $submission ) ) {
+            $submission['data']['prevent_write'] = true;
+        }
+
+        // Check execute permission and set 'prevent_exec' flag
+        if ( $args['check_permissions'] && ! intranet_fafar_api_check_exec_permission( $submission ) ) {
+            $submission['data']['prevent_exec'] = true;
+        }
+
+        // Add the processed submission to the result array
+        array_push( $submissions_checked, $submission );
+    }
+
+    // Return the results with pagination metadata
+    return array(
+        'data'          => $submissions_checked,
+        'pagination'    => array(
+            'page'        => $args['page'],
+            'per_page'    => $args['per_page'],
+            'total_items' => $total_submissions,
+            'total_pages' => $total_pages,
+        ),
+    );
+}
+
+function intranet_fafar_api_old_read( $query, $check_permissions = true, $check_is_active = true ) {
 
     if ( ! $query )
         return array( 'error_msg' => 'No query str on "intranet_fafar_api_read"!' );

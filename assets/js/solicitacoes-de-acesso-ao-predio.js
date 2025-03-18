@@ -108,48 +108,47 @@ const grid = new gridjs.Grid({
     { name: "Últ. Status", formatter: lastRegisterStatusFormatter },
     { name: "Ações", formatter: actionColFormatter },
   ],
-  data: fetchDataHandler,
-  pagination: {
-    limit: 10,
-    summary: true,
+  search: {
+    server: {
+      url: (prev, keyword) => {
+        const url = `${prev}?keyword=${keyword}`;
+        console.log(url); // Debugging: Log the search URL
+        return url;
+      },
+    },
   },
-  search: true,
+  pagination: {
+    limit: 10, // Number of rows per page
+    server: {
+      url: (prev, page, limit) => {
+        let url = `${prev}?limit=${limit}&offset=${page * limit}`;
+        if (url.indexOf("keyword") > -1)
+          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+        console.log(url);
+        return url;
+      },
+    },
+    summary: true, // Show pagination summary
+  },
+  server: {
+    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request",
+    then: renderDataOnTable,
+    total: (data) => data.count,
+  },
   sort: true,
   resizable: true,
   autoWidth: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-async function renderGridJS(data = []) {
-  if (!data) data = [];
-
-  if (data.length === 0) data = await fetchDataHandler();
-
-  grid
-    .updateConfig({
-      data,
-    })
-    .forceRender();
-}
-
-async function fetchDataHandler() {
-  let response;
-
-  try {
-    response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request/"
-    );
-  } catch (error) {
-    //console.log(error.response.data.message);
+function renderDataOnTable(data) {
+  // Early return if data is invalid or empty
+  if (!data || !Array.isArray(data.results)) {
     return [];
   }
 
-  const submissions = response.data;
-
-  // console.log(submissions);
-
-  let table_arr = [];
-  for (const submission of Object.values(submissions)) {
+  // Map through the results and transform each submission
+  return data.results.map((submission) => {
     const { data, owner } = submission;
     const {
       object_sub_type,
@@ -161,6 +160,8 @@ async function fetchDataHandler() {
       end_date,
       logs,
     } = data;
+
+    console.log(submission);
 
     const user_column_data = JSON.stringify({
       access_building_request_type,
@@ -188,16 +189,14 @@ async function fetchDataHandler() {
       object_sub_type,
     });
 
-    table_arr.push([
+    return [
       user_column_data,
       place_column_data,
       period_column_data,
       logs,
       action_column_data,
-    ]);
-  }
-
-  return table_arr;
+    ];
+  });
 }
 
 function userColFormatter(current) {
@@ -377,7 +376,7 @@ async function registerEntryOrExit(id, type) {
 
     showAlert("Registrado com sucesso!", "success", true, 3000);
 
-    renderGridJS();
+    grid.forceRender();
   } catch (error) {
     let errorMessage = "[1010] Unknown error occurred.";
 

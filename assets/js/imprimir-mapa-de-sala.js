@@ -83,7 +83,9 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
   },
   hiddenDays: [0],
   events: [],
-  eventColor: "#000000",
+  eventBackgroundColor: "transparent",
+  eventTextColor: "#000000",
+  eventBorderColor: "#000000",
   eventClassNames: "fw-medium",
   dateClick: function (arg) {
     console.log(arg.date.toString()); // use *local* methods on the native Date Object

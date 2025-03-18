@@ -49,57 +49,69 @@ const grid = new gridjs.Grid({
       formatter: actionColFormatter,
     },
   ],
-  data: fetchDataHandler,
-  pagination: {
-    limit: 25,
-    summary: true,
+  search: {
+    server: {
+      url: (prev, keyword) => {
+        const url = `${prev}?keyword=${keyword}`;
+        console.log(url); // Debugging: Log the search URL
+        return url;
+      },
+    },
   },
-  search: true,
+  pagination: {
+    limit: 10, // Number of rows per page
+    server: {
+      url: (prev, page, limit) => {
+        let url = `${prev}?limit=${limit}&offset=${page * limit}`;
+        if (url.indexOf("keyword") > -1)
+          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+        console.log(url);
+        return url;
+      },
+    },
+    summary: true, // Show pagination summary
+  },
+  server: {
+    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/log",
+    then: renderDataOnTable,
+    total: (data) => data.count,
+  },
   sort: true,
   resizable: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-async function fetchDataHandler() {
-  try {
-    const response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/log"
-    );
-
-    const submissions = response.data;
-
-    console.log(submissions);
-
-    return submissions.reverse().map(({ id, data, created_at }) => {
-      const { category = "N/A", source = "N/A", user = 0, desc = 0 } = data;
-
-      const prevent_write = data.prevent_write ? "1" : "0";
-      const prevent_exec = data.prevent_exec ? "1" : "0";
-      const permissions = `${prevent_write}${prevent_exec}`;
-
-      return [
-        category,
-        source,
-        user,
-        JSON.stringify(desc),
-        created_at,
-        JSON.stringify({
-          id,
-          permissions,
-        }),
-      ];
-    });
-  } catch (error) {
-    console.error(
-      "Erro ao buscar dados:",
-      error.response?.data?.message || error
-    );
+function renderDataOnTable(data) {
+  // Early return if data is invalid or empty
+  if (!data || !Array.isArray(data.results)) {
     return [];
   }
+
+  // Map through the results and transform each submission
+  return data.results.map((submission) => {
+    const { id, data, created_at } = submission;
+    const { category = "N/A", source = "N/A", user = 0, desc = 0 } = data;
+
+    const prevent_write = data.prevent_write ? "1" : "0";
+    const prevent_exec = data.prevent_exec ? "1" : "0";
+    const permissions = `${prevent_write}${prevent_exec}`;
+
+    return [
+      category,
+      source,
+      user,
+      JSON.stringify(desc),
+      created_at,
+      JSON.stringify({
+        id,
+        permissions,
+      }),
+    ];
+  });
 }
 
 function actionColFormatter(current) {
-  const { id, permissions, object_sub_type, number } = JSON.parse(current);
+  const { id, permissions } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
 

@@ -233,7 +233,6 @@ table.fc-col-header {
 
   .fc-event-main-frame .fc-event-title-container .fc-event-title {
     font-weight: bolder !important;
-    font-size: 1rem !important;
   }
 
   .numero-sala {
@@ -247,7 +246,7 @@ table.fc-col-header {
     text-align: center;
 
     font-size: 24rem;
-    color: #aaa !important;
+    color: #ccc !important;
   }
 
   .logo-fafar {
@@ -261,5 +260,10 @@ table.fc-col-header {
   .content {
     overflow: hidden; /* Prevent overflowing content */
     max-height: 100vh; /* Limit content to one page */
+  }
+
+  .fc-col-header-cell-cushion {
+    text-decoration: none;
+    color: #000000;
   }
 }

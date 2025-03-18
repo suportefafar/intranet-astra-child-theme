@@ -319,10 +319,8 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
             <th><label for="workplace_place"><?php _e( "Sala", "intranet-astra-child-theme" ); ?></label></th>
             <td>
                 <?php
-                    $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array( 'orderby_json' => 'number' ) );
-                    $rooms = array_filter( $places, function ( $place ) {
-                        return $place['data']['object_sub_type'] === [ 'general' ];
-                    } );
+                    $rooms = intranet_fafar_api_get_not_reservable_places();
+                    error_log(print_r($rooms, true));
                     $rooms_numbers = array_map( function ( $room ) {
                         return $room['data']['number'];
                     }, $rooms );

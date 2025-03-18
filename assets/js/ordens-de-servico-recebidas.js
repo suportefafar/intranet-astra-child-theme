@@ -10,7 +10,7 @@ let EVENTS = [];
  * Aguarda até que a DOM seja carregada
  */
 document.addEventListener("DOMContentLoaded", () => {
-  fetchTableData();
+  updateURLFetchBase();
 });
 
 /*
@@ -20,9 +20,30 @@ document.querySelectorAll("#ul_os_status_tabs .nav-link").forEach((el) => {
   el.addEventListener("click", (e) => {
     changeActiveTab(e);
 
-    fetchTableData();
+    updateURLFetchBase();
   });
 });
+
+/*
+ * Para adicionar listeners aos spans com descrição, e abrir o Popover
+ */
+const observer = new MutationObserver((mutationsList) => {
+  for (const mutation of mutationsList) {
+    if (mutation.type === "childList") {
+      // Reinitialize popovers when new elements are added
+      const popoverTriggerList = [].slice.call(
+        document.querySelectorAll('[data-bs-toggle="popover"]')
+      );
+      popoverTriggerList.map((popoverTriggerEl) => {
+        return new bootstrap.Popover(popoverTriggerEl);
+      });
+    }
+  }
+});
+
+// Start observing the table container for changes
+const tableContainer = document.getElementById("table-wrapper");
+observer.observe(tableContainer, { childList: true, subtree: true });
 
 function changeActiveTab(el) {
   const tabs = document.querySelectorAll("#ul_os_status_tabs .nav-link");
@@ -66,12 +87,24 @@ function getActiveTab() {
   return document.querySelector("#ul_os_status_tabs .nav-link.active");
 }
 
-async function fetchTableData() {
+async function updateURLFetchBase() {
   const tab_data = getActiveTabData();
   if (!tab_data) return;
 
-  const submissions = await getServiceTickets(tab_data.url);
-  renderTable(submissions);
+  const url =
+    "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions" +
+    tab_data.url;
+
+  // console.log({ url });
+  grid
+    .updateConfig({
+      server: {
+        url,
+        then: renderDataOnTable,
+        total: (data) => data.count,
+      },
+    })
+    .forceRender();
 }
 
 async function getServiceTickets(url) {
@@ -150,35 +183,59 @@ const grid = new gridjs.Grid({
       formatter: actionColFormatter,
     },
   ],
-  data: [],
-  pagination: {
-    limit: 20,
-    summary: true,
+
+  search: {
+    server: {
+      url: (prev, keyword) => {
+        let junction = prev.indexOf("?") > 0 ? "&" : "?";
+
+        const url = `${prev}${junction}keyword=${keyword}`;
+
+        // console.log({ url }); // Debugging: Log the search URL
+
+        return url;
+      },
+    },
   },
-  search: true,
+  pagination: {
+    limit: 10, // Number of rows per page
+    server: {
+      url: (prev, page, limit) => {
+        let junction = prev.indexOf("?") > 0 ? "&" : "?";
+
+        let url = `${prev}${junction}limit=${limit}&offset=${page * limit}`;
+
+        if (url.indexOf("keyword") > -1)
+          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+
+        // console.log({ url });
+
+        return url;
+      },
+    },
+    summary: true, // Show pagination summary
+  },
+  server: {
+    url:
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions" +
+      "/service_tickets/by_departament?assigned_to=-1&status=Nova,Aguardando,Em andamento",
+    then: renderDataOnTable,
+    total: (data) => data.count,
+  },
   sort: true,
   resizable: true,
   autoWidth: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-function renderTable(data = []) {
-  if (!data) data = [];
+function renderDataOnTable(data) {
+  // Early return if data is invalid or empty
+  if (!data || !Array.isArray(data.results)) {
+    return [];
+  }
 
-  if (Array.isArray(data) && data.length === 0) data = [];
-
-  grid
-    .updateConfig({
-      data: fetchDataHandler(data),
-    })
-    .forceRender();
-}
-
-function fetchDataHandler(submissions) {
-  console.log(submissions);
-
-  let table_arr = [];
-  for (const submission of submissions) {
+  // Map through the results and transform each submission
+  return data.results.map((submission) => {
     const { id, data, owner, updated_at, created_at } = submission;
     const { assigned_to, status, type, number, user_report } = data;
 
@@ -207,7 +264,7 @@ function fetchDataHandler(submissions) {
       permissions,
     });
 
-    table_arr.push([
+    return [
       number_column_data,
       desc_column_data,
       owner,
@@ -215,16 +272,12 @@ function fetchDataHandler(submissions) {
       assigned_to,
       date_column_data,
       action_column_data,
-    ]);
-  }
-
-  return table_arr;
+    ];
+  });
 }
 
 function numberColFormatter(current) {
   const { id, permissions, number } = JSON.parse(current);
-
-  const prevent_write = parseInt(permissions.split("")[0]);
 
   const html_content = `
     <div class="d-flex gap-2">
@@ -239,8 +292,12 @@ function numberColFormatter(current) {
 function descColFormatter(current) {
   const { type, user_report } = JSON.parse(current);
 
-  const MAX_CHAR_DESC = 100;
+  const MAX_CHAR_DESC = 80;
 
+  const short_user_report =
+    user_report && user_report.length > MAX_CHAR_DESC
+      ? user_report.slice(0, MAX_CHAR_DESC) + "..."
+      : user_report;
   return html(`
     <div class="d-flex flex-column gap-1">
       <div>
@@ -249,16 +306,17 @@ function descColFormatter(current) {
         </span>
       </div>
 
-      <div>
-        <span class="text-secondary">
-        ${
-          user_report && user_report.length > MAX_CHAR_DESC
-            ? user_report.slice(0, MAX_CHAR_DESC) + "..."
-            : user_report
-        }
-        </span>
-      </div>
-    </div
+      <a 
+          href="#"
+          class="d-inline-block text-secondary" 
+          tabindex="0" 
+          data-bs-toggle="popover" 
+          data-bs-trigger="focus" 
+          data-bs-title="Relato" 
+          data-bs-content="${user_report.replaceAll('"', "'")}">
+        ${short_user_report.replaceAll('"', "'")}
+        </a>
+    </div>
     `);
 }
 

@@ -53,35 +53,46 @@ const grid = new gridjs.Grid({
       formatter: actionColFormatter,
     },
   ],
-  data: fetchDataHandler,
-  pagination: {
-    limit: 10,
-    summary: true,
+  search: {
+    server: {
+      url: (prev, keyword) => {
+        const url = `${prev}?keyword=${keyword}`;
+        console.log(url); // Debugging: Log the search URL
+        return url;
+      },
+    },
   },
-  search: true,
+  pagination: {
+    limit: 10, // Number of rows per page
+    server: {
+      url: (prev, page, limit) => {
+        let url = `${prev}?limit=${limit}&offset=${page * limit}`;
+        if (url.indexOf("keyword") > -1)
+          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+        console.log(url);
+        return url;
+      },
+    },
+    summary: true, // Show pagination summary
+  },
+  server: {
+    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request/mines",
+    then: renderDataOnTable,
+    total: (data) => data.count,
+  },
   sort: true,
   resizable: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-async function fetchDataHandler() {
-  let response;
-
-  try {
-    response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request/mines"
-    );
-  } catch (error) {
-    // console.log(error.response.data.message);
+function renderDataOnTable(data) {
+  // Early return if data is invalid or empty
+  if (!data || !Array.isArray(data.results)) {
     return [];
   }
 
-  const submissions = response.data;
-
-  // console.log(submissions);
-
-  let table_arr = [];
-  for (const submission of Object.values(submissions)) {
+  // Map through the results and transform each submission
+  return data.results.map((submission) => {
     const submission_data = submission["data"];
 
     // console.log(JSON.stringify(submission_data));
@@ -93,20 +104,17 @@ async function fetchDataHandler() {
     const action_column_data = JSON.stringify({
       id: submission["id"],
       permissions,
-      object_sub_type: submission_data["object_sub_type"],
     });
 
-    table_arr.push([
+    return [
       submission_data["access_building_request_type"],
       submission_data["place"],
       submission_data["lab"],
       submission_data["start_date"],
       submission_data["end_date"],
       action_column_data,
-    ]);
-  }
-
-  return table_arr;
+    ];
+  });
 }
 
 async function renderGridJS(data = []) {
@@ -123,7 +131,7 @@ async function renderGridJS(data = []) {
 
 function actionColFormatter(current, row) {
   //console.log(current);
-  const { id, permissions, object_sub_type } = JSON.parse(current);
+  const { id, permissions } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
 
@@ -131,14 +139,6 @@ function actionColFormatter(current, row) {
 
   const html_content = `
     <div class="d-flex gap-2">
-
-      ${
-        object_sub_type === "classroom" || object_sub_type === "auditorium"
-          ? `<a class="btn btn-outline-primary" href="/reservas/?sala=${id}" title="Eventos">
-          <i class="bi bi-calendar-week"></i>
-        </a>`
-          : ""
-      }
       
       ${
         prevent_write
