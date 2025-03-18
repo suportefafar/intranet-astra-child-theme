@@ -37,10 +37,10 @@ if (
     $_SERVER['REQUEST_METHOD'] === 'POST'
 ) {
 
-    $old_users_json = $_POST["old_users"];
+    $old_auditoriums_json = $_POST["old_auditoriums"];
 
     //$json_d = json_decode( preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $json_string), true );
-    $old_users = json_decode(stripslashes($old_users_json), true);
+    $old_auditoriums = json_decode(stripslashes($old_auditoriums_json), true);
 
     print_r("<br/>");
     print_r("JSON LAST ERROR: ");
@@ -71,41 +71,194 @@ if (
 
     print_r("<br/>");
 
-    $users = get_users();
-
-    foreach ( $users as $user )
+    // print_r($old_auditoriums);
+    $nc = 0;
+    $c = 0;
+    foreach ( $old_auditoriums as $old_auditorium )
     {
-        $place_number = get_old_user_place( $user, $old_users );
 
-        if ( true ) {
-            $place_id = get_fafar_user_place($place_number);
+        if( $old_auditorium['form_post_id'] != "40364" )
+            continue;
 
-            echo '<br/>';
-            print_r($user->data->display_name . ': ' . $place_number . ' - ' . $place_id);
-            echo '<br/>';
+        $old_auditorium_data = unserialize( $old_auditorium['form_value'] );
 
-            if($place_id){
-                update_user_meta( $user->ID, 'workplace_place', $place_id );
-            }
-        }
-    }
+        /*
+        {
+            "desc": "asdfasd",
+            "status": "Aguardando aprovação",
+            "end_time": "22:00",
+            "technical": "",
+            "event_date": "2025-03-07",
+            "start_time": "18:00",
+            "applicant_name": "asdfasdfasd",
+            "applicant_email": "asdf@asdf.com",
+            "applicant_phone": "(12) 34123-4123",
+            "use_own_notebook": [
+                "Sim"
+            ],
+            "public_prediction": "190",
+            "use_fafar_notebook": [
+                "Não"
+            ],
+            "use_internet_access": [
+                "Não"
+            ],
+            "use_musical_instruments": [
+                "Sim"
+            ]
+        }  
 
-}
+        Array ( 
+            [cfdb7_status] => read 
+            [NomeSolicitante] => Adriano Max Moreira Reis 
+            [EmailSolicitante] => amreis@outlook.com 
+            [TelefoneSolicitante] => (31) 99728-1803 
+            [NomeEvento] => Simpósio Segurança do Paciente e Erros de Medicação 15 anos do ISMP Brasil 
+            [PrevisaoPublico] => 190 
+            [InstrumentosMusicais] => Array ( 
+            [0] => Não ) 
+            [NotebookFafar] => Array ( 
+            [0] => Não ) 
+            [NotebookProprio] => Array ( 
+            [0] => Sim ) 
+            [AcessoInternet] => Array ( 
+            [0] => Sim ) 
+            [DataEvento__1] => 2024-11-25 
+            [HoraInicioEvento__1] => Array ( 
+            [0] => 8:00 ) 
+            [HoraFimEvento__1] => Array ( 
+            [0] => 18:30 ) 
+            [DataEvento__2] => 2024-11-26 
+            [HoraInicioEvento__2] => Array ( 
+            [0] => 8:00 ) 
+            [HoraFimEvento__2] => Array ( 
+            [0] => 18:30 ) 
+            [Status] => Aprovada 
+        )
 
-function get_old_user_place( $current_user, $old_users ) {
+        Array ( 
+            [cfdb7_status] => read 
+            [far_db_column_submission_url] => https://www.farmacia.ufmg.br/reservaauditorio/ 
+            [far_db_column_remote_ip] => 150.164.110.253 
+            [far_db_column_object_name] => auditorium_reservation 
+            [status] => Aguardando aprovação 
+            [technical] => 
+            [applicant_name] => asdflçkj 
+            [applicant_email] => asdf@asd.com 
+            [applicant_phone] => (23) 32142-3412 
+            [desc] => asdfasdf 
+            [public_prediction] => 9 
+            [use_musical_instruments] => Array ( 
+            [0] => Sim ) 
+            [use_fafar_notebook] => Array ( 
+            [0] => Não ) 
+            [use_own_notebook] => Array ( 
+            [0] => Sim ) 
+            [use_internet_access] => Array ( 
+            [0] => Não ) 
+            [event_date__1] => 2025-03-07 
+            [start_time__1] => 19:00 
+            [end_time__1] => 22:00 
+        )
+        */
 
-    foreach( $old_users as $old_user ) {
+        $new_auditorium_data = $old_auditorium_data;
 
         if(
-            intranet_fafar_utils_escape_and_clean_to_compare( $old_user['nome'] ) === 
-            intranet_fafar_utils_escape_and_clean_to_compare( $current_user->data->display_name )
+            isset( $old_auditorium_data['NomeEvento'] )
         ) {
-            return $old_user['sala'];
+
+            $new_auditorium_data = array(
+                'far_db_column_submission_url' => 'https://www.farmacia.ufmg.br/reservaauditorio/',
+                'far_db_column_object_name' => 'auditorium_reservation',
+                'technical' => '',
+                'applicant_name' => $old_auditorium_data['NomeSolicitante'],
+                'applicant_email' => $old_auditorium_data['EmailSolicitante'],
+                'applicant_phone' => $old_auditorium_data['TelefoneSolicitante'],
+                'desc' => $old_auditorium_data['NomeEvento'],
+                'public_prediction' => $old_auditorium_data['PrevisaoPublico'],
+                'use_musical_instruments' => $old_auditorium_data['InstrumentosMusicais'],
+                'use_fafar_notebook' => $old_auditorium_data['NotebookFafar'],
+                'use_own_notebook' => $old_auditorium_data['NotebookProprio'],
+                'use_internet_access' => $old_auditorium_data['AcessoInternet'],
+                'event_date__1' => $old_auditorium_data['DataEvento__1'],
+                'start_time__1' => $old_auditorium_data['HoraInicioEvento__1'],
+                'end_time__1' => $old_auditorium_data['HoraFimEvento__1'],
+            );
+
+            // Get the current date in 'Y-m-d' format
+            $currentDate = date('Y-m-d');
+    
+            // Compare the dates
+            if ($old_auditorium_data['DataEvento__1'] < $currentDate) {
+                $new_auditorium_data['status'] = 'Finalizada';
+                $new_auditorium_data['technical'] = '2078';
+            } else {
+                $new_auditorium_data['status'] = 'Aguardando início';
+                $new_auditorium_data['technical'] = '2078';
+            }
+
+            if(
+                ! empty( $old_auditorium_data['DataEvento__2'] ) &&
+                ! empty( $old_auditorium_data['HoraInicioEvento__2'] ) &&
+                ! empty( $old_auditorium_data['HoraFimEvento__2'] )
+            ) {
+                $new_auditorium_data['event_date__2'] = $old_auditorium_data['DataEvento__2'];
+                $new_auditorium_data['start_time__2'] = $old_auditorium_data['HoraInicioEvento__2'];
+                $new_auditorium_data['end_time__2'] = $old_auditorium_data['HoraFimEvento__2'];
+            }
+
+            if(
+                ! empty( $old_auditorium_data['DataEvento__3']) &&
+                ! empty( $old_auditorium_data['HoraInicioEvento__3']) &&
+                ! empty( $old_auditorium_data['HoraFimEvento__3'])
+            ) {
+                $new_auditorium_data['event_date__3'] = $old_auditorium_data['DataEvento__3'];
+                $new_auditorium_data['start_time__3'] = $old_auditorium_data['HoraInicioEvento__3'];
+                $new_auditorium_data['end_time__3'] = $old_auditorium_data['HoraFimEvento__3'];
+            }
+
+            if(
+                ! empty( $old_auditorium_data['DataEvento__4']) &&
+                ! empty( $old_auditorium_data['HoraInicioEvento__4']) &&
+                ! empty( $old_auditorium_data['HoraFimEvento__4'])
+            ) {
+                $new_auditorium_data['event_date__4'] = $old_auditorium_data['DataEvento__4'];
+                $new_auditorium_data['start_time__4'] = $old_auditorium_data['HoraInicioEvento__4'];
+                $new_auditorium_data['end_time__4'] = $old_auditorium_data['HoraFimEvento__4'];
+            }
+
+            // 43
+            $arr = intranet_fafar_api_pre_create_auditorium_reservation( $new_auditorium_data );
+            $c += count( $arr );
+        } else if( isset( $old_auditorium_data['desc'] ) ) {
+            $new_auditorium_data['status'] = 'Aguardando aprovação';
+
+            // Get the current date in 'Y-m-d' format
+            $currentDate = date('Y-m-d');
+    
+            // Compare the dates
+            if ($old_auditorium_data['event_date__1'] < $currentDate) {
+                $new_auditorium_data['status'] = 'Finalizada';
+                $new_auditorium_data['technical'] = '2078';
+            } else {
+                $new_auditorium_data['status'] = 'Aguardando início';
+                $new_auditorium_data['technical'] = '2078';
+            }
+            // 85
+            $arr = intranet_fafar_api_pre_create_auditorium_reservation( $new_auditorium_data );
+            $nc += count( $arr );
         }
 
-    } 
+        // 128
+        // $new_submissions[] = $new_equipament;
 
-    return false;
+    }
+
+    echo "<br/>";
+    echo $c . " / " . $nc;
+    echo "<br/>";
+
 
 }
 
@@ -335,14 +488,14 @@ function get_fafar_old_status( $index ) {
 
 }
 
-function get_fafar_new_user_id_by_old_id( $old_id, $old_old_users ) {
+function get_fafar_new_user_id_by_old_id( $old_id, $old_users ) {
     if(
         ! isset( $old_id ) ||
         $old_id === null || 
         is_array( $old_id )
     ) return '';
 
-    foreach ( $old_old_users as $old_user ) {
+    foreach ( $old_users as $old_user ) {
         
         if(
             $old_user['id'] === $old_id
@@ -472,6 +625,12 @@ function get_fafar_user_phone_clean( $text ) {
 
 function get_fafar_user_place( $number ) {
 
+    if(
+        ! isset( $number ) ||
+        $number === null || 
+        is_array( $number )
+    ) return '';
+
     $places = intranet_fafar_api_get_submissions_by_object_name( 'place' );
 
     foreach ( $places as $place ) {
@@ -482,7 +641,7 @@ function get_fafar_user_place( $number ) {
 
     }
 
-    return false;
+    return '';
 }
 
 function get_fafar_address_obj( $user_id, $addresses ) {
@@ -632,8 +791,8 @@ get_header(); ?>
         <form class="my-3" action="/importar-objeto" method="POST">
 
             <div class="form-floating mb-3">
-                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_users" rows="15" required></textarea>
-                <label for="floatingTextarea">Usuários</label>
+                <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="old_auditoriums" rows="15" required></textarea>
+                <label for="floatingTextarea">Reservas de auditorio</label>
             </div>
 
             <button type="submit">

@@ -55,6 +55,8 @@ require_once get_stylesheet_directory() . '/inc/template-tags.php';
 
 require_once get_stylesheet_directory() . '/inc/logs-hooks.php';
 
+require_once get_stylesheet_directory() . '/inc/mail.php';
+
 /*
  * Isso é uma gambiarra para lidar com um problema no CF7:
  * https://stackoverflow.com/questions/78101215/contact-form-undefined-value-was-submitted-through-this-field
@@ -96,3 +98,33 @@ add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_service_ti
  * Adicionando checagem para registrar atualização de ordem de serviço
  */
 add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_insert_update_on_service_ticket', 10, 2 );
+
+/*
+ * Adicionando listener de atualizações  para envio de emails
+ */
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_insert_update_on_service_ticket', 10, 2 );
+
+// - Ordens de Serviço
+// 	- Criação
+// 	- Criação de interação
+
+// - Equipamentos
+// 	- Atualização
+// 		- Mudança de local
+// 		- Mudança de responsável
+// 	- Criação
+// 		- Apenas equipamentos com patrimônio
+
+// - Empréstimo
+// 	- Depois de 30 dias aberto o empréstimo
+
+// - Reserva de auditório
+// 	- Mudança de status (c/ técnico, quando aplicável)
+
+// - Automações diversas como:
+// 	- IPs usados e que não estão respondendo à mais de 30 dias
+// 	- Ao abrir uma OS com palavras chaves que representam problemas que tem primeiros passos
+
+// - Solicitações de Acesso ao Prédio
+// 	- Criação
+	
