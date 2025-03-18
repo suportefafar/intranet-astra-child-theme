@@ -2178,6 +2178,7 @@ function intranet_fafar_api_get_user_by_id( $id ) {
         if(
             $current_user_role === 'administrator' || 
             $current_user_role === 'pessoal' || 
+            $current_user_role === 'tecnologia_da_informacao_e_suporte' || 
             $user->ID === get_current_user_id()
         ) $can_view_personal_info = true;
 
