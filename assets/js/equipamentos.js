@@ -154,6 +154,8 @@ function renderDataOnTable(data) {
     return [];
   }
 
+  console.log(data.results);
+
   // Map through the results and transform each submission
   return data.results.map((submission) => {
     const { id, data: submissionData } = submission;

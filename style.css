@@ -12,6 +12,13 @@
 */
 
 /*
+ * Classes genéricas
+ */
+.fafar-cursor-pointer {
+  cursor: pointer;
+}
+
+/*
  * Styles for buttons on top of CRUD pages like 'Adicionar' or 'Imprimir'
  */
 .w-button {
@@ -144,7 +151,7 @@
 /*
  * Estilos para a página imprimir-mapa-de-sala
  */
-#calendar {
+.map-printer-container {
   margin: 1rem;
 }
 
@@ -265,5 +272,17 @@ table.fc-col-header {
   .fc-col-header-cell-cushion {
     text-decoration: none;
     color: #000000;
+  }
+
+  .map-printer-container {
+    margin: 0 auto;
+  }
+
+  #btn_printer {
+    display: none;
+  }
+
+  #btn_go_back {
+    display: none;
   }
 }

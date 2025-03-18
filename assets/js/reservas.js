@@ -27,8 +27,7 @@ document.querySelectorAll("#ul_classroom_tabs .nav-link").forEach((el) => {
 document
   .querySelector("#btn_print_classroom_map")
   .addEventListener("click", () => {
-    const url = "/imprimir-mapa-de-sala/?id=" + CURRENT_CLASSROOM.id;
-    window.open(url, "_blank").focus();
+    window.location = "/imprimir-mapa-de-sala/?id=" + CURRENT_CLASSROOM.id;
   });
 
 /*
@@ -213,6 +212,8 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
   eventClick: viewEvent,
   dateClick: dateClickHandler,
   events: EVENTS,
+  eventBorderColor: "#000000",
+  eventTextColor: "#000000",
 });
 
 function renderTable(submissions) {
@@ -222,12 +223,17 @@ function renderTable(submissions) {
   for (const submission of submissions) {
     const submission_data = submission["data"];
 
+    console.log(submission_data);
+
+    let color = "#F2B600";
+    if (submission_data.frequency.indexOf("once") > -1) color = "#79ADDC";
+
     arr.push({
       id: submission["id"],
       title: submission_data["title"],
       rrule: submission_data["rrule"].replace(/\\n/g, "\n"),
       duration: submission_data["duration"],
-      color: "#F2B600",
+      color,
     });
   }
 

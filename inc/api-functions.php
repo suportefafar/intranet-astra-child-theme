@@ -2432,7 +2432,7 @@ function intranet_fafar_api_get_equipaments_handler( $request ) {
     $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
     $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
     
-    $submissions = intranet_fafar_api_get_equipaments( $keyword, $offset, $limit, false ); 
+    $submissions = intranet_fafar_api_get_equipaments( $keyword, $offset, $limit, true ); 
 
     if ( ! $submissions ) {
         return new WP_Error(
@@ -2491,16 +2491,16 @@ function intranet_fafar_api_get_equipaments( $keyword = '', $offset = 1, $limit 
      */ 
     $submissions['data'] = array_map ( function ( $s ) {
 
-        if ( is_array( $s['data']['place'] ) && count( $s['data']['place'] ) > 0 ){
+        if ( ! empty( $s['data']['place'][0] ) ) {
             $s['data']['place'] = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
         }
 
-        if ( is_array( $s['data']['applicant'] ) && count( $s['data']['applicant'] ) > 0 ){
+        if ( ! empty( $s['data']['applicant'][0] ) ) {
             $applicant = get_userdata( $s['data']['applicant'][0] );
             $s['data']['applicant'] = ( $applicant ? $applicant->get( 'display_name' ) : '' );
         }
 
-        if ( is_array( $s['data']['ip'] ) && count( $s['data']['ip'] ) > 0 ){
+        if ( ! empty( $s['data']['ip'][0] ) ) {
             $s['data']['ip'] = intranet_fafar_api_get_submission_by_id( $s['data']['ip'][0] );
         }
 

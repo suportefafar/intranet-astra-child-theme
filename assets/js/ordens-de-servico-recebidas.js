@@ -307,8 +307,7 @@ function descColFormatter(current) {
       </div>
 
       <a 
-          href="#"
-          class="d-inline-block text-secondary" 
+          class="d-inline-block text-secondary fafar-cursor-pointer" 
           tabindex="0" 
           data-bs-toggle="popover" 
           data-bs-trigger="focus" 

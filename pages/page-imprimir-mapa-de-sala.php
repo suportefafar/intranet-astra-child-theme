@@ -12,8 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-$ID           = sanitize_text_field( wp_unslash( $_GET["id"] ) );
-$classroom    = intranet_fafar_api_get_submission_by_id( $ID );
+$ID               = sanitize_text_field( wp_unslash( $_GET["id"] ) );
+$classroom        = intranet_fafar_api_get_submission_by_id( $ID );
 $all_reservations = intranet_fafar_api_get_reservations_by_place( $ID );
 
 if( isset($all_reservations['error_msg'] ) ) {
@@ -51,11 +51,24 @@ get_header(); ?>
 
 <!-- CALENDER -->
 
-<h1 class="numero-sala"><?php echo preg_replace( '/\D/', '', $classroom['data']['number'] ); ?></h1>
+<div class="map-printer-container">
+    <div class="d-flex justify-content-between mb-3">
+        <a href="/reservas?place_id=<?= $ID ?>" class="btn btn-secondary" id="btn_go_back">
+            <i class="bi bi-arrow-left"></i>
+            Voltar
+        </a>
+        <a href="#" class="btn btn-primary" id="btn_printer">
+            <i class="bi bi-printer"></i>
+            Imprimir
+        </a>
+    </div>
 
-<div id="calendar"></div>
+    <h1 class="numero-sala"><?php echo preg_replace( '/\D/', '', $classroom['data']['number'] ); ?></h1>
 
-<img class="logo-fafar" src="<?= get_stylesheet_directory_uri() ?>/assets/img/logo-fafar-escuro.png" width="64">
+    <div id="calendar"></div>
+
+    <img class="logo-fafar" src="<?= get_stylesheet_directory_uri() ?>/assets/img/logo-fafar-escuro.png" width="64">
+</div>
 
 <!--
     * Conteúdo customizado da página

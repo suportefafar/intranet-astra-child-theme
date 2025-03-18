@@ -9,6 +9,10 @@
  */
 document.addEventListener("DOMContentLoaded", () => {
   loadUI();
+
+  document
+    .querySelector("#btn_printer")
+    .addEventListener("click", () => window.print());
 });
 
 async function loadUI() {
@@ -91,4 +95,51 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
     console.log(arg.date.toString()); // use *local* methods on the native Date Object
     // will output something like 'Sat Sep 01 2018 00:00:00 GMT-XX:XX (Eastern Daylight Time)'
   },
+  eventContent: function (arg) {
+    console.log(arg);
+
+    // Create a container for the event content
+    let container = document.createElement("div");
+
+    if (getDurationInMinutes(arg.timeText) > 60) {
+      container.style.display = "flex";
+      container.style.flexDirection = "column";
+    }
+
+    // Add the event time
+    let timeEl = document.createElement("span");
+    timeEl.style.marginRight = "4px";
+    timeEl.innerHTML = arg.timeText; // Event time (e.g., "10:00 AM")
+
+    // Add the event description
+    let descEl = document.createElement("span");
+    descEl.innerHTML = arg.event._def.title; // Event description
+
+    container.appendChild(timeEl);
+    container.appendChild(descEl);
+
+    return { domNodes: [container] };
+  },
 });
+
+function getDurationInMinutes(timeString) {
+  // Split the string into start and end times
+  const [startTime, endTime] = timeString.split(" - ");
+
+  // Parse hours and minutes for start time
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+
+  // Parse hours and minutes for end time
+  const [endHour, endMinute] = endTime.split(":").map(Number);
+
+  // Convert start time to total minutes
+  const startTotalMinutes = startHour * 60 + startMinute;
+
+  // Convert end time to total minutes
+  const endTotalMinutes = endHour * 60 + endMinute;
+
+  // Calculate duration in minutes
+  const durationInMinutes = endTotalMinutes - startTotalMinutes;
+
+  return durationInMinutes;
+}
