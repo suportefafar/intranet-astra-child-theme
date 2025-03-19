@@ -32,8 +32,8 @@ function intranet_fafar_mail_on_create_service_ticket( $form_data ) {
   }
   
   $message = '
-    <p>Seu ticket foi registrado com sucesso! 🎊 Estamos analisando sua solicitação e em breve entraremos em contato com mais informações.</p>
-    <p><strong>Detalhes do Ticket:</strong></p>
+    <p>Sua ordem de serviço foi registrado com sucesso! 🎊 Estamos analisando sua solicitação e em breve entraremos em contato com mais informações.</p>
+    <p><strong>Detalhes da Ordem de Serviço:</strong></p>
     <ul>
       <li><strong>Número:</strong> ' . $form_data['data']['number'] . '</li>
       <li><strong>Departamento:</strong> ' . $departament . '</li>
@@ -42,7 +42,7 @@ function intranet_fafar_mail_on_create_service_ticket( $form_data ) {
       <li><strong>Patrimônio:</strong> ' . $form_data['data']['asset'] . '</li>
       <li><strong>Relato:</strong> ' . $form_data['data']['user_report'] . '</li>
     </ul>
-    <p>Você pode acompanhar o status do seu ticket a qualquer momento através da nossa intranet. Caso precise de mais alguma informação, não hesite em nos contatar.</p>
+    <p>Você pode acompanhar o status do sua ordem de serviço a qualquer momento através da nossa intranet. Caso precise de mais alguma informação, não hesite em nos contatar.</p>
   ';
 
   intranet_fafar_mail_notify( $user_email, $subject, $message );
@@ -86,13 +86,13 @@ function intranet_fafar_mail_on_create_service_ticket_update( $form_data ) {
   }
   
   $message = '
-    <p>Seu ticket foi atualizado! 🚀 Aqui estão as últimas informações sobre o andamento da sua solicitação:</p>
+    <p>Sua ordem de serviço foi atualizado! 🚀 Aqui estão as últimas informações sobre o andamento da sua solicitação:</p>
     <p><strong>Novo Status:</strong></p>
     <ul>
       <li><strong>Status:</strong> ' . $form_data['data']['status'][0] . '</li>
       <li><strong>Relatório:</strong> ' . $form_data['data']['service_report'] . '</li>
     </ul>
-    <p><strong>Detalhes do Ticket:</strong></p>
+    <p><strong>Detalhes da Ordem de Serviço:</strong></p>
     <ul>
       <li><strong>Número:</strong> ' . $service_ticket['data']['number'] . '</li>
       <li><strong>Departamento:</strong> ' . $departament . '</li>
@@ -102,7 +102,7 @@ function intranet_fafar_mail_on_create_service_ticket_update( $form_data ) {
       <li><strong>Relato:</strong> ' . $service_ticket['data']['user_report'] . '</li>
       <li><strong>Criado em:</strong> ' . convertToBrazilianFormat( $service_ticket['created_at'] ) . '</li>
     </ul>
-    <p>Você pode acompanhar o status do seu ticket a qualquer momento através da nossa intranet. Caso precise de mais alguma informação, não hesite em nos contatar.</p>
+    <p>Você pode acompanhar o status do sua ordem de serviço a qualquer momento através da nossa intranet. Caso precise de mais alguma informação, não hesite em nos contatar.</p>
   ';
 
   intranet_fafar_mail_notify( $user_email, $subject, $message );
