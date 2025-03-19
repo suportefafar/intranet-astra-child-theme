@@ -160,3 +160,23 @@ function intranet_fafar_utils_escape_and_clean_to_compare( $value ) {
     return $value;
 
 }
+
+function convertToBrazilianFormat($dateTimeString) {
+    // Define the input date and time format
+    $inputFormat = 'Y-m-d H:i:s';
+    
+    // Create a DateTime object from the input string
+    $dateTime = DateTime::createFromFormat($inputFormat, $dateTimeString);
+    
+    // Set the timezone to UTC (since the input is assumed to be in UTC)
+    $dateTime->setTimezone(new DateTimeZone('UTC'));
+    
+    // Convert to the -3 timezone (Brazil/Sao_Paulo)
+    $dateTime->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+    
+    // Define the output format in PT-BR style
+    $outputFormat = 'd/m/Y H:i:s';
+    
+    // Format the date and time according to the PT-BR format
+    return $dateTime->format($outputFormat);
+}

@@ -82,49 +82,29 @@ add_filter( 'fafar_cf7crud_before_update', 'intranet_fafar_api_create_or_update_
 /*
  * Adicionando checagem para criação de empréstimos de equipamentos
  */
-add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_new_loan', 10, 2 );
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_new_loan', 10, 1 );
 
 /*
  * Adicionando checagem para registrar o retorno de um empréstimo
  */
-add_filter( 'fafar_cf7crud_before_update', 'intranet_fafar_api_register_loan_return', 10, 2 );
+add_filter( 'fafar_cf7crud_before_update', 'intranet_fafar_api_register_loan_return', 10, 1 );
 
 /*
  * Adicionando handler para criação de ordem de serviço
  */
-add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_service_ticket', 10, 2 );
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_create_service_ticket', 10, 1 );
 
 /*
  * Adicionando checagem para registrar atualização de ordem de serviço
  */
-add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_insert_update_on_service_ticket', 10, 2 );
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_insert_update_on_service_ticket', 10, 1 );
 
 /*
- * Adicionando listener de atualizações  para envio de emails
+ * Adicionando handler para envio de email na criação de ordem de serviço
  */
-add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_api_insert_update_on_service_ticket', 10, 2 );
-
-// - Ordens de Serviço
-// 	- Criação
-// 	- Criação de interação
-
-// - Equipamentos
-// 	- Atualização
-// 		- Mudança de local
-// 		- Mudança de responsável
-// 	- Criação
-// 		- Apenas equipamentos com patrimônio
-
-// - Empréstimo
-// 	- Depois de 30 dias aberto o empréstimo
-
-// - Reserva de auditório
-// 	- Mudança de status (c/ técnico, quando aplicável)
-
-// - Automações diversas como:
-// 	- IPs usados e que não estão respondendo à mais de 30 dias
-// 	- Ao abrir uma OS com palavras chaves que representam problemas que tem primeiros passos
-
-// - Solicitações de Acesso ao Prédio
-// 	- Criação
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_mail_on_create_service_ticket', 11, 1 );
 	
+/*
+ * Adicionando handler para envio de email na atualização de ordem de serviço
+ */
+add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_mail_on_create_service_ticket_update', 11, 1 );
