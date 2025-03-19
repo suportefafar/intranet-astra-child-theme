@@ -261,7 +261,7 @@ function periodColFormatter(current) {
   return html(`
       <div class="d-flex flex-column gap-1">
         <div>
-          <span class="me-1"><i class="bi bi-clock"></i></span>
+          <span class="me-1"><i class="bi bi-calendar-range"></i></span>
           <span>
             ${new Date(start_date).toLocaleDateString()} - ${new Date(
     end_date

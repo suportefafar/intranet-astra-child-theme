@@ -16,13 +16,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function loadUI() {
-  const queryString = window.location.search;
-  const urlParams = new URLSearchParams(queryString);
-  const place_id = urlParams.get("id");
-
-  const submissions = RESERVAS;
-
-  renderCalendar(submissions);
+  if (!Array.isArray(RESERVAS)) RESERVAS = Object.values(RESERVAS);
+  renderCalendar(RESERVAS);
   removeScrollBar();
 }
 

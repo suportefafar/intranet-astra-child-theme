@@ -181,11 +181,11 @@
 }
 
 .logo-fafar {
-  display: block !important;
+  display: block;
   position: absolute;
   bottom: 24px;
   right: 24px;
-  opacity: 0.75 !important;
+  opacity: 0;
 }
 
 table.fc-col-header {
@@ -284,5 +284,9 @@ table.fc-col-header {
 
   #btn_go_back {
     display: none;
+  }
+
+  .logo-fafar {
+    opacity: 0.75 !important;
   }
 }
