@@ -62,9 +62,9 @@ const grid = new gridjs.Grid({
     limit: 10, // Number of rows per page
     server: {
       url: (prev, page, limit) => {
-        let url = `${prev}?limit=${limit}&offset=${page * limit}`;
+        let url = `${prev}?limit=${limit}&offset=${page + 1}`;
         if (url.indexOf("keyword") > -1)
-          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+          url = `${prev}&limit=${limit}&offset=${page + 1}`;
         console.log(url);
         return url;
       },
@@ -89,36 +89,35 @@ function renderDataOnTable(data) {
 
   // Map through the results and transform each submission
   return data.results.map((submission) => {
-    const {id, data} = submission;
-      const {
-        number = "N/A",
-        desc = "N/A",
-        floor = 0,
-        block = 0,
-        capacity = 0,
-        object_sub_type = [],
-      } = data;
+    const { id, data } = submission;
+    const {
+      number = "N/A",
+      desc = "N/A",
+      floor = 0,
+      block = 0,
+      capacity = 0,
+      object_sub_type = [],
+    } = data;
 
-      const prevent_write = data.prevent_write ? "1" : "0";
-      const prevent_exec = data.prevent_exec ? "1" : "0";
-      const permissions = `${prevent_write}${prevent_exec}`;
+    const prevent_write = data.prevent_write ? "1" : "0";
+    const prevent_exec = data.prevent_exec ? "1" : "0";
+    const permissions = `${prevent_write}${prevent_exec}`;
 
-      return [
+    return [
+      number,
+      desc,
+      block,
+      floor,
+      parseInt(capacity),
+      object_sub_type,
+      JSON.stringify({
+        id,
+        permissions,
+        object_sub_type: object_sub_type[0],
         number,
-        desc,
-        block,
-        floor,
-        parseInt(capacity),
-        object_sub_type,
-        JSON.stringify({
-          id,
-          permissions,
-          object_sub_type: object_sub_type[0],
-          number,
-        }),
-      ];
-    });
-
+      }),
+    ];
+  });
 }
 
 function typeColFormatter(current) {

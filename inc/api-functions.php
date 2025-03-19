@@ -735,8 +735,8 @@ function intranet_fafar_api_get_service_tickets_by_departament(
             ),
         ),
         'order_by' => array(
-            'orderby_column' => 'created_at',
-            'order'          => 'DESC',
+            'orderby_json' => 'number',
+            'order'        => 'DESC',
         ),
         'page'     => $offset,   
         'per_page' => $limit,

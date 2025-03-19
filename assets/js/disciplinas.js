@@ -40,7 +40,7 @@ const grid = new gridjs.Grid({
     "Vagas",
     { name: "Ações", formatter: actionColFormatter },
   ],
- search: {
+  search: {
     server: {
       url: (prev, keyword) => {
         const url = `${prev}?keyword=${keyword}`;
@@ -53,9 +53,9 @@ const grid = new gridjs.Grid({
     limit: 10, // Number of rows per page
     server: {
       url: (prev, page, limit) => {
-        let url = `${prev}?limit=${limit}&offset=${page * limit}`;
+        let url = `${prev}?limit=${limit}&offset=${page + 1}`;
         if (url.indexOf("keyword") > -1)
-          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+          url = `${prev}&limit=${limit}&offset=${page + 1}`;
         console.log(url);
         return url;
       },
@@ -80,31 +80,30 @@ function renderDataOnTable(data) {
 
   // Map through the results and transform each submission
   return data.results.map((submission) => {
-    const {id, data} = submission;  
+    const { id, data } = submission;
     const {
-        code = "N/A",
-        name_of_subject = "N/A",
-        group = "N/A",
-        course = [],
-        nature_of_subject = [],
-        number_vacancies_offered = 0,
-      } = data;
+      code = "N/A",
+      name_of_subject = "N/A",
+      group = "N/A",
+      course = [],
+      nature_of_subject = [],
+      number_vacancies_offered = 0,
+    } = data;
 
-      const prevent_write = data.prevent_write ? "1" : "0";
-      const prevent_exec = data.prevent_exec ? "1" : "0";
-      const permissions = `${prevent_write}${prevent_exec}`;
+    const prevent_write = data.prevent_write ? "1" : "0";
+    const prevent_exec = data.prevent_exec ? "1" : "0";
+    const permissions = `${prevent_write}${prevent_exec}`;
 
-      return [
-        code,
-        name_of_subject,
-        group,
-        course.join(", "),
-        nature_of_subject.join(","),
-        number_vacancies_offered,
-        JSON.stringify({ id, permissions }),
-      ];
-    });
-
+    return [
+      code,
+      name_of_subject,
+      group,
+      course.join(", "),
+      nature_of_subject.join(","),
+      number_vacancies_offered,
+      JSON.stringify({ id, permissions }),
+    ];
+  });
 }
 
 async function renderGridJS(data = []) {

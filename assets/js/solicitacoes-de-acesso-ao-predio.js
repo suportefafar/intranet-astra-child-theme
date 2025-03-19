@@ -121,9 +121,9 @@ const grid = new gridjs.Grid({
     limit: 10, // Number of rows per page
     server: {
       url: (prev, page, limit) => {
-        let url = `${prev}?limit=${limit}&offset=${page * limit}`;
+        let url = `${prev}?limit=${limit}&offset=${page + 1}`;
         if (url.indexOf("keyword") > -1)
-          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+          url = `${prev}&limit=${limit}&offset=${page + 1}`;
         console.log(url);
         return url;
       },

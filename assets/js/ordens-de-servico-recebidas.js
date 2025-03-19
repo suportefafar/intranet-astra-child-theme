@@ -191,7 +191,7 @@ const grid = new gridjs.Grid({
 
         const url = `${prev}${junction}keyword=${keyword}`;
 
-        // console.log({ url }); // Debugging: Log the search URL
+        console.log({ url });
 
         return url;
       },
@@ -203,12 +203,12 @@ const grid = new gridjs.Grid({
       url: (prev, page, limit) => {
         let junction = prev.indexOf("?") > 0 ? "&" : "?";
 
-        let url = `${prev}${junction}limit=${limit}&offset=${page * limit}`;
+        let url = `${prev}${junction}limit=${limit}&offset=${page + 1}`;
 
         if (url.indexOf("keyword") > -1)
-          url = `${prev}&limit=${limit}&offset=${page * limit}`;
+          url = `${prev}&limit=${limit}&offset=${page + 1}`;
 
-        // console.log({ url });
+        console.log({ url });
 
         return url;
       },
