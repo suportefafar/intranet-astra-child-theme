@@ -4,12 +4,12 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-
 add_action( 'after_switch_theme', 'intranet_fafar_initial_setup' );
 
 function intranet_fafar_initial_setup() {
+    
     if ( get_template() === 'astra' && get_stylesheet() === 'intranet-astra-child-theme' ) {
-        
+
         // Checa se o setup já foi feito
         if ( ! get_option( 'intranet_astra_child_theme_done_setup' ) ) {
 
@@ -24,7 +24,8 @@ function intranet_fafar_initial_setup() {
             // Grava as categorias de vínculo possíveis
             $bond_categories = [
                 'DOCENTE',
-                'TAE'
+                'TAE',
+                'TERCEIRIZADO',
             ];
             update_option( 'bond_categories', $bond_categories );
 
@@ -109,7 +110,16 @@ function intranet_fafar_initial_setup() {
                 'REMOVIDO'
             ];
             update_option( 'bond_status', $bond_status );
-            
+
+            /*
+             * Remove todos os 'roles' para caso a lista mude.
+             * Se não remover, ao adicionar, o novo 'role' irá para o 
+             * final da lista. 
+             * Além disso, exclui todos os 'roles' padrões do WP, que não 
+             * são necessários.
+             */
+            intranet_fafar_remove_all_roles_except_admin();
+             
             /* 
              * Grava os setores de trabalho possíveis, como 
              * 'roles' do WordPress
@@ -127,6 +137,24 @@ function intranet_fafar_initial_setup() {
              */
             update_option( 'intranet_astra_child_theme_done_setup', true );
         }
+    }
+}
+
+function intranet_fafar_remove_all_roles_except_admin() {
+    global $wp_roles;
+
+    // Get all roles
+    $roles = $wp_roles->roles;
+
+    // Loop through all roles
+    foreach ( $roles as $role => $details ) {
+        // Skip the 'administrator' role
+        if ( $role === 'administrator' ) {
+            continue;
+        }
+
+        // Remove the role
+        remove_role( $role );
     }
 }
 
@@ -292,6 +320,13 @@ function intranet_fafar_add_custom_roles() {
             ),
         ),
         array( 
+            'display_name' => 'PORTARIA', 
+            'slug'         => 'portaria', 
+            'capabilities' => array(
+                'read' => true,
+            ),
+        ),
+        array( 
             'display_name' => 'PPGCA', 
             'slug'         => 'ppgca', 
             'capabilities' => array(
@@ -408,6 +443,8 @@ function intranet_fafar_add_custom_roles() {
             $work_sector['capabilities'],
         );
 
+        error_log($work_sector['slug']);
+
     }
 
     return $work_sectors;
@@ -425,9 +462,9 @@ function intranet_fafar_add_custom_roles_menus( $sectors = null ) {
         $menu_exists = wp_get_nav_menu_object( $sector['display_name'] );
         
         if ( ! $menu_exists ) {
- 
+
             $menu_id = wp_create_nav_menu( $sector['display_name'] );
-            
+
         }
     }
 
@@ -438,12 +475,10 @@ function intranet_add_custom_capabilities() {
     $role = get_role('administrator');
 
     if ( $role ) {
-
         // Permite receber Ordens de Serviço
         $role->add_cap('manage_ticket');
         // Permite gerenciar formulários e submissões
         $role->add_cap('manage_form');
-
     }
     
 }

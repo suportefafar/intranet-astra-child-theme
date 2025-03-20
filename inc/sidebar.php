@@ -52,7 +52,7 @@ function intranet_fafar_sidebar_menu() {
         'alm',
         'tecnologia_da_informacao_e_suporte',
         'apoio_logistico_e_operacional',
-        'contributor',
+        'portaria',
         'colegiado_de_graduacao_biomedicina',
         'colegiado_de_graduacao_farmacia'
     );

@@ -10,7 +10,7 @@ add_action( 'edit_user_profile', 'intranet_fafar_extra_user_profile_fields' );
 add_action( 'personal_options_update', 'intranet_fafar_save_extra_user_profile_fields' );
 add_action( 'edit_user_profile_update', 'intranet_fafar_save_extra_user_profile_fields' );
 
-add_action('admin_enqueue_scripts', 'intranet_fafar_load_admin_scripts');
+add_action( 'admin_enqueue_scripts', 'intranet_fafar_load_admin_scripts' );
 
 
 function intranet_fafar_extra_user_profile_fields( $user ) { ?>
@@ -272,7 +272,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                             'options_values' => $roles_slugs,
                             'name'           => 'public_servant_role',
                             'id'             => 'public_servant_role',
-                            'selected'       => esc_attr( ! empty( $user_roles ) ? $user_roles[0] : '' ),
+                            'selected'       => esc_attr( ! empty( $user_roles[0] ) ? $user_roles[0] : '' ),
                             'placeholder'    => 'Selecione um setor',
                         ) 
                     );

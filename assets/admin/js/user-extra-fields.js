@@ -107,7 +107,7 @@ function changeFieldsByBondCategory(bond_category) {
     "professor_bond_class_levels_row",
   ];
 
-  const tae_fileds = ["tae_bond_positions_row", "tae_bond_classes_row"];
+  const tae_fields = ["tae_bond_positions_row", "tae_bond_classes_row"];
 
   // Trata o caso da categoria escolhida ser 'Docente'
   if (bond_category.toUpperCase() === "DOCENTE") {
@@ -128,16 +128,16 @@ function changeFieldsByBondCategory(bond_category) {
     });
 
     // Esconde os campos referentes à categoria 'TAE'
-    tae_fileds.forEach((f) => {
+    tae_fields.forEach((f) => {
       document.querySelector("#" + f).classList.add("display-none");
     });
     // Desabilita os campos referentes à categoria 'TAE'
-    tae_fileds.forEach((f) => {
+    tae_fields.forEach((f) => {
       document.querySelectorAll("#" + f + " input").forEach((in_f) => {
         in_f.disabled = true;
       });
     });
-    tae_fileds.forEach((f) => {
+    tae_fields.forEach((f) => {
       document.querySelectorAll("#" + f + " select").forEach((in_f) => {
         in_f.disabled = true;
       });
@@ -161,19 +161,53 @@ function changeFieldsByBondCategory(bond_category) {
       });
     });
 
-    // Mostra os campos referentes à categoria 'TAE'
-    tae_fileds.forEach((f) => {
+    // Esconde os campos referentes à categoria 'TAE'
+    tae_fields.forEach((f) => {
       document.querySelector("#" + f).classList.remove("display-none");
     });
-    // Habilita os campos referentes à categoria 'TAE'
-    tae_fileds.forEach((f) => {
+    // Desabilita os campos referentes à categoria 'TAE'
+    tae_fields.forEach((f) => {
       document.querySelectorAll("#" + f + " input").forEach((in_f) => {
         in_f.disabled = false;
       });
     });
-    tae_fileds.forEach((f) => {
+    tae_fields.forEach((f) => {
       document.querySelectorAll("#" + f + " select").forEach((in_f) => {
         in_f.disabled = false;
+      });
+    });
+  }
+  // Trata o caso da categoria escolhida ser 'TERCEIRIZADO'
+  else if (bond_category.toUpperCase() === "TERCEIRIZADO") {
+    // Esconde os campos referentes à categoria 'Docente'
+    professor_fields.forEach((f) => {
+      document.querySelector("#" + f).classList.add("display-none");
+    });
+    // Desabilita os campos referentes à categoria 'Docente'
+    professor_fields.forEach((f) => {
+      document.querySelectorAll("#" + f + " input").forEach((in_f) => {
+        in_f.disabled = true;
+      });
+    });
+    professor_fields.forEach((f) => {
+      document.querySelectorAll("#" + f + " select").forEach((in_f) => {
+        in_f.disabled = true;
+      });
+    });
+
+    // Esconde os campos referentes à categoria 'TAE'
+    tae_fields.forEach((f) => {
+      document.querySelector("#" + f).classList.add("display-none");
+    });
+    // Desabilita os campos referentes à categoria 'TAE'
+    tae_fields.forEach((f) => {
+      document.querySelectorAll("#" + f + " input").forEach((in_f) => {
+        in_f.disabled = true;
+      });
+    });
+    tae_fields.forEach((f) => {
+      document.querySelectorAll("#" + f + " select").forEach((in_f) => {
+        in_f.disabled = true;
       });
     });
   } else {
