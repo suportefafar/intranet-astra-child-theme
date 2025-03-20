@@ -9,134 +9,123 @@ add_action( 'after_switch_theme', 'intranet_fafar_initial_setup' );
 function intranet_fafar_initial_setup() {
     
     if ( get_template() === 'astra' && get_stylesheet() === 'intranet-astra-child-theme' ) {
+        // Grava os tipos de vínculo possíveis
+        $bond_types = [
+            'EFETIVO',
+            'SUBSTITUTO',
+            'VOLUNTÁRIO'
+        ];
+        update_option( 'bond_types', $bond_types );
 
-        // Checa se o setup já foi feito
-        if ( ! get_option( 'intranet_astra_child_theme_done_setup' ) ) {
+        // Grava as categorias de vínculo possíveis
+        $bond_categories = [
+            'DOCENTE',
+            'TAE',
+            'TERCEIRIZADO',
+        ];
+        update_option( 'bond_categories', $bond_categories );
 
-            // Grava os tipos de vínculo possíveis
-            $bond_types = [
-                'EFETIVO',
-                'SUBSTITUTO',
-                'VOLUNTÁRIO'
-            ];
-            update_option( 'bond_types', $bond_types );
+        // Grava os cargos de vínculo possíveis para docentes
+        $professor_bond_positions = [
+            'PROFESSOR DO MAGISTÉRIO SUPERIOR'
+        ];
+        update_option( 'professor_bond_positions', $professor_bond_positions );
 
-            // Grava as categorias de vínculo possíveis
-            $bond_categories = [
-                'DOCENTE',
-                'TAE',
-                'TERCEIRIZADO',
-            ];
-            update_option( 'bond_categories', $bond_categories );
+        // Grava os cargos de vínculo possíveis para TAEs
+        $tae_bond_positions = [
+            'ADMINISTRADOR',
+            'ALMOXARIFE',
+            'ANALISTA DE SISTEMA',
+            'ASSISTENTE ADMINISTRATIVO',
+            'ASSISTENTE DE LABORATÓRIO ',
+            'AUXILIAR DE ADMINISTRAÇÃO',
+            'AUXILIAR DE LABORATÓRIO ',
+            'BIBLIOTECÁRIO',
+            'BIÓLOGO',
+            'BOMBEIRO HIDRÁULICO',
+            'CONTADOR',
+            'FARMACÊUTICO',
+            'GERENTE DE QUALIDADE',
+            'MÉDICO VETERINÁRIO',
+            'MOTORISTA',
+            'REPROGRAFIA',
+            'SECRETÁRIO EXECUTIVO',
+            'SERVENTE DE OBRAS',
+            'TÉCNICO ADMINISTRATIVO',
+            'TÉCNICA ASSUNTOS EDUCACIONAIS',
+            'TÉCNICO QUIMICO',
+            'TÉCNICO DE ALIMENTOS E LATICÍNIOS',
+            'TÉCNICO DE FARMÁCIA',
+            'TÉCNICO DE LABORATÓRIO/ANÁLISES CLÍNICAS',
+            'TÉCNICO DE LABORATÓRIO/BIOLOGIA',
+            'TÉCNICO DE LABORATÓRIO/FÍSICA',
+            'TÉCNICO DE LABORATÓRIO/INDUSTRIAL',
+            'TÉCNICO DE LABORATÓRIO/QUÍMICA',
+            'TÉCNICO EM CONTABILIDADE',
+            'TÉCNICO EM TECNOLOGIA DA INFORMAÇÃO'
+        ];
+        update_option( 'tae_bond_positions', $tae_bond_positions );
 
-            // Grava os cargos de vínculo possíveis para docentes
-            $professor_bond_positions = [
-                'PROFESSOR DO MAGISTÉRIO SUPERIOR'
-            ];
-            update_option( 'professor_bond_positions', $professor_bond_positions );
+        // Grava as classes de vínculo possíveis para docentes
+        $professor_bond_classes = [
+            'AUXILIAR',
+            'ADJUNTO A',
+            'ADJUNTO',
+            'ASSOCIADO',
+            'TITULAR'
+        ];
+        update_option( 'professor_bond_classes', $professor_bond_classes );
 
-            // Grava os cargos de vínculo possíveis para TAEs
-            $tae_bond_positions = [
-                'ADMINISTRADOR',
-                'ALMOXARIFE',
-                'ANALISTA DE SISTEMA',
-                'ASSISTENTE ADMINISTRATIVO',
-                'ASSISTENTE DE LABORATÓRIO ',
-                'AUXILIAR DE ADMINISTRAÇÃO',
-                'AUXILIAR DE LABORATÓRIO ',
-                'BIBLIOTECÁRIO',
-                'BIÓLOGO',
-                'BOMBEIRO HIDRÁULICO',
-                'CONTADOR',
-                'FARMACÊUTICO',
-                'GERENTE DE QUALIDADE',
-                'MÉDICO VETERINÁRIO',
-                'MOTORISTA',
-                'REPROGRAFIA',
-                'SECRETÁRIO EXECUTIVO',
-                'SERVENTE DE OBRAS',
-                'TÉCNICO ADMINISTRATIVO',
-                'TÉCNICA ASSUNTOS EDUCACIONAIS',
-                'TÉCNICO QUIMICO',
-                'TÉCNICO DE ALIMENTOS E LATICÍNIOS',
-                'TÉCNICO DE FARMÁCIA',
-                'TÉCNICO DE LABORATÓRIO/ANÁLISES CLÍNICAS',
-                'TÉCNICO DE LABORATÓRIO/BIOLOGIA',
-                'TÉCNICO DE LABORATÓRIO/FÍSICA',
-                'TÉCNICO DE LABORATÓRIO/INDUSTRIAL',
-                'TÉCNICO DE LABORATÓRIO/QUÍMICA',
-                'TÉCNICO EM CONTABILIDADE',
-                'TÉCNICO EM TECNOLOGIA DA INFORMAÇÃO'
-            ];
-            update_option( 'tae_bond_positions', $tae_bond_positions );
+        /* 
+         * Grava os níveis de classe de vínculo possíveis para docentes
+         * Guardei com string para não dar algum problema idiota de tipo
+         */ 
+        $professor_bond_class_levels = [
+            '1',
+            '2',
+            '3',
+            '4'
+        ];
+        update_option( 'professor_bond_class_levels', $professor_bond_class_levels );
 
-            // Grava as classes de vínculo possíveis para docentes
-            $professor_bond_classes = [
-                'AUXILIAR',
-                'ADJUNTO A',
-                'ADJUNTO',
-                'ASSOCIADO',
-                'TITULAR'
-            ];
-            update_option( 'professor_bond_classes', $professor_bond_classes );
+        // Grava as classes de vínculo possíveis para TAEs
+        $tae_bond_classes = [
+            'A',
+            'B',
+            'C',
+            'D',
+            'E'
+        ];
+        update_option( 'tae_bond_classes', $tae_bond_classes );
 
-            /* 
-             * Grava os níveis de classe de vínculo possíveis para docentes
-             * Guardei com string para não dar algum problema idiota de tipo
-             */ 
-            $professor_bond_class_levels = [
-                '1',
-                '2',
-                '3',
-                '4'
-            ];
-            update_option( 'professor_bond_class_levels', $professor_bond_class_levels );
+        // Grava os status de vínculo possíveis
+        $bond_status = [
+            'ATIVO',
+            'APOSENTADO',
+            'DESLIGADO',
+            'REMOVIDO'
+        ];
+        update_option( 'bond_status', $bond_status );
 
-            // Grava as classes de vínculo possíveis para TAEs
-            $tae_bond_classes = [
-                'A',
-                'B',
-                'C',
-                'D',
-                'E'
-            ];
-            update_option( 'tae_bond_classes', $tae_bond_classes );
-
-            // Grava os status de vínculo possíveis
-            $bond_status = [
-                'ATIVO',
-                'APOSENTADO',
-                'DESLIGADO',
-                'REMOVIDO'
-            ];
-            update_option( 'bond_status', $bond_status );
-
-            /*
-             * Remove todos os 'roles' para caso a lista mude.
-             * Se não remover, ao adicionar, o novo 'role' irá para o 
-             * final da lista. 
-             * Além disso, exclui todos os 'roles' padrões do WP, que não 
-             * são necessários.
-             */
-            intranet_fafar_remove_all_roles_except_admin();
+        /*
+         * Remove todos os 'roles' para caso a lista mude.
+         * Se não remover, ao adicionar, o novo 'role' irá para o 
+         * final da lista. 
+         * Além disso, exclui todos os 'roles' padrões do WP, que não 
+         * são necessários.
+         */
+        intranet_fafar_remove_all_roles_except_admin();
              
-            /* 
-             * Grava os setores de trabalho possíveis, como 
-             * 'roles' do WordPress
-             */
-            $work_sectors = intranet_fafar_add_custom_roles();
+        /* 
+         * Grava os setores de trabalho possíveis, como 
+         * 'roles' do WordPress
+         */
+        $work_sectors = intranet_fafar_add_custom_roles();
 
-            /*
-             * Cria menus para cada setor 
-             */
-            intranet_fafar_add_custom_roles_menus( $work_sectors );
-            
-            /* 
-             * Cria uma option para não passar para garantir 
-             * que esse trecho só seja executado uma vez
-             */
-            update_option( 'intranet_astra_child_theme_done_setup', true );
-        }
+        /*
+         * Cria menus para cada setor 
+         */
+        intranet_fafar_add_custom_roles_menus( $work_sectors );
     }
 }
 
