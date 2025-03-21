@@ -59,7 +59,7 @@ form.addEventListener("submit", onSubmitHandler);
 async function onSubmitHandler(e) {
   e.preventDefault();
 
-  showAlert("Carregando....", "warning");
+  showAlert("Buscando salas....", "warning");
 
   const date = document.querySelector("#event_date").value;
   const start_time = document.querySelector("#start_time").value;
@@ -83,6 +83,7 @@ async function onSubmitHandler(e) {
   const raw_salas = response.data;
 
   const salas = [];
+
   for (const sala of raw_salas) {
     const { id, data } = sala;
     const { number, block, floor, capacity, desc } = data;
@@ -96,14 +97,16 @@ async function onSubmitHandler(e) {
 
   document.getElementById("table-wrapper").classList.remove("d-none");
 
-  hideAlert();
-
   gridjs
     .updateConfig({
       search: true,
       data: salas,
     })
     .forceRender();
+
+  hideAlert();
+
+  if (salas.length === 0) showAlert("Nenhuma sala encontrada.", "danger", true);
 }
 
 function descPlaceFormatter(current) {
