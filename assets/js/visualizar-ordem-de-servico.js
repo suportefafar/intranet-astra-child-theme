@@ -24,7 +24,7 @@ if (btn_delete) {
  * quando uma submissão é feita com sucesso
  */
 document.addEventListener("onInsertUpdateSuccess", () => {
-  window.location.reload();
+  goToReservationList();
 });
 
 /*
@@ -77,6 +77,8 @@ async function setAssignedToUserProp(user_assigned_to_id) {
     );
 
     showAlert("Atualizado!", "success", true, 3000);
+
+    goToReservationList();
   } catch (error) {
     let error_msg = "[1010]Unknow error on try catch";
 
@@ -115,7 +117,7 @@ async function deleteSubmission(id) {
 
     showAlert("Excluído com sucesso!", "success", true, 3000);
 
-    setTimeout(() => window.history.back(), 1000);
+    goToReservationList();
   } catch (error) {
     let error_msg = "[1010]Unknow error on try catch";
 
@@ -156,4 +158,9 @@ function copyToClipboard() {
       showAlert("Falha ao copiar!", "danger");
     }
   );
+}
+
+function goToReservationList() {
+  window.location =
+    "https://intranet.farmacia.ufmg.br/ordens-de-servico-recebidas/";
 }
