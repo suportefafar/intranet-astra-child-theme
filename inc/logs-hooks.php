@@ -4,39 +4,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-/*
- *
- * Logger do Grid.JS
- * Tem alguma coisa pra copiar?
- * 
-class Logger {
-    private format(message: string, type: string): string {
-      return `[Grid.js] [${type.toUpperCase()}]: ${message}`;
-    }
-  
-    error(message: string, throwException = false): void {
-      const msg = this.format(message, 'error');
-  
-      if (throwException) {
-        throw Error(msg);
-      } else {
-        console.error(msg);
-      }
-    }
-  
-    warn(message: string): void {
-      console.warn(this.format(message, 'warn'));
-    }
-  
-    info(message: string): void {
-      console.info(this.format(message, 'info'));
-    }
-  }
-  
-  export default new Logger();
-  *
- */
-
 add_action( 'wp_login', 'intranet_fafar_logs_login', 10, 2 );
 
 add_action( 'application_password_failed_authentication', 'intranet_fafar_logs_login_password_failed_auth', 10, 1 );

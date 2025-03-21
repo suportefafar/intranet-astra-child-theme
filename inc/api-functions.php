@@ -245,15 +245,21 @@ function intranet_fafar_api_update_submission_by_id_handler( $request ) {
     // Get data from the request
     $submission = $request->get_json_params();
 
-    $submission = intranet_fafar_api_update( $id, $submission );
+    $response = intranet_fafar_api_update( $id, $submission );
 
-    if ( isset( $submission['error_msg'] ) ) {
+    if ( isset( $response['error_msg'] ) ) {
 
-        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
+        return new WP_Error( 'rest_api_sad', esc_html__( $response['error_msg'], 'intranet-fafar-api' ), ( ( $response['http_status'] ) ?? 400 ) );
 
     }
 
-    return rest_ensure_response( $submission );
+    error_log(print_r($submission, true));
+
+    if ( $submission['object_name'] === 'auditorium_reservation' ) {
+        intranet_fafar_mail_on_change_auditorium_reservation_status( $submission );
+    }
+
+    return rest_ensure_response( $response );
 
 }
 
@@ -2630,30 +2636,30 @@ function intranet_fafar_api_set_reservation_technical_handler( $request ) {
 function intranet_fafar_api_set_reservation_technical( $reservation_id, $technical_id ) {
 
     if( ! $reservation_id ) {
-
         return array( 'error_msg' => 'ID de reserva de auditório não informado!', 'http_status' => 500 );
-
     }
 
     if( ! $technical_id ) {
-
         return array( 'error_msg' => 'ID do técnico não informado!', 'http_status' => 500 );
-
     }
 
     $reservation = intranet_fafar_api_get_submission_by_id( $reservation_id, false );
 
     if( ! $reservation ) {
-
         return array( 'error_msg' => 'Reserva de auditório não encontrado!', 'http_status' => 500 );
-
     }
 
     $reservation['data']['technical'] = $technical_id;
 
     $reservation['data']['status'] = 'Aguardando início';
 
-    return intranet_fafar_api_update( $reservation['id'], $reservation );
+    $submission = intranet_fafar_api_update( $reservation['id'], $reservation );
+
+    if ( isset( $submission['error_msg'] ) ) return $submission;
+
+    intranet_fafar_mail_on_set_auditorium_reservation_technical( $reservation );
+
+    return $submission;
 
 }
 
