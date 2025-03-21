@@ -1375,57 +1375,60 @@ function intranet_fafar_api_get_available_place_for_reservation_handler( $reques
 
 }
 
-function intranet_fafar_api_get_available_place_for_reservation($pre_reservation) {
-    // Validate required parameters using single isset check
-    if (!isset($pre_reservation['date'], $pre_reservation['start_time'], $pre_reservation['end_time'], $pre_reservation['capacity'])) {
-        return array('error_msg' => 'Faltando atributo(s): data, início, fim e/ou capacidade');
+function intranet_fafar_api_get_available_place_for_reservation( $pre_reservation ) {
+
+
+    if( 
+        ! isset( $pre_reservation['date'] ) || 
+        ! isset( $pre_reservation['start_time'] ) ||
+        ! isset( $pre_reservation['end_time'] ) ||
+        ! isset( $pre_reservation['capacity'] )
+      ) {
+
+        return array( 'error_msg' => 'Faltando atributo(s): data, início, fim e/ou capacidade' );
+
     }
 
-    // Use hash lookups for reservable types
-    $reservables = array_flip(["classroom", "living_room", "computer_lab", "multimedia_room"]);
+    $reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
 
-    // Get places ordered by capacity (descending)
-    $places = intranet_fafar_api_get_submissions_by_object_name('place', ['orderby_json' => 'capacity', 'order' => 'DESC']);
+    // Ordenar pela quantidade vagas
+    $places = intranet_fafar_api_get_submissions_by_object_name( 'place', ['orderby_json' => 'capacity', 'order' => 'DESC'] );
 
-    // Pre-filter valid candidates to minimize API calls
-    $required_capacity = $pre_reservation['capacity'];
-    $filtered_places = array_filter($places, function($place) use ($reservables, $required_capacity) {
-        // Check if reservable type exists and is valid
-        if (!isset($place['data']['object_sub_type'][0]) || !isset($reservables[$place['data']['object_sub_type'][0]])) {
-            return false;
-        }
+    $availables = array();
 
-        // Check capacity requirement
-        return ($place['data']['capacity'] >= $required_capacity);
-    });
+    foreach ( $places as $place ) {
 
-    // Prepare common reservation data once
-    $common_data = array(
-        'date' => $pre_reservation['date'],
-        'start_time' => $pre_reservation['start_time'],
-        'end_time' => $pre_reservation['end_time'],
-        'frequency' => ['once'],
-    );
+        if (
+            isset( $place['data']['object_sub_type'][0] ) && 
+            ! in_array( $place['data']['object_sub_type'][0], $reservables )
+        ) continue;
 
-    $availables = [];
-    foreach ($filtered_places as $place) {
-        // Create reservation payload
-        $payload = $common_data;
-        $payload['place'] = [$place['id']];
+        if ( $place['data']['capacity'] < $pre_reservation['capacity'] ) continue;
+
         
-        // Attempt to create reservation
-        $response = intranet_fafar_api_create_or_update_reservation(array(
-            'object_name' => 'reservation',
-            'data' => json_encode($payload),
-        ));
+        $response = intranet_fafar_api_create_or_update_reservation(
+            array(
+                'object_name' => 'reservation',
+                'data' => json_encode(
+                    array(
+                        'date'       => $pre_reservation['date'],
+                        'start_time' => $pre_reservation['start_time'],
+                        'end_time'   => $pre_reservation['end_time'],
+                        'frequency'  => [ 'once' ],
+                        'place'      => [ $place['id'] ],
+                    )
+                ),
+            )
+        );
 
-        // Collect available places without errors
-        if (!isset($response['error_msg'])) {
-            $availables[] = $place;
-        }
+        if( isset( $response['error_msg'] ) ) continue;
+        
+        $availables[] = $place;
+
     }
 
     return $availables;
+
 }
 
 /**
@@ -1522,6 +1525,10 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
     
     $new_form_data         = $form_data;
     $new_form_data['data'] = json_decode( $new_form_data['data'], true );
+
+    error_log('----------------------------------------------------');
+    error_log(print_r( $new_form_data, true ));
+    error_log('----------------------------------------------------');
 
     // Verificar se dados necessários foram informados
     if ( empty( $new_form_data['data']['date'] )  ||
@@ -1775,6 +1782,8 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 
     return $form_data;
 }
+
+
 
 /**
  * 

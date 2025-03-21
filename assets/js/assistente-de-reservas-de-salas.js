@@ -59,6 +59,8 @@ form.addEventListener("submit", onSubmitHandler);
 async function onSubmitHandler(e) {
   e.preventDefault();
 
+  showAlert("Carregando....", "warning");
+
   const date = document.querySelector("#event_date").value;
   const start_time = document.querySelector("#start_time").value;
   const end_time = document.querySelector("#end_time").value;
@@ -94,6 +96,8 @@ async function onSubmitHandler(e) {
 
   document.getElementById("table-wrapper").classList.remove("d-none");
 
+  hideAlert();
+
   gridjs
     .updateConfig({
       search: true,
@@ -113,9 +117,16 @@ function descPlaceFormatter(current) {
 function formatterHandler(current) {
   const { id, number } = JSON.parse(current);
 
+  const date = document.querySelector("#event_date").value;
+  const start_time = document.querySelector("#start_time").value;
+  const end_time = document.querySelector("#end_time").value;
+  const capacity = document.querySelector("#capacity").value;
+
   const html_content = `
   <div class="d-flex gap-2">
-    <a class="btn btn-outline-primary" href="/reservas/?place_id=${id}" title="Reserva na ${number}">
+    <a class="btn btn-outline-primary" href="/assistente-de-reservas-de-salas/?date=${date}&start_time=${start_time}&end_time=${end_time}&capacity=${capacity}&place=${encodeURIComponent(
+    JSON.stringify([id])
+  )}" title="Reserva na ${number}">
       <i class="bi bi-calendar-week"></i>
     </a>
   </div>  

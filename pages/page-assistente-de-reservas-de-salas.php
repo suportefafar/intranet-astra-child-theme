@@ -20,13 +20,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 wp_enqueue_script_module( 'intranet-fafar-visualizar-reserva-script', get_stylesheet_directory_uri() . '/assets/js/visualizar-reserva.js', array( 'jquery' ), false, false );
 
 function fafar_intranet_format_date_local( $dt ) {
-
     return DateTime::createFromFormat( 'Y-m-d', $dt )->format( 'd/m/Y' );
-
 }
 
 function fafar_intranet_get_frequency_display_text( $f ) {
-
     switch( $f ){
 
         case 'once':
@@ -41,11 +38,9 @@ function fafar_intranet_get_frequency_display_text( $f ) {
             '--';
             
     }
-
 }
 
 function fafar_intranet_get_weekdays( $wds ) {
-
     $weekdays = array( 'Domingo', 
                        'Segunda', 
                        'Terça', 
@@ -59,7 +54,6 @@ function fafar_intranet_get_weekdays( $wds ) {
     }, $wds );
 
     return implode( ', ', $weekdays_arr );
-
 }
 
 
@@ -85,6 +79,19 @@ get_header(); ?>
     * Início
 --> 
 
+        <?php if (
+            isset( $_GET['date'] ) && 
+            isset( $_GET['start_time'] ) && 
+            isset( $_GET['end_time'] ) && 
+            isset( $_GET['capacity'] ) &&
+            isset( $_GET['place'] ) 
+        ):?>
+        <h5>2/2 - Informações adicionais</h5>
+        <br />
+            <?= do_shortcode( '[contact-form-7 id="c567fc2" title="Adicionar Reserva Pelo Assistente"]' ) ?>
+        <?php else: ?>
+        <h5>1/2 - Informações básicas</h5>
+        <br />
         <form id="form-buscar-salas" class="mb-5">
             <div class="form-group mb-3">
                 <label for="event_date">* Dia do Evento </label>
@@ -132,6 +139,8 @@ get_header(); ?>
         <!-- TABLES -->
 
         <div id="table-wrapper" class="my-5 d-none"></div>
+
+        <?php endif; ?>
         
 <!--
     * Conteúdo customizado da página
