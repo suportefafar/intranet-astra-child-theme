@@ -20,21 +20,6 @@ if (btn_delete) {
 }
 
 /*
- * Adiciona um evento de clique ao botão com ID 'btn_insert_update'
- */
-document
-  .querySelector("#btn_insert_update")
-  .addEventListener("click", (event) => {
-    /*
-     * Esse elemento é criado no formulário do CF7,
-     * na página de administração
-     */
-    document.querySelector("#service_ticket_to_update").value =
-      event.target.dataset.id;
-    showInsertServiceTicketUpdateModal();
-  });
-
-/*
  * Adiciona um evento criado no CF7,
  * quando uma submissão é feita com sucesso
  */
@@ -43,13 +28,22 @@ document.addEventListener("onInsertUpdateSuccess", () => {
 });
 
 /*
- *
+ * Listener para o select de técnico atribuido
  */
-document
-  .querySelector("#select_assigned_to")
-  .addEventListener("change", (event) => {
+const select_assigned_to = document.querySelector("#select_assigned_to");
+if (select_assigned_to) {
+  select_assigned_to.addEventListener("change", (event) => {
     setAssignedToUserProp(event.target.value);
   });
+}
+
+/*
+ * Listener para o botão copiar dados da OS
+ */
+const btn_copy_data = document.querySelector("#btn_copy_data");
+if (btn_copy_data) {
+  btn_copy_data.addEventListener("click", copyToClipboard);
+}
 
 async function setAssignedToUserProp(user_assigned_to_id) {
   showAlert("Por favor, aguarde....", "warning");
@@ -136,23 +130,6 @@ async function deleteSubmission(id) {
   }
 }
 
-/*
- * Controle dos Modal's de Empréstimo e Devolução
- */
-function showInsertServiceTicketUpdateModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarInsertServiceTicketUpdate")
-  );
-  modal.show();
-}
-
-function hideInsertServiceTicketUpdateModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarInsertServiceTicketUpdate")
-  );
-  modal.hide();
-}
-
 function getURLParam(param) {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
@@ -163,38 +140,20 @@ function getURLParam(param) {
  * Copiar dados da ordem de serviço para o DEMAI
  */
 function copyToClipboard() {
-  var text = "";
-
   if (!navigator.clipboard) {
-    alert(
-      "ERRO: Erro no recurso 'navigator.clipboard'. Por favor, informe ao setor de Informática."
-    );
+    showAlert("Seu navegador não tem suporte à essa funcionalidade.");
     return;
   }
 
-  // $(".title-info")
-  //   .toArray()
-  //   .forEach((element, index) => {
-  //     //Retira a informação de "Status" e "Técnico"
-  //     if (index < $(".title-info").toArray().length - 2) {
-  //       text +=
-  //         $(element).text().toUpperCase().trim() +
-  //         ": " +
-  //         $($(".info").toArray()[index])
-  //           .text()
-  //           .trim()
-  //           .replace(/(\r\n|\n|\r)/gm, "") +
-  //         ";          ";
-  //     }
-  //   });
+  const text = "OS:" + OS_NUMBER + "; Relato:" + USER_REPORT;
 
-  // navigator.clipboard.writeText(text.trim()).then(
-  //   () => {
-  //     showAlert("Copiado!", "success", true, 3000);
-  //   },
-  //   function (err) {
-  //     console.log(err);
-  //     showAlert("Falha ao copiar!", "danger");
-  //   }
-  // );
+  navigator.clipboard.writeText(text.trim()).then(
+    () => {
+      showAlert("Copiado!", "success", true, 3000);
+    },
+    (err) => {
+      console.log(err);
+      showAlert("Falha ao copiar!", "danger");
+    }
+  );
 }

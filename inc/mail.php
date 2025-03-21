@@ -180,7 +180,11 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
       $headers[] = 'Content-Type: text/html; charset=UTF-8';
     }
 
-    $result = wp_mail( $to, $subject, $html_mail_body_template, $headers, $attachments );
+    if ( defined( 'WP_DEV_ENV' ) && WP_DEV_ENV === true ) {
+      $result = true;
+    } else {
+      $result = wp_mail( $to, $subject, $html_mail_body_template, $headers, $attachments );
+    }
 
     if ( ! $result ) {
       intranet_fafar_logs_register_log(

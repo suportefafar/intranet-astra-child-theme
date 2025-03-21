@@ -8,7 +8,6 @@ add_shortcode( 'intranet_fafar_sidebar_profile', 'intranet_fafar_sidebar_profile
 
 add_shortcode( 'intranet_fafar_sidebar_menu', 'intranet_fafar_sidebar_menu' );
 
-
 function intranet_fafar_sidebar_profile() {
 
     $user       = wp_get_current_user();
@@ -81,4 +80,13 @@ function intranet_fafar_sidebar_menu() {
             'walker' => new bootstrap_5_wp_nav_menu_walker()
         ));
     echo '</div>';
+
+    if ( defined( 'WP_DEV_ENV' ) && WP_DEV_ENV === true ) {
+        echo '
+            <div class="badge text-bg-primary">
+                Development Environment
+            </div>
+        ';
+    }
+    
 }

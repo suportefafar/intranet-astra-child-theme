@@ -17,8 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Importanto script JS customizado
  * wp_enqueue_script_module( 'intranet-fafar-visualizador-equipamento-script', get_stylesheet_directory_uri() . '/assets/js/visualizador-equipamento.js', array( 'jquery' ), false, false );
  */
-wp_enqueue_script_module( 'intranet-fafar-visualizar-ordem-de-servico-script', get_stylesheet_directory_uri() . '/assets/js/visualizar-ordem-de-servico.js', array( 'jquery' ), false, false );
-
+wp_enqueue_script( 'intranet-fafar-visualizar-ordem-de-servico-script', get_stylesheet_directory_uri() . '/assets/js/visualizar-ordem-de-servico.js', array( 'jquery' ), false, true );
 
 if( ! isset( $_GET["id"] ) ) {
     echo '<pre> Nenhum ID informado. </pre>';
@@ -89,6 +88,14 @@ $service_evaluations = intranet_fafar_api_get_service_ticket_evaluation_by_id( $
 if ( isset( $updates['error_msg'] ) )
     $updates = array();
 
+
+// Tratar dados para o botão de copiar
+$OS_NUMBER   = ( ! empty( $service_ticket['data']['number'] ) ? $service_ticket['data']['number'] : '' );
+$USER_REPORT = ( ! empty( $service_ticket['data']['user_report'] ) ? $service_ticket['data']['user_report'] : '' );
+
+wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico-script', 'OS_NUMBER', $OS_NUMBER );
+wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico-script', 'USER_REPORT', $USER_REPORT );
+
 get_header(); ?>
 
 <?php if ( astra_page_layout() == 'left-sidebar' ) : ?>
@@ -143,22 +150,22 @@ get_header(); ?>
             <?php  
             if ( ! $prevent_insert_update ) :
             ?>
-                <button 
+                <!-- <button 
                     class="btn btn-info"
                     id="btn_insert_update" 
                     data-id="<?= $ID; ?>" 
                     title="Inserir Atualização" >
                         <i class="bi bi-node-plus"></i>
                         Atualizar
-                </button>
+                </button> -->
 
-                <!-- <button 
+                <button 
                     class="btn btn-secondary"
                     id="btn_copy_data" 
                     title="Copiar dados da OS" >
                         <i class="bi bi-clipboard"></i>
                         Copiar
-                </button> -->
+                </button>
             <?php
             endif;
             ?>
@@ -204,14 +211,14 @@ get_header(); ?>
                                 <td>Número</td>
                                 <td class="fw-medium">
                                     <?php 
-                                        echo ( 
-                                            isset( $service_ticket['data']['number'] ) ? 
-                                                '<mark>' . 
-                                                    $service_ticket['data']['number'] .
-                                                '</mark>' 
-                                                : 
-                                                '' 
-                                            ) 
+                                        echo (
+                                            $OS_NUMBER ? 
+                                            '<mark>' . 
+                                            $OS_NUMBER .
+                                            '</mark>' 
+                                            : 
+                                            '' 
+                                        )
                                     ?>
                                 </td>
                             <tr>
@@ -281,11 +288,12 @@ get_header(); ?>
                                 <td>Relato</td>
                                 <td class="fw-medium">
                                     <?php 
-                                        echo ( 
-                                            isset( $service_ticket['data']['user_report'] ) ? 
-                                                $service_ticket['data']['user_report'] : 
-                                                '' 
-                                            ) 
+                                        echo (
+                                            $USER_REPORT ? 
+                                            $USER_REPORT
+                                            : 
+                                            '' 
+                                        )
                                     ?>
                                 </td>
                             <tr>
@@ -347,49 +355,67 @@ get_header(); ?>
                     </table>
                 </div>
             </div>
+
             <div class="row">
                 <div class="col-12">
-                    <div class="px-2 py-2 border-bottom border-dark">
+                    <div class="d-flex justify-content-between px-2 py-2 border-bottom border-dark mb-2">
+                        <h5 class="fw-bold p-0 m-0"> Inserir Atualização </h5>
+                    </div>
+                    <div class="px-2 py-3">
+                        <?= do_shortcode( '[contact-form-7 id="0a46270" title="Inserir Atualização em Ordem de Serviço"]' ) ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between px-2 py-2 border-bottom border-dark mb-2">
                         <h5 class="fw-bold p-0 m-0"> Histórico de Atualizações </h5>
                     </div>
-                    <table class="table border border-end-0 border-start-0">
-                        <tbody>
-                        <?php
-                            foreach ( $updates as $index => $update ):
-                        ?>
+                    <div class="px-2 py-3">
+                        <?php if ( count( $updates ) > 0 ): ?>
+                        <table class="table border border-end-0 border-start-0">
+                            <tbody>
+                            <?php
+                                foreach ( $updates as $index => $update ):
+                            ?>
 
-                            <tr>
-                                <td class="fw-medium text-decoration-underline">Inserido em</td>
-                                <td class="fw-medium text-decoration-underline"><?php echo fafar_intranet_format_date_local( $update['created_at'] ); ?></td>
-                            <tr>
-                            <tr>
-                                <td>Prestador</td>
-                                <td class="fw-medium"><?php echo $update['owner']['data']->display_name; ?></td>
-                            <tr>
-                            <tr>
-                                <td>Relatório</td>
-                                <td class="fw-medium"><?php echo $update['data']['service_report']; ?></td>
-                            <tr>
-                            <tr>
-                                <td>Status</td>
-                                <td class="fw-medium"><?php echo fafar_intranet_get_status_badge( $update['data']['status'][0] ); ?></td>
-                            <tr>
-                            
-                            <?php if( count( $updates ) > ( $index + 1 ) ): ?>
-
-                            <tr>
-                                <td class="bg-light"></td>
-                                <td class="bg-light"></td>
-                            <tr>
-
-                            <?php endif ?>
-
+                                <tr>
+                                    <td class="fw-medium text-decoration-underline">Inserido em</td>
+                                    <td class="fw-medium text-decoration-underline"><?php echo fafar_intranet_format_date_local( $update['created_at'] ); ?></td>
+                                <tr>
+                                <tr>
+                                    <td>Prestador</td>
+                                    <td class="fw-medium"><?php echo $update['owner']['data']->display_name; ?></td>
+                                <tr>
+                                <tr>
+                                    <td>Relatório</td>
+                                    <td class="fw-medium"><?php echo $update['data']['service_report']; ?></td>
+                                <tr>
+                                <tr>
+                                    <td>Status</td>
+                                    <td class="fw-medium"><?php echo fafar_intranet_get_status_badge( $update['data']['status'][0] ); ?></td>
+                                <tr>
                                 
-                        <?php
-                            endforeach;
-                        ?>
-                        </tbody>
-                    </table>
+                                <?php if( count( $updates ) > ( $index + 1 ) ): ?>
+
+                                <tr>
+                                    <td class="bg-light"></td>
+                                    <td class="bg-light"></td>
+                                <tr>
+
+                                <?php endif ?>
+
+                                    
+                            <?php
+                                endforeach;
+                            ?>
+                            </tbody>
+                        </table>
+                        <?php else: ?>
+                            <p class="text-muted">Nenhuma atualização inserida.</p>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 
