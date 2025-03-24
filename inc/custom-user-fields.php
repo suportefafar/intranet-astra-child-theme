@@ -266,6 +266,10 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
 
                     $user_roles = get_userdata( $user->ID )->roles;
 
+            
+            
+            
+                    
                     echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
                             'options'        => $roles_display_names,
@@ -320,7 +324,7 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
             <td>
                 <?php
                     $rooms = intranet_fafar_api_get_not_reservable_places();
-                    error_log(print_r($rooms, true));
+            
                     $rooms_numbers = array_map( function ( $room ) {
                         return $room['data']['number'];
                     }, $rooms );
@@ -376,13 +380,24 @@ function intranet_fafar_save_extra_user_profile_fields( $user_id ) {
     update_user_meta( $user_id, 'public_servant_bond_class', sanitize_text_field( $_POST['public_servant_bond_class'] ) );
     update_user_meta( $user_id, 'professor_bond_class_levels', sanitize_text_field( $_POST['professor_bond_class_levels'] ) );
     update_user_meta( $user_id, 'public_servant_bond_class', sanitize_text_field( $_POST['public_servant_bond_class'] ) );
-    
+
+
     if ( isset( $_POST['public_servant_role'] ) ) {
         $user = new WP_User( $user_id );
-    
+        
+        // 1. Remove ALL roles (fixes indexing issues)
+        foreach ( $user->roles as $role ) {
+            $user->remove_role( $role );
+        }
+        
+        // 2. Remove ALL direct capabilities (if any)
+        foreach ($user->allcaps as $cap => $has_cap ) {
+            $user->remove_cap( $cap );
+        }
+        
+        // 3. Set the new role (clean slate)
         $new_role = sanitize_text_field( $_POST['public_servant_role'] );
-    
-        $user->set_role( $new_role );
+        $user->set_role( $new_role ); // Overwrites any remaining caps
     }
 
     update_user_meta( $user_id, 'bond_status', sanitize_text_field( $_POST['bond_status'] ) );
