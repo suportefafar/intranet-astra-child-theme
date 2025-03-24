@@ -528,37 +528,106 @@ function get_incremental_service_ticker_number() {
 
 }
 
+function intranet_fafar_api_create_rapid_service_ticket( $form_data ) {
+   
+    // Verificações iniciais
+    if ( ! isset( $form_data['object_name'] ) ) return $form_data;
+
+    if ( $form_data['object_name'] !== 'rapid_service_ticket' ) return $form_data;
+
+    $form_data['data'] = json_decode( $form_data['data'], true );
+
+    if (
+        empty( $form_data['data']['assigned_to'] ) || 
+        empty( $form_data['data']['departament_assigned_to'] ) || 
+        empty( $form_data['data']['status'] ) || 
+        empty( $form_data['data']['type'][0] ) || 
+        empty( $form_data['data']['sub_type'][0] ) || 
+        empty( $form_data['data']['user_report'] ) || 
+        empty( $form_data['data']['service_report'] ) 
+    ) return array ( 'error_msg' => 'Faltando campos necessários: atribuido, departamento atribuido, status, tipo, sub-tipo, problema e/ ou solução' );
+
+    // Preparando o objeto de ordem de serviço
+    $new_service_ticket['object_name'] = 'service_ticket';
+    $new_service_ticket['owner']       = ! empty( $form_data['owner'] ) ? $form_data['owner'] : '';
+    $new_service_ticket['group_owner'] = ! empty( $form_data['group_owner'] ) ? $form_data['group_owner'] : '';
+    $new_service_ticket['permissions'] = ! empty( $form_data['permissions'] ) ? $form_data['permissions'] : '';
+
+    $new_service_ticket['data']['assigned_to']                = $form_data['data']['assigned_to'];
+    $new_service_ticket['data']['departament_assigned_to'][0] = $form_data['data']['departament_assigned_to'];
+    $new_service_ticket['data']['status']                     = $form_data['data']['status'];
+    $new_service_ticket['data']['type']                       = $form_data['data']['type'][0];
+    $new_service_ticket['data']['sub_type']                   = $form_data['data']['sub_type'][0];
+    $new_service_ticket['data']['user_report']                = $form_data['data']['user_report'];
+    $new_service_ticket['data']['place']                      = $form_data['data']['place'];
+
+    $new_service_ticket['data'] = json_encode( $new_service_ticket['data'] );
+
+    $new_service_ticket = intranet_fafar_api_create_service_ticket( $new_service_ticket );
+    
+    $new_submission = intranet_fafar_api_create( $new_service_ticket );
+
+    if ( isset( $new_submission['error_msg'] ) ) return $new_submission;
+
+    // Preparando o objeto de atualização da ordem de serviço
+    $new_service_ticket_update['object_name'] = 'service_ticket_update';
+    $new_service_ticket_update['owner']       = ! empty( $form_data['owner'] ) ? $form_data['owner'] : '';
+    $new_service_ticket_update['group_owner'] = ! empty( $form_data['group_owner'] ) ? $form_data['group_owner'] : '';
+    $new_service_ticket_update['permissions'] = ! empty( $form_data['permissions'] ) ? $form_data['permissions'] : '';
+    
+    $new_service_ticket_update['data']['service_ticket'] = $new_submission['id'];
+    $new_service_ticket_update['data']['status'][0]      = $form_data['data']['status'];
+    $new_service_ticket_update['data']['service_report'] = $form_data['data']['service_report'];
+    
+    $new_service_ticket_update['data'] = json_encode( $new_service_ticket_update['data'] );
+
+    /*
+     * Não é necessário passar para 'intranet_fafar_api_insert_update_on_service_ticket'
+     * porque ela só altera o status da OS, e isso já foi feito na criação dela, acima.
+     */  
+    $new_submission = intranet_fafar_api_create( $new_service_ticket_update );
+
+    if ( isset( $new_submission['error_msg'] ) ) return $new_submission;
+
+    /*
+     * O retorno não importa porque o formulário já conta com um campo
+     * definindo que será feita a submissão pelo FAFARCF7CRUD: 
+     * [hidden far_prevent_submit "1"]
+     */ 
+    return true;
+
+}
+
 function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
    
-        // Verificações iniciais
-        if ( ! isset( $form_data['object_name'] ) ) return $form_data;
+    // Verificações iniciais
+    if ( ! isset( $form_data['object_name'] ) ) return $form_data;
 
-        if ( $form_data['object_name'] !== 'service_ticket_update' ) return $form_data;
+    if ( $form_data['object_name'] !== 'service_ticket_update' ) return $form_data;
    
-        $form_data['data'] = json_decode( $form_data['data'], true );
+    $form_data['data'] = json_decode( $form_data['data'], true );
        
-        // Atualizando a propriedade 'status' da ordem de serviço
-        if ( ! isset( $form_data['data']['status'][0] ) )
-            return array( 'error_msg' => 'Status não informado!' );
+    // Atualizando a propriedade 'status' da ordem de serviço
+    if ( ! isset( $form_data['data']['status'][0] ) )
+        return array( 'error_msg' => 'Status não informado!' );
    
-        $service_ticket = intranet_fafar_api_get_submission_by_id( $form_data['data']['service_ticket'], false );
+    $service_ticket = intranet_fafar_api_get_submission_by_id( $form_data['data']['service_ticket'], false );
    
-        if ( empty( $service_ticket ) )
-            return $service_ticket;
+    if ( empty( $service_ticket ) )
+        return $service_ticket;
    
-        $service_ticket['data']['status'] = $form_data['data']['status'][0];
+    $service_ticket['data']['status'] = $form_data['data']['status'][0];
    
-        $service_ticket = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
+    $service_ticket = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
 
-        if ( isset( $service_ticket['error_msg'] ) )
-            return $service_ticket;
+    if ( isset( $service_ticket['error_msg'] ) )
+        return $service_ticket;
 
-        // Se tudo deu certo, então apenas retorna o objeto para ser inserido
-        $form_data['data'] = json_encode( $form_data['data'] );
+    // Se tudo deu certo, então apenas retorna o objeto para ser inserido
+    $form_data['data'] = json_encode( $form_data['data'] );
 
-        // Retorna uma obj genérico para concluir a submissão com sucesso
-        return $form_data;
-    
+    // Retorna uma obj genérico para concluir a submissão com sucesso
+    return $form_data;   
 }
 
 function intranet_fafar_api_get_loans_by_equipament( $id ) {
@@ -650,7 +719,7 @@ function intranet_fafar_api_get_service_tickets_by_user() {
             $service_tickets[$i]['owner'] = intranet_fafar_api_get_user_by_id( $service_tickets[$i]['owner'] );
 
         if ( isset( $service_tickets[$i]['data']['place'][0] ) )
-            $service_tickets[$i]['data']['place'] = intranet_fafar_api_get_submission_by_id( $service_tickets[$i]['data']['place'][0] );
+            $service_tickets[$i]['data']['place'] = intranet_fafar_api_create_service_ticket( $service_tickets[$i]['data']['place'][0] );
 
         if ( isset( $service_tickets[$i]['data']['departament_assigned_to'][0] ) ) {
 

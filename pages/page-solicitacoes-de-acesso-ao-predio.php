@@ -19,6 +19,24 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 wp_enqueue_script_module( 'intranet-fafar-solicitacoes-de-acesso-ao-predio-script', get_stylesheet_directory_uri() . '/assets/js/solicitacoes-de-acesso-ao-predio.js', array( 'jquery' ), false, false );
 
+$tabs_metadata = array( 
+    array(
+        'text' => 'Todas',
+        'url' => '/service_tickets/by_departament?assigned_to=-1&status=Nova,Aguardando,Em andamento'
+    ),
+    array(
+        'text' => 'Entrada',
+        'url' => '/service_tickets/by_departament?status=Nova'
+    ),
+    array(
+        'text' => 'Pendente',
+        'url' => '/service_tickets/by_departament?status=Aguardando'
+    ),
+    array(
+        'text' => 'Saída',
+        'url' => '/service_tickets/by_departament?status=Em andamento'
+    ),
+);
 
 get_header(); ?>
 
@@ -41,7 +59,34 @@ get_header(); ?>
     * Conteúdo customizado da página
     * Início
 --> 
+        <!-- TABS -->
 
+        <ul id="ul_os_status_tabs" class="nav nav-tabs ms-0">
+
+        <?php
+
+            $first = true;
+
+            foreach ( $tabs_metadata as $tab_metadata ) {
+            
+                echo   '<li class="nav-item">
+                            <a class="text-decoration-none nav-link ' . ( $first ? ' active' : '' ) . '"' . 
+                            ( $first ? ' aria-current="page"' : '' ) . ' 
+                            href="#"  
+                            data-url="' . $tab_metadata["url"] . '">' . 
+                                $tab_metadata["text"] .
+                            ' </a>
+                        </li>';
+            
+                $first = false;
+                
+            }
+
+        ?>
+
+        </ul>
+
+        <br />
         <!-- TABLES -->
 
         <div id="table-wrapper"></div>

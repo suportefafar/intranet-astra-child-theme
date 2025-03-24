@@ -4,16 +4,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-add_shortcode( 'intranet_fafar_logs', 'intranet_fafar_logs' );
-
-add_shortcode( 'intranet_fafar_importar_json', 'intranet_fafar_importar_json' );
-
-add_shortcode( 'intranet_fafar_importar_reservas', 'intranet_fafar_importar_reservas' );
-
-add_shortcode( 'intranet_fafar_reservas_por_disciplina', 'intranet_fafar_reservas_por_disciplina' );
-
-add_shortcode( 'intranet_fafar_importar_disciplinas', 'intranet_fafar_importar_disciplinas' );
-
 /* 
  * 
  * Shortcodes that returns html for forms, used on 
@@ -33,302 +23,7 @@ add_shortcode( 'intranet_fafar_generate_service_ticket_code', 'intranet_fafar_ge
 
 add_shortcode( 'intranet_fafar_get_not_classrooms_as_select_options', 'intranet_fafar_get_not_classrooms_as_select_options' );
 
-
-function intranet_fafar_logs() {
-
-    echo '
-
-        <!-- CHARTS -->
-
-        <!--<div class="d-flex justify-content-around mb-4">
-            <div class="card" style="width: 18rem;">intranet_fafar_importar_json
-                <canvas id="myChart1"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Mês</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart2"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Ano</h5>
-                </div>
-            </div>
-
-            <div class="card" style="width: 18rem;">
-                <canvas id="myChart3"></canvas>
-                <div class="card-body">
-                    <h5 class="card-title">Chart vs Setor</h5>
-                </div>
-            </div>
-        </div>-->
-
-        <!-- TABS
-
-        <ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#">Todos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Adicionado</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Editado</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link">Erro</a>
-            </li>
-        </ul>
-
-        -->
-
-        <!-- TABLES -->
-
-        <div id="table-wrapper"></div>
-
-    ';
-
-}
-
-function intranet_fafar_importar_json() {
-
-    global $wpdb;
-
-    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
-
-
-    if( isset( $_POST["json_string"] ) ) {
-
-        $json_string = $_POST["json_string"];
-
-        print_r("Processando.....");
-        print_r("<br/>");
-        //print_r($json_string);
-
-        //$json_d = json_decode( preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $json_string), true );
-        $json_d = json_decode(stripslashes($json_string));
-
-        //print_r($json_d);
-
-        print_r("<br/>");
-        print_r("JSON LAST ERROR: ");
-        switch (json_last_error()) {
-            case JSON_ERROR_NONE:
-                echo ' - No errors';
-            break;
-            case JSON_ERROR_DEPTH:
-                echo ' - Maximum stack depth exceeded';
-            break;
-            case JSON_ERROR_STATE_MISMATCH:
-                echo ' - Underflow or the modes mismatch';
-            break;
-            case JSON_ERROR_CTRL_CHAR:
-                echo ' - Unexpected control character found';
-            break;
-            case JSON_ERROR_SYNTAX:
-                echo ' - Syntax error, malformed JSON';
-            break;
-            case JSON_ERROR_UTF8:
-                echo ' - Malformed UTF-8 characters, possibly incorrectly encoded';
-            break;
-            default:
-                echo ' - Unknown error';
-            break;
-        }
-
-        print_r("<br/>");
-
-        $total_rows = count( $json_d );
-        $count = 0;
-        foreach( $json_d as $json_item ) {
-
-            print_r($json_item);
-            print_r("<br/>");
-            print_r( (($count++)/$total_rows*100) . "%" );
-            print_r("<br/>");
-
-            $bytes       = random_bytes(5);
-            $unique_hash = time().bin2hex($bytes); 
-        
-            $form_post_id      = -1;
-            $form_data_as_json = json_encode( $json_item );
-        
-            $wpdb->insert( $table_name, array(
-                'id'          => $unique_hash,
-                'form_id'     => $form_post_id,
-                'object_name' => $_POST['input_object_name'] ?? '',
-                'data'        => $form_data_as_json,
-                'permissions' => $_POST['input_permissions'] ?? '777',
-                'owner'       => ($_POST['input_owner'] ?? ''),
-                'group_owner' => ($_POST['input_group_owner'] ?? null)
-            ) );
-
-
-        }
-
-    }
-
-
-    echo '
-    
-    <form class="my-3" action="/importar-json" method="POST">
-
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="floatingInput" name="input_object_name"/>
-            <label for="floatingInput">Nome do Objeto</label>
-        </div>
-
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="fasd" name="input_owner"/>
-            <label for="fasd">Dono</label>
-        </div>
-
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="gsdge" name="input_group_owner"/>
-            <label for="gsdge">Grupo Dono</label>
-        </div>
-
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="asdasd" name="input_permissions"/>
-            <label for="asdasd">Permissões</label>
-        </div>
-
-        <div class="form-floating mb-3">
-            <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="json_string" rows="15" required></textarea>
-            <label for="floatingTextarea">Texto JSON</label>
-        </div>
-
-        <button type="submit">
-            <i class="bi bi-file-earmark-arrow-up"></i>
-            Importar
-        </button>
-    </form>
-
-    ';
-}
-
-function intranet_fafar_importar_disciplinas() {
-
-    global $wpdb;
-
-    $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
-
-
-    if( isset( $_POST["json_string"] ) ) {
-
-        $json_string = $_POST["json_string"];
-
-        print_r("Processando.....");
-        print_r("<br/>");
-        //print_r($json_string);
-
-        //$json_d = json_decode( preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $json_string), true );
-        $json_d = json_decode(stripslashes($json_string), true);
-
-        //print_r($json_d);
-
-        print_r("<br/>");
-        print_r("JSON LAST ERROR: ");
-        switch (json_last_error()) {
-            case JSON_ERROR_NONE:
-                echo ' - No errors';
-            break;
-            case JSON_ERROR_DEPTH:
-                echo ' - Maximum stack depth exceeded';
-            break;
-            case JSON_ERROR_STATE_MISMATCH:
-                echo ' - Underflow or the modes mismatch';
-            break;
-            case JSON_ERROR_CTRL_CHAR:
-                echo ' - Unexpected control character found';
-            break;
-            case JSON_ERROR_SYNTAX:
-                echo ' - Syntax error, malformed JSON';
-            break;
-            case JSON_ERROR_UTF8:
-                echo ' - Malformed UTF-8 characters, possibly incorrectly encoded';
-            break;
-            default:
-                echo ' - Unknown error';
-            break;
-        }
-
-        print_r("<br/>");
-
-        $total_rows = count( $json_d );
-        $count = 0;
-        foreach( $json_d as $json_item ) {
-
-            print_r($json_item);
-            print_r("<br/>");
-            print_r( (($count++)/$total_rows*100) . "%" );
-            print_r("<br/>");
-
-            
-            $json_item['desc'] = $json_item['code'] . " - " . $json_item['name_of_subject'];
-
-            $bytes       = random_bytes(5);
-            $unique_hash = time().bin2hex($bytes); 
-        
-            $form_post_id      = -1;
-            $form_data_as_json = json_encode( $json_item );
-        
-            $object_name = $_POST['object_name'] ?? '';
-        
-            $wpdb->insert( $table_name, array(
-                'id'          => $unique_hash,
-                'form_id'     => $form_post_id,
-                'object_name' => $_POST['input_object_name'] ?? '',
-                'data'        => $form_data_as_json,
-                'permissions' => $_POST['input_permissions'] ?? '777',
-                'owner'       => ($_POST['input_owner'] ?? ''),
-                'group_owner' => ($_POST['input_group_owner'] ?? null)
-            ) );
-
-
-        }
-
-    }
-
-
-    echo '
-    disciplina
-    
-    <form class="my-3" action="/importar-disciplinas" method="POST">
-
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="floatingInput" name="input_object_name" value="class_subject"/>
-            <label for="floatingInput">Nome do Objeto</label>
-        </div>
-
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="fasd" name="input_owner"/>
-            <label for="fasd">Dono</label>
-        </div>
-
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="gsdge" name="input_group_owner"/>
-            <label for="gsdge">Grupo Dono</label>
-        </div>
-
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="asdasd" name="input_permissions"/>
-            <label for="asdasd">Permissões</label>
-        </div>
-
-        <div class="form-floating mb-3">
-            <textarea class="form-control" placeholder="Insira o texto JSON aqui" id="floatingTextarea" name="json_string" rows="15" required></textarea>
-            <label for="floatingTextarea">Texto JSON</label>
-        </div>
-
-        <button type="submit">
-            <i class="bi bi-file-earmark-arrow-up"></i>
-            Importar
-        </button>
-    </form>
-
-    ';
-}
+add_shortcode( 'intranet_fafar_all_places_as_select_options', 'intranet_fafar_all_places_as_select_options' );
 
 function intranet_fafar_get_users_as_select_options_old() {
 
@@ -483,6 +178,28 @@ function intranet_fafar_get_not_classrooms_as_select_options() {
     $options = array();
 
     foreach ( $places as $place ) {
+        $desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
+        $options[esc_attr( $place['id'] )] = esc_html( $desc );
+    }
+
+    return json_encode( $options ); 
+}
+
+function intranet_fafar_all_places_as_select_options() {
+    $places = intranet_fafar_api_get_submissions_by_object_name(
+        'place', 
+        array(
+            'orderby_json' => 'number',
+        ),
+        array(),
+        false
+    );
+
+    if( empty( $places ) || empty( $places['data'] ) ) return json_encode( [] );
+
+    $options = array();
+
+    foreach ( $places['data'] as $place ) {
         $desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
         $options[esc_attr( $place['id'] )] = esc_html( $desc );
     }

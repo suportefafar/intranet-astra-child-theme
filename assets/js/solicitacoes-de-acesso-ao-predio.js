@@ -36,7 +36,7 @@ function handleRegisterClick(event) {
   const buttonExit = event.target.closest(".btn-register-exit");
 
   if (buttonEntry) {
-    console.log("addEventListener ENTRY", new Date().toLocaleString());
+    // console.log("addEventListener ENTRY", new Date().toLocaleString());
 
     event.stopImmediatePropagation(); // Evita múltiplas execuções no mesmo clique
 
@@ -52,7 +52,7 @@ function handleRegisterClick(event) {
   }
 
   if (buttonExit) {
-    console.log("addEventListener EXIT", new Date().toLocaleString());
+    //console.log("addEventListener EXIT", new Date().toLocaleString());
 
     event.stopImmediatePropagation(); // Evita múltiplas execuções no mesmo clique
 
@@ -105,14 +105,14 @@ const grid = new gridjs.Grid({
     { name: "Usuário", formatter: userColFormatter },
     { name: "Local", formatter: placeColFormatter },
     { name: "Período", formatter: periodColFormatter },
-    { name: "Últ. Status", formatter: lastRegisterStatusFormatter },
+    { name: "Atualização", formatter: lastRegisterUpdateFormatter },
     { name: "Ações", formatter: actionColFormatter },
   ],
   search: {
     server: {
       url: (prev, keyword) => {
         const url = `${prev}?keyword=${keyword}`;
-        console.log(url); // Debugging: Log the search URL
+        //console.log(url); // Debugging: Log the search URL
         return url;
       },
     },
@@ -124,7 +124,7 @@ const grid = new gridjs.Grid({
         let url = `${prev}?limit=${limit}&offset=${page + 1}`;
         if (url.indexOf("keyword") > -1)
           url = `${prev}&limit=${limit}&offset=${page + 1}`;
-        console.log(url);
+        //console.log(url);
         return url;
       },
     },
@@ -135,7 +135,6 @@ const grid = new gridjs.Grid({
     then: renderDataOnTable,
     total: (data) => data.count,
   },
-  sort: true,
   resizable: true,
   autoWidth: true,
   language: ptBR,
@@ -161,7 +160,7 @@ function renderDataOnTable(data) {
       logs,
     } = data;
 
-    console.log(submission);
+    //console.log(submission);
 
     const user_column_data = JSON.stringify({
       access_building_request_type,
@@ -193,7 +192,7 @@ function renderDataOnTable(data) {
       user_column_data,
       place_column_data,
       period_column_data,
-      logs,
+      getLastResgisterUpdate(logs),
       action_column_data,
     ];
   });
@@ -272,41 +271,36 @@ function periodColFormatter(current) {
       `);
 }
 
-function lastRegisterStatusFormatter(current) {
+function lastRegisterUpdateFormatter(current) {
+  const { type_text, registered_at } = current;
+
   let type = "text-bg-info";
-  let text = "Não utilizado";
-
-  if (current && current.length > 0) {
-    const last_update = current[current.length - 1];
-
-    if (last_update.type == "entry") {
-      type = "text-bg-success";
-      text = "Entrada";
-    } else if (last_update.type == "exit") {
-      type = "text-bg-danger";
-      text = "Saída";
-    }
+  let text = type_text ? type_text : "Pendente";
+  if (type_text.toLowerCase() == "entrada") {
+    type = "text-bg-success";
+  } else if (type_text.toLowerCase() == "saída") {
+    type = "text-bg-danger";
   }
 
-  let last_register = "--";
-
-  if (current && current.length > 0) {
-    const last_update = current[current.length - 1];
-
-    last_register = new Date(last_update.registered_at * 1000).toLocaleString();
-  }
+  let last_register = registered_at
+    ? new Date(registered_at * 1000).toLocaleString()
+    : "";
 
   return html(`
     <div class="d-flex gap-1 align-items-center">
-      <span>
+      ${
+        last_register
+          ? `<span>
         <i class="bi bi-clock"></i>
       </span>
       <span>
         ${last_register}
-      </span>
+      </span>`
+          : ""
+      }
       <span class="badge ${type}">${text}</span>
     </div>
-    `);
+  `);
 }
 
 function actionColFormatter(current) {
@@ -343,7 +337,7 @@ function actionColFormatter(current) {
 }
 
 function confirmRegister(title = "", text = "", id = null, type = null) {
-  console.log("confirmRegister", new Date().toLocaleString());
+  //console.log("confirmRegister", new Date().toLocaleString());
 
   if (id === null || type === null) {
     alert("Nenhum ID ou tipo de registro informado! Contacte o administrador.");
@@ -363,7 +357,7 @@ function confirmRegister(title = "", text = "", id = null, type = null) {
 }
 
 async function registerEntryOrExit(id, type) {
-  console.log("registerEntryOrExit", new Date().toLocaleString());
+  //console.log("registerEntryOrExit", new Date().toLocaleString());
   hideConfirmModal();
   showAlert("Por favor, aguarde...", "warning");
 
@@ -488,6 +482,28 @@ async function renderAccessBuildingRequestDetailsModal(id) {
 
   document.querySelector("#access_building_request_logs tbody").innerHTML =
     logs_html ?? "Sem registro";
+}
+
+function getLastResgisterUpdate(logs) {
+  if (logs && logs.length > 0) {
+    const { type, registered_at } = logs[logs.length - 1];
+
+    let type_text = "";
+    if (type == "entry") {
+      type_text = "Entrada";
+    } else if (type == "exit") {
+      type_text = "Saída";
+    }
+
+    return {
+      type_text,
+      registered_at,
+    };
+  }
+  return {
+    type_text: "",
+    registered_at: 0,
+  };
 }
 
 /*
