@@ -23,6 +23,9 @@ add_action('bp_member_header_actions', 'hide_bp_edit_profile_button', 1);
 // Bloquear acesso à Perfil, Notificações e Configurações
 add_action('bp_actions', 'intraner_fafar_block_for_not_profile_owners');
 
+// Bloquear todo mundo de qualquer coisa
+add_action('template_redirect', 'redirect_all_users');
+
 function restrict_bp_profile_editing() {
     if (!current_user_can('manage_options') && bp_is_user_profile_edit()) {
         wp_redirect(home_url());
@@ -55,3 +58,16 @@ function intraner_fafar_block_for_not_profile_owners() {
     }
 }
 
+function redirect_all_users() {
+    // Check if user is logged in
+    if ( is_user_logged_in() ) {
+        // Get current user ID
+        $current_user_id = get_current_user_id();
+        
+        // If user is not ID 23, redirect them
+        if ( in_array( $current_user_id, [1, 2078, 2041] ) ) {
+            wp_redirect('https://intranet.farmacia.ufmg.br/wp-login.php?redirect_to=https%3A%2F%2Fintranet.farmacia.ufmg.br%2F'); // Change to your desired redirect URL
+            exit;
+        }
+    }
+}

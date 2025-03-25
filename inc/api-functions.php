@@ -1590,7 +1590,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
     // Professores que não são de colegiados não podem usar reservar
     $public_servant_bond_category = get_user_meta( get_current_user_id(), 'public_servant_bond_category', true );
     $user                         = wp_get_current_user();
-    $role                         = !empty( $user->roles ) ? $user->roles[0] : '';
+    $role                         = ! empty( $user->roles ) ? $user->roles[0] : '';
     if (
         strtoupper( $public_servant_bond_category ) === 'DOCENTE' && 
         ! in_array( $role, ['colegiado_de_graduacao_biomedicina', 'colegiado_de_graduacao_farmacia'], true )
