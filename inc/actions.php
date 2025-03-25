@@ -24,7 +24,7 @@ add_action('bp_member_header_actions', 'hide_bp_edit_profile_button', 1);
 add_action('bp_actions', 'intraner_fafar_block_for_not_profile_owners');
 
 // Bloquear todo mundo de qualquer coisa
-add_action('template_redirect', 'redirect_all_users');
+// add_action('template_redirect', 'redirect_all_users');
 
 function restrict_bp_profile_editing() {
     if (!current_user_can('manage_options') && bp_is_user_profile_edit()) {

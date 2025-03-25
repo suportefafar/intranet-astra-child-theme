@@ -75,7 +75,7 @@ function intranet_fafar_get_ips_as_select_options() {
         'inet_aton' => '1',
     ) ); 
 
-    error_log( print_r( $ips, true ) );
+    // error_log( print_r( $ips, true ) );
 
     if ( isset( $ips['error_msg'] ) )
         $ips = array();
@@ -128,7 +128,7 @@ function intranet_fafar_get_ips_as_select_options() {
 
     }
 
-    error_log( print_r( $options, true ) );
+    // error_log( print_r( $options, true ) );
 
     return json_encode( $options ); 
 
@@ -160,7 +160,7 @@ function intranet_fafar_get_subjects_as_select_options() {
 function intranet_fafar_get_classrooms_as_select_options() {
     $places = intranet_fafar_api_get_reservable_places();
 
-    error_log(print_r($places, true));
+    // error_log(print_r($places, true));
 
     $options = array();
 

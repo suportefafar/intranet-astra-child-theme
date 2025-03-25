@@ -253,8 +253,6 @@ function intranet_fafar_api_update_submission_by_id_handler( $request ) {
 
     }
 
-    error_log(print_r($submission, true));
-
     if ( $submission['object_name'] === 'auditorium_reservation' ) {
         intranet_fafar_mail_on_change_auditorium_reservation_status( $submission );
     }
@@ -1219,8 +1217,6 @@ function intranet_fafar_api_create_auditorium_reservation_handler( $request ) {
 
     $data = json_decode( $request_data, true );
 
-    // error_log(print_r( $data, true ) ); 
-
     $reservations = intranet_fafar_api_pre_create_auditorium_reservation( $data );
 
     if( isset( $reservations['error_msg'] ) ) {
@@ -1314,8 +1310,6 @@ function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
 
     // Get all query parameters
     $query_params = $request->get_query_params();
-
-    // error_log(print_r($query_params, true));
 
     $submissions = intranet_fafar_api_get_auditorium_reservations( 
         ( $query_params['status'] ?? null ), 
@@ -1512,7 +1506,6 @@ function intranet_fafar_api_get_available_place_for_reservation($pre_reservation
  */
 function intranet_fafar_api_search_place($search) {
 
-    // error_log('searching....');
 
     // Get all places, ordered by 'number' in ascending order
     $places = intranet_fafar_api_get_submissions_by_object_name('place', ['orderby_json' => 'number', 'order' => 'ASC']);
@@ -1529,8 +1522,6 @@ function intranet_fafar_api_search_place($search) {
         // Check if the search term matches the number or description
         return str_contains($number_esc, $search_esc) || str_contains($desc_esc, $search_esc);
     });
-
-    // error_log( print_r( count( $matches ) , true));
 
     // Return the matches as a numerically indexed array
     return array_values($matches);
@@ -1578,6 +1569,11 @@ function intranet_fafar_api_search_place($search) {
  * @return FromData | null
 */
 function intranet_fafar_api_create_or_update_reservation( $form_data, $submission_id = null ) {
+
+    error_log( 'INICIO-------------------------> ' );
+    error_log( print_r( $form_data, true ) );
+    error_log( print_r( $submission_id, true ) );
+    error_log( 'INICIO-------------------------> ' );
 
     // Verificações iniciais
 
@@ -1760,7 +1756,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
          * Gerando RRULE string com a: 
          * 'DTSTART:20240201T113000\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20241201;BYDAY=MO,FR'
          */
-        $new_rrule = 'DTSTART:' . $dt_start . PHP_EOL . 'RRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=' . $until . ';BYDAY=' . implode(',', $byday);
+        $new_rrule = 'DTSTART:' . $dt_start . '\nRRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=' . $until . ';BYDAY=' . implode(',', $byday);
 
         // Gerando a prop 'duration'
         $start = DateTime::createFromFormat('H:i', $new_form_data['data']['start_time']);
@@ -1783,7 +1779,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
          * Gerando RRULE string com a: 
          * 'DTSTART:20241107T113000\nRRULE:FREQ=DAILY;COUNT=1'
          */
-        $new_rrule = 'DTSTART:' . $dt_start . PHP_EOL . 'RRULE:FREQ=DAILY;COUNT=1';
+        $new_rrule = 'DTSTART:' . $dt_start . '\nRRULE:FREQ=DAILY;COUNT=1';
 
         // Gerando a prop 'duration'
         $start = DateTime::createFromFormat('H:i', $new_form_data['data']['start_time']);
@@ -1827,7 +1823,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
         $new_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $new_form_data['data']['rrule'] );
 
         if ( empty( $new_reservation_timestamps ) ) {
-            return array( 'error_msg' => 'RRULE inválido ou sem ocorrências!' );
+            return array( 'error_msg' => 'RRULE inválido ou sem ocorrências. Confira os dados enviados.' );
         }
 
         // Aqui temos timestamps das reservas à ser registradas
@@ -1864,6 +1860,7 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
         }
     }
 
+    
     // Se tudo deu certo, então devolve o objeto para ser inserido pelo plugin 'fafar-cf7crud'
     $json_data = json_encode($new_form_data['data']);
     if ( $json_data === false ) {
@@ -1871,6 +1868,11 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
     }
     
     $form_data['data'] = $json_data;
+
+    error_log( 'FIM-------------------------> ' );
+    error_log( print_r( $form_data, true ) );
+    error_log( print_r( $submission_id, true ) );
+    error_log( 'FIM-------------------------> ' );
 
     return $form_data;
 }
@@ -3069,8 +3071,6 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
         $offset = ( $args['page'] - 1 ) * $args['per_page'];
         $pagination_query .= " LIMIT {$args['per_page']} OFFSET $offset";
     }
-
-    // error_log($pagination_query);
 
     // Execute the query
     if ( ! $args['return_count_only'] ) {
