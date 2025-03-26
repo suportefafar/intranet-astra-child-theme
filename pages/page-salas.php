@@ -44,7 +44,6 @@ get_header(); ?>
     * Conteúdo customizado da página
     * Início
 --> 
-    
         <!-- HEADER BUTTONS -->
         <div class="d-flex justify-content-start gap-2 mb-4">
             <a href="/adicionar-sala" class="btn btn-outline-success text-decoration-none">
