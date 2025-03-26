@@ -148,6 +148,7 @@ get_header(); ?>
                                 <td>Capacidade</td>
                                 <td class="fw-medium"><?php echo ( ( $place['data']['capacity'] ) ?? '' ) ?></td>
                             <tr>
+                            <?php if ( ! empty( $place['data']['object_sub_type'][0] ) && $place['data']['object_sub_type'][0] === 'lab' ): ?>
                             <tr>
                                 <td>Professor responsável</td>
                                 <td class="fw-medium">
@@ -168,6 +169,7 @@ get_header(); ?>
                                     <?php endif; ?>
                                 </td>
                             <tr>
+                            <?php endif; ?>
                             <tr>
                                 <td>Dono</td>
                                 <td class="fw-medium">
