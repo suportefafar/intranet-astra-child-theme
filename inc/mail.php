@@ -164,7 +164,7 @@ function intranet_fafar_mail_on_create_equipament( $form_data ) {
 }
 
 function intranet_fafar_mail_on_update_equipament( $form_data, $equipament_id ) {
-  if( ! isset( $form_data['object_name'] ) ) return $form_data;
+  if ( ! isset( $form_data['object_name'] ) ) return $form_data;
 
   if ( $form_data['object_name'] !== 'equipament' ) return $form_data;
 
@@ -190,7 +190,6 @@ function intranet_fafar_mail_on_update_equipament( $form_data, $equipament_id ) 
 
   if ( ! $HAS_PLACE_CHANGED && ! $HAS_APPLICANT_CHANGED ) {
     $form_data['data'] = json_encode( $form_data['data'] );
-
     return $form_data;
   }
 
@@ -201,28 +200,48 @@ function intranet_fafar_mail_on_update_equipament( $form_data, $equipament_id ) 
     return $form_data;
   }
 
-  // Responsável do equipamento
-  $user_info      = get_userdata( $form_data['data']['applicant'][0] );
-  $applicant_name = $user_info ? $user_info->display_name : '';
+  // Configurando o tipo de do equipamento
+  $equipament_type = ( ! empty( $form_data['data']['object_sub_type'][0] ) ? $form_data['data']['object_sub_type'][0] : '--' );
+
+  // Antigo e novo resposáveis do equipamento
+  $old_applicant_name = ( get_userdata( $old_applicant ) ? get_userdata( $old_applicant )->display_name : '--' );
+  $new_applicant_name = ( get_userdata( $new_applicant ) ? get_userdata( $new_applicant )->display_name : '--' );
 
   // Local do equipamento
-  $place_desc = '';
-  if ( ! empty( $form_data['data']['place'][0] ) ) {
-    $place = intranet_fafar_api_get_submission_by_id( $form_data['data']['place'][0] );
-
+  $old_place_desc = '--';
+  if ( ! empty( $old_place ) ) {
+    $place = intranet_fafar_api_get_submission_by_id( $old_place );
     if ( ! empty( $place['data'] ) ) {
-      $place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
+      $old_place_desc = ( ! empty( $place['data']['desc'] ) ? $place['data']['number'] . ' ' . $place['data']['desc'] : $place['data']['number'] );
+    }
+  }
+
+  $new_place_desc = '--';
+  if ( ! empty( $new_place ) ) {
+    $place = intranet_fafar_api_get_submission_by_id( $new_place );
+    if ( ! empty( $place['data'] ) ) {
+      $new_place_desc = ( ! empty( $place['data']['desc'] ) ? $place['data']['number'] . ' ' . $place['data']['desc'] : $place['data']['number'] );
     }
   }
   
   $message = '
     <p>Houve mudança de <strong>responsável</strong> e/ou <strong>local</strong> no equipamento a seguir.</p>
-    <p><strong>Detalhes da mudança:</strong></p>
-    <ul>
-      <li><strong>Patrimônio:</strong> ' . $form_data['data']['asset'] . '</li>
-      <li><strong>Responsável:</strong> ' . ( $HAS_APPLICANT_CHANGED ? '<mark> ' . $applicant_name . ' </mark>' : $applicant_name ) . '</li>
-      <li><strong>Local:</strong> ' . ( $HAS_PLACE_CHANGED ? '<mark> ' . $place_desc . ' </mark>' : $place_desc ) . '</li>
-    </ul>
+    <p>
+      O equipamento, de tipo <strong>' . $equipament_type . '</strong> e patrimônio <strong>' . $form_data['data']['asset'] . '</strong>, sofreu alterações.
+    </p>
+    ' . 
+    (
+      $HAS_APPLICANT_CHANGED === true ? 
+      '<p> Responsabilidade: De <strong>' . $old_applicant_name . '</strong> para <strong>' . $new_applicant_name . '</strong>. </p>' : 
+      ''
+    ) 
+    . 
+    (
+      $HAS_PLACE_CHANGED === true ? 
+      '<p> Sala: De <strong>' . $old_place_desc . '</strong> para <strong>' . $new_place_desc . '</strong>. </p>' : 
+      ''
+    ) 
+     . '
     <p>Caso precise de mais alguma informação, não hesite em nos contatar.</p>
   ';
 
