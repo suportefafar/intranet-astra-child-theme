@@ -46,14 +46,12 @@ get_header(); ?>
 --> 
     
         <!-- HEADER BUTTONS -->
-        <?php if ( in_array( $role_slug, [ 'administrator', 'apoio_logistico_e_operacional', 'tecnologia_da_informacao_e_suporte' ] ) ): ?>
         <div class="d-flex justify-content-start gap-2 mb-4">
             <a href="/adicionar-sala" class="btn btn-outline-success text-decoration-none">
                 <i class="bi bi-plus-lg"></i>
                 Adicionar
             </a>
         </div>
-        <?php endif; ?>
 
         <!-- CHARTS -->
 
