@@ -16,9 +16,7 @@ function intranet_fafar_sidebar_profile() {
 
     $role_display_name = '--';
     if ( isset( wp_roles()->roles[ $role_slug ] ) ) {
-
         $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
-
     }
 
     echo '

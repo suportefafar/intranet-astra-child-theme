@@ -40,9 +40,19 @@ function get_place_type_display_name( $type ) {
 
 }
 
-$ID            = sanitize_text_field( wp_unslash( $_GET["id"] ) );
+$ID    = sanitize_text_field( wp_unslash( $_GET["id"] ) );
+$place = intranet_fafar_api_get_submission_by_id( $ID );
 
-$place         = intranet_fafar_api_get_submission_by_id( $ID );
+$professor_responsible = '';
+if ( ! empty( $place['data']['professor_responsible'][0] ) ) {
+    $professor_responsible = intranet_fafar_api_get_user_by_id( $place['data']['professor_responsible'][0] );
+}
+
+$tae_responsible = '';
+if ( ! empty( $place['data']['tae_responsible'][0] ) ) {
+    $tae_responsible = intranet_fafar_api_get_user_by_id( $place['data']['tae_responsible'][0] );
+}
+
 
 $prevent_write = isset( $place['data']['prevent_write'] );
 
@@ -139,17 +149,31 @@ get_header(); ?>
                                 <td class="fw-medium"><?php echo ( ( $place['data']['capacity'] ) ?? '' ) ?></td>
                             <tr>
                             <tr>
+                                <td>Professor responsável</td>
+                                <td class="fw-medium">
+                                    <?php if ( $professor_responsible ): ?>
+                                    <a href="/membros/<?= $professor_responsible['data']->user_login ?>" target="_blank" title="Perfil de <?= $professor_responsible['data']->display_name ?>">
+                                        <?= $professor_responsible['data']->display_name ?>
+                                    </a>
+                                    <?php endif; ?>
+                                </td>
+                            <tr>
+                            <tr>
+                                <td>TAE responsável</td>
+                                <td class="fw-medium">
+                                    <?php if ( $tae_responsible ): ?>
+                                    <a href="/membros/<?= $tae_responsible['data']->user_login ?>" target="_blank" title="Perfil de <?= $tae_responsible['data']->display_name ?>">
+                                        <?= $tae_responsible['data']->display_name ?>
+                                    </a>
+                                    <?php endif; ?>
+                                </td>
+                            <tr>
+                            <tr>
                                 <td>Dono</td>
                                 <td class="fw-medium">
-                                <?php 
-                                echo ( 
-                                    isset( $place['owner']['data'] ) ?
-                                    '<a href="/membros/' . $place['owner']['data']->user_login . '" target="_blank" title="Perfil de ' . $place['owner']['data']->display_name . '">' .
-                                       $place['owner']['data']->display_name .
-                                    '</a>' : 
-                                    '' 
-                                    ) 
-                                ?>
+                                    <?php if ( isset( $place['owner']['data'] ) ): ?>
+                                        <?= $place['owner']['data']->display_name ?>
+                                    <?php endif; ?>
                                 </td>
                             <tr>
                         </tbody>
