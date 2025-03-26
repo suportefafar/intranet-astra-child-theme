@@ -359,10 +359,18 @@ function intranet_fafar_api_get_place_reservations_handler( $request ) {
     $submissions = intranet_fafar_api_get_reservations_by_place( $place_id );
 
     if ( isset( $submissions['error_msg'] ) ) {
-
         return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
-
     }
+
+    $submissions = array_map( function ( $submission ) {
+
+        $role_slug = $submission['group_owner'];
+
+        $submission['group_owner'] = isset( wp_roles()->roles[ $role_slug ] ) ? isset( wp_roles()->roles[ $role_slug ] ) : '';
+
+        return $submission;
+
+    }, $submissions );
 
     return rest_ensure_response( $submissions );
 
@@ -2525,6 +2533,11 @@ function intranet_fafar_api_get_reservation_by_id_handler( $request ) {
 
     if ( isset( $reservation['error_msg'] ) ) {
         return new WP_Error( 'rest_api_sad', esc_html__( $reservation['error_msg'], 'intranet-fafar-api' ), ( ( $reservation['http_status'] ) ?? 400 ) );
+    }
+
+    $role_slug = $reservation['group_owner'];
+    if ( isset( $role_slug ) ) {
+        $reservation['group_owner'] = isset( wp_roles()->roles[ $role_slug ] ) ? wp_roles()->roles[ $role_slug ]['name'] : '';
     }
 
     return rest_ensure_response( $reservation );

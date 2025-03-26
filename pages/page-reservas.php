@@ -131,8 +131,12 @@ get_header(); ?>
                                     <td id="modal_event_applicant" class="text-body-emphasis">--</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-body">Dono</td>
+                                    <td class="text-body">Criador</td>
                                     <td id="modal_event_owner" class="text-body-emphasis">--</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-body">Setor Dono</td>
+                                    <td id="modal_event_group_owner" class="text-body-emphasis">--</td>
                                 </tr>
                             </tbody>
                         </table>

@@ -296,6 +296,9 @@ async function viewEvent(info) {
     ? event.owner.data.display_name
     : "--";
 
+  document.querySelector("#modal_event_group_owner").innerHTML =
+    event.group_owner ? event.group_owner : "--";
+
   document.querySelector("#modal_event_applicant").innerHTML = event.data
     .applicant?.data
     ? event.data.applicant.data.display_name
