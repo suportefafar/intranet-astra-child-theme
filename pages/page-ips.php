@@ -20,14 +20,6 @@ $ips_in_use = array_filter( $ips, function ( $ip ) {
 
 $ips_usage_percentage = count( $ips_in_use ) / count( $ips ) * 100;
 
-
-/*
- * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-ips-script', get_stylesheet_directory_uri() . '/assets/js/ips.js', array( 'jquery' ), false, false );
- */
-wp_enqueue_script_module( 'intranet-fafar-ips-script', get_stylesheet_directory_uri() . '/assets/js/ips.js', array( 'jquery' ), false, false );
-
-
 get_header(); ?>
 
 <?php if ( astra_page_layout() == 'left-sidebar' ) : ?>

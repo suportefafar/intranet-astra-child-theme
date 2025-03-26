@@ -19,13 +19,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 $user        = wp_get_current_user();
 $sector_slug = $user->roles[0];
 
-
-/*
- * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-usuarios-script', get_stylesheet_directory_uri() . '/assets/js/usuarios.js', array( 'jquery' ), false, false );
- */
-wp_enqueue_script_module( 'intranet-fafar-usuarios-script', get_stylesheet_directory_uri() . '/assets/js/usuarios.js', array( 'intranet-fafar-alert' ), false, true );
-
 $user_logged_params = array(
     'displayName' => $user->display_name,
     'userLogin'   => $user->user_login

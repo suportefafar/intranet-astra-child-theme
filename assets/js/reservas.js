@@ -1,4 +1,3 @@
-// console.log("FOI O JS");
 let EVENTS = [];
 let CURRENT_CLASSROOM = { id: null, number: null };
 
@@ -53,6 +52,38 @@ document.addEventListener("onAddEventSuccess", () => {
   hideAddEventModal();
   fetchCalendarData();
   showAlert("Reserva adicionada com sucesso!", "success", true);
+});
+
+/*
+ * CALENDAR RENDER
+ */
+const calendarEl = document.getElementById("calendar");
+
+const calendar = new FullCalendar.Calendar(calendarEl, {
+  locale: "pt-br",
+  headerToolbar: {
+    left: "prev,next",
+    center: "title",
+    right: "multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay,listWeek", // user can switch between the two
+  },
+  allDaySlot: false,
+  initialView: "timeGridWeek",
+  views: {
+    week: {
+      titleFormat: {
+        month: "2-digit",
+        day: "2-digit",
+        year: "numeric",
+      },
+      eventClassNames: ["cursor-pointer", "text-decoration-none"],
+    },
+  },
+  hiddenDays: [0],
+  eventClick: viewEvent,
+  dateClick: dateClickHandler,
+  events: EVENTS,
+  eventBorderColor: "#000000",
+  eventTextColor: "#000000",
 });
 
 function onLoadCalendarByUrlParams() {
@@ -182,39 +213,6 @@ async function getEventsByPlaceID(place_id) {
 
   return response.data;
 }
-
-/**
- * CALENDAR RENDER
- */
-
-const calendarEl = document.getElementById("calendar");
-
-const calendar = new FullCalendar.Calendar(calendarEl, {
-  locale: "pt-br",
-  headerToolbar: {
-    left: "prev,next",
-    center: "title",
-    right: "multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay,listWeek", // user can switch between the two
-  },
-  allDaySlot: false,
-  initialView: "timeGridWeek",
-  views: {
-    week: {
-      titleFormat: {
-        month: "2-digit",
-        day: "2-digit",
-        year: "numeric",
-      },
-      eventClassNames: ["cursor-pointer", "text-decoration-none"],
-    },
-  },
-  hiddenDays: [0],
-  eventClick: viewEvent,
-  dateClick: dateClickHandler,
-  events: EVENTS,
-  eventBorderColor: "#000000",
-  eventTextColor: "#000000",
-});
 
 function renderTable(submissions) {
   // console.log(submissions);

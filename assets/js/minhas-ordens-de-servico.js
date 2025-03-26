@@ -1,5 +1,3 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
 /*
  * LISTENER'S
  */
@@ -167,7 +165,7 @@ function numberColFormatter(current, row) {
       </a>
     </div>`;
 
-  return html(html_content);
+  return gridjs.html(html_content);
 }
 
 function assignedToColFormatter(current, row) {
@@ -178,7 +176,7 @@ function assignedToColFormatter(current, row) {
 
   const html_content = `<a href="/membros/${current.data.user_login}/" target="blank" title="${current.data.display_name}">${current.data.display_name}</a>`;
 
-  return html(html_content);
+  return gridjs.html(html_content);
 }
 
 function statusColFormatter(current, row) {
@@ -191,7 +189,7 @@ function statusColFormatter(current, row) {
   else if (current_lower === "finalizada") type = "text-bg-secondary";
   else if (current_lower === "cancelada") type = "text-bg-danger";
 
-  return html(`<span class="badge ${type}">${current}</span>`);
+  return gridjs.html(`<span class="badge ${type}">${current}</span>`);
 }
 
 function actionColFormatter(current, row) {
@@ -219,7 +217,7 @@ function actionColFormatter(current, row) {
       }
     </div>`;
 
-  return html(html_content);
+  return gridjs.html(html_content);
 }
 
 function confirmDelete(id) {

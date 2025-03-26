@@ -27,8 +27,6 @@ $reservations = array_filter(
     }
 );
 
-wp_enqueue_script_module( 'intranet-fafar-imprimir-mapa-de-sala-script', get_stylesheet_directory_uri() . '/assets/js/imprimir-mapa-de-sala.js', array( 'jquery' ), false, false );
-
 get_header(); ?>
 
 <script>

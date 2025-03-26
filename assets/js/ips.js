@@ -1,5 +1,3 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
 /**
  * CHARTS RENDER
  */
@@ -161,7 +159,7 @@ function actionColFormatter(current, row) {
       </a>
     </div>`;
 
-  return html(html_content);
+  return gridjs.html(html_content);
 }
 
 /*

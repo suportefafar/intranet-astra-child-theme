@@ -1,5 +1,3 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
 let EVENTS = [];
 
 /*
@@ -23,6 +21,96 @@ document.querySelectorAll("#ul_os_status_tabs .nav-link").forEach((el) => {
     updateURLFetchBase();
   });
 });
+
+/*
+ * TABLE RENDER
+ */
+const ptBR = {
+  search: { placeholder: "Digite uma palavra-chave..." },
+  sort: {
+    sortAsc: "Coluna em ordem crescente",
+    sortDesc: "Coluna em ordem decrescente",
+  },
+  pagination: {
+    previous: "Anterior",
+    next: "Próxima",
+    navigate: function (e, r) {
+      return "Página " + e + " de " + r;
+    },
+    page: function (e) {
+      return "Página " + e;
+    },
+    showing: "Mostrando",
+    of: "de",
+    to: "até",
+    results: "resultados",
+  },
+  loading: "Carregando...",
+  noRecordsFound: "Nenhum registro encontrado",
+  error: "Ocorreu um erro ao buscar os dados",
+};
+
+const grid = new gridjs.Grid({
+  columns: [
+    {
+      name: "Número",
+      formatter: numberColFormatter,
+    },
+    {
+      name: "Descrição",
+      formatter: descColFormatter,
+    },
+    {
+      name: "Responsável",
+      formatter: ownerColFormatter,
+    },
+    {
+      name: "Status",
+      formatter: statusColFormatter,
+    },
+    {
+      name: "Atribuído à",
+      formatter: assignedToColFormatter,
+    },
+    {
+      name: "Criado",
+      formatter: (current) => createdAtColFormatter(current),
+    },
+    {
+      name: "Ações",
+      formatter: actionColFormatter,
+    },
+  ],
+  search: {
+    server: {
+      url: (prev, keyword) => {
+        let junction = prev.indexOf("?") > 0 ? "&" : "?";
+        return `${prev}${junction}keyword=${keyword}`;
+      },
+    },
+  },
+  pagination: {
+    limit: 10,
+    server: {
+      url: (prev, page, limit) => {
+        let junction = prev.indexOf("?") > 0 ? "&" : "?";
+        return `${prev}${junction}limit=${limit}&offset=${page + 1}`;
+      },
+    },
+    summary: true,
+  },
+  server: {
+    url:
+      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions" +
+      "/service_tickets/by_departament?assigned_to=-1&status=Nova,Aguardando,Em andamento",
+    then: renderDataOnTable,
+    total: (data) => data.count,
+  },
+  sort: true,
+  resizable: true,
+  autoWidth: true,
+  language: ptBR,
+}).render(document.getElementById("table-wrapper"));
 
 /*
  * Para adicionar listeners aos spans com descrição, e abrir o Popover
@@ -124,110 +212,6 @@ async function getServiceTickets(url) {
   return response.data;
 }
 
-/*
- * TABLE RENDER
- */
-const ptBR = {
-  search: { placeholder: "Digite uma palavra-chave..." },
-  sort: {
-    sortAsc: "Coluna em ordem crescente",
-    sortDesc: "Coluna em ordem decrescente",
-  },
-  pagination: {
-    previous: "Anterior",
-    next: "Próxima",
-    navigate: function (e, r) {
-      return "Página " + e + " de " + r;
-    },
-    page: function (e) {
-      return "Página " + e;
-    },
-    showing: "Mostrando",
-    of: "de",
-    to: "até",
-    results: "resultados",
-  },
-  loading: "Carregando...",
-  noRecordsFound: "Nenhum registro encontrado",
-  error: "Ocorreu um erro ao buscar os dados",
-};
-
-const grid = new gridjs.Grid({
-  columns: [
-    {
-      name: "Número",
-      formatter: numberColFormatter,
-    },
-    {
-      name: "Descrição",
-      formatter: descColFormatter,
-    },
-    {
-      name: "Responsável",
-      formatter: ownerColFormatter,
-    },
-    {
-      name: "Status",
-      formatter: statusColFormatter,
-    },
-    {
-      name: "Atribuído à",
-      formatter: assignedToColFormatter,
-    },
-    {
-      name: "Criado",
-      formatter: (current) => createdAtColFormatter(current),
-    },
-    {
-      name: "Ações",
-      formatter: actionColFormatter,
-    },
-  ],
-
-  search: {
-    server: {
-      url: (prev, keyword) => {
-        let junction = prev.indexOf("?") > 0 ? "&" : "?";
-
-        const url = `${prev}${junction}keyword=${keyword}`;
-
-        console.log({ url });
-
-        return url;
-      },
-    },
-  },
-  pagination: {
-    limit: 10, // Number of rows per page
-    server: {
-      url: (prev, page, limit) => {
-        let junction = prev.indexOf("?") > 0 ? "&" : "?";
-
-        let url = `${prev}${junction}limit=${limit}&offset=${page + 1}`;
-
-        if (url.indexOf("keyword") > -1)
-          url = `${prev}&limit=${limit}&offset=${page + 1}`;
-
-        console.log({ url });
-
-        return url;
-      },
-    },
-    summary: true, // Show pagination summary
-  },
-  server: {
-    url:
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions" +
-      "/service_tickets/by_departament?assigned_to=-1&status=Nova,Aguardando,Em andamento",
-    then: renderDataOnTable,
-    total: (data) => data.count,
-  },
-  sort: true,
-  resizable: true,
-  autoWidth: true,
-  language: ptBR,
-}).render(document.getElementById("table-wrapper"));
-
 function renderDataOnTable(data) {
   // Early return if data is invalid or empty
   if (!data || !Array.isArray(data.results)) {
@@ -286,7 +270,7 @@ function numberColFormatter(current) {
       </a>
     </div>`;
 
-  return html(html_content);
+  return gridjs.html(html_content);
 }
 
 function descColFormatter(current) {
@@ -298,7 +282,7 @@ function descColFormatter(current) {
     user_report && user_report.length > MAX_CHAR_DESC
       ? user_report.slice(0, MAX_CHAR_DESC) + "..."
       : user_report;
-  return html(`
+  return gridjs.html(`
     <div class="d-flex flex-column gap-1">
       <div>
         <span>
@@ -327,7 +311,7 @@ function ownerColFormatter(current) {
     display_name = "";
   }
 
-  return html(
+  return gridjs.html(
     `<a href="/membros/${user_login}/" 
         target="blank" 
         title="${display_name}">
@@ -344,7 +328,7 @@ function assignedToColFormatter(current) {
 
   const html_content = `<a href="/membros/${current.data.user_login}/" target="blank" title="${current.data.display_name}">${current.data.display_name}</a>`;
 
-  return html(html_content);
+  return gridjs.html(html_content);
 }
 
 function statusColFormatter(current) {
@@ -372,7 +356,7 @@ function statusColFormatter(current) {
       break;
   }
 
-  return html(`<span class="badge ${type}">${current}</span>`);
+  return gridjs.html(`<span class="badge ${type}">${current}</span>`);
 }
 
 function createdAtColFormatter(current) {
@@ -386,7 +370,7 @@ function createdAtColFormatter(current) {
 
   const how_long_updated_at = getDateAsHowLongFormatted(updated_at);
 
-  return html(`
+  return gridjs.html(`
     <div class="d-flex flex-column gap-1">
       <div>
         <i class="bi bi-clock"></i>
@@ -415,7 +399,7 @@ function actionColFormatter(current) {
       </a>
     </div>`;
 
-  return html(html_content);
+  return gridjs.html(html_content);
 }
 
 function getDateAsHowLongFormatted(d) {

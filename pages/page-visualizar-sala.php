@@ -12,13 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-
-/*
- * Importanto script JS customizado
- * wp_enqueue_script_module( 'intranet-fafar-visualizar-equipamento-script', get_stylesheet_directory_uri() . '/assets/js/visualizar-equipamento.js', array( 'jquery' ), false, false );
- */
-wp_enqueue_script_module( 'intranet-fafar-visualizar-sala-script', get_stylesheet_directory_uri() . '/assets/js/visualizar-sala.js', array( 'jquery' ), false, false );
-
 if( ! isset( $_GET["id"] ) ) {
     echo '<pre> Nenhum ID informado. </pre>';
     return;
@@ -52,7 +45,6 @@ $tae_responsible = '';
 if ( ! empty( $place['data']['tae_responsible'][0] ) ) {
     $tae_responsible = intranet_fafar_api_get_user_by_id( $place['data']['tae_responsible'][0] );
 }
-
 
 $prevent_write = isset( $place['data']['prevent_write'] );
 

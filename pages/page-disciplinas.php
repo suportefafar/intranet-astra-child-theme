@@ -12,14 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-
-/*
- * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-disciplinas-script', get_stylesheet_directory_uri() . '/assets/js/disciplinas.js', array( 'jquery' ), false, false );
- */
-// wp_enqueue_script_module( 'intranet-fafar-disciplinas-script', get_stylesheet_directory_uri() . '/assets/js/disciplinas.js', array( 'jquery' ), false, false );
-wp_enqueue_script( 'intranet-fafar-disciplinas-script', get_stylesheet_directory_uri() . '/assets/js/disciplinas.js', array(), false, true );
-
 get_header(); ?>
 
 <?php if ( astra_page_layout() == 'left-sidebar' ) : ?>

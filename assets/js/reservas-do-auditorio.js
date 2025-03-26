@@ -1,5 +1,3 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
 let EVENTS = [];
 
 /*
@@ -265,7 +263,7 @@ function aboutEventColFormatter(current) {
 
   const type = getStatusStyle(status);
 
-  return html(`
+  return gridjs.html(`
     <div class="d-flex flex-column gap-1">
       <div>
         <strong>${desc}</strong>
@@ -289,7 +287,7 @@ function applicantColFormatter(current) {
   const { applicant_name, applicant_phone, applicant_email } =
     JSON.parse(current);
 
-  return html(`
+  return gridjs.html(`
     <div class="d-flex flex-column gap-1">
       <div>
         <strong>
@@ -322,7 +320,7 @@ function applicantColFormatter(current) {
 function executionColFormatter(current) {
   const { event_date, start_time, end_time, technical } = JSON.parse(current);
 
-  return html(`
+  return gridjs.html(`
     <div class="d-flex flex-column gap-1">
       <div>
         <strong>
@@ -386,7 +384,7 @@ function actionColFormatter(current) {
     },
   };
 
-  return html(`
+  return gridjs.html(`
     <div class="d-flex gap-2">
       ${actions
         .map((action) => {

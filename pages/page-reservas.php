@@ -12,13 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-
-/*
- * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-reservas-script', get_stylesheet_directory_uri() . '/assets/js/reservas.js', array( 'jquery' ), false, false );
- */
-wp_enqueue_script_module( 'intranet-fafar-reservas-script', get_stylesheet_directory_uri() . '/assets/js/reservas.js', array( 'jquery' ), false, false );
-
 $places = intranet_fafar_api_get_submissions_by_object_name( 'place', array( 'orderby_json' => 'number', 'order' => 'ASC' ) );
 
 if ( isset( $places['error_msg'] ) ) $places = array();

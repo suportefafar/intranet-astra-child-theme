@@ -1,5 +1,3 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
 /*
  * LISTENER's
  */
@@ -202,7 +200,7 @@ function userColFormatter(current) {
   const { access_building_request_type, third_party_name, owner } =
     JSON.parse(current);
 
-  return html(`
+  return gridjs.html(`
       <div class="d-flex flex-column gap-1">
         <div>
           <span class="me-1"><i class="bi bi-person-up"></i></span>
@@ -236,7 +234,7 @@ function userColFormatter(current) {
 function placeColFormatter(current) {
   const { place, lab } = JSON.parse(current);
 
-  return html(`
+  return gridjs.html(`
       <div>
         <span>
           <a href="https://intranet.farmacia.ufmg.br/visualizar-objeto/?id=${
@@ -257,7 +255,7 @@ function placeColFormatter(current) {
 function periodColFormatter(current) {
   const { start_date, end_date } = JSON.parse(current);
 
-  return html(`
+  return gridjs.html(`
       <div class="d-flex flex-column gap-1">
         <div>
           <span class="me-1"><i class="bi bi-calendar-range"></i></span>
@@ -286,7 +284,7 @@ function lastRegisterUpdateFormatter(current) {
     ? new Date(registered_at * 1000).toLocaleString()
     : "";
 
-  return html(`
+  return gridjs.html(`
     <div class="d-flex gap-1 align-items-center">
       ${
         last_register
@@ -333,7 +331,7 @@ function actionColFormatter(current) {
       }
     </div>`;
 
-  return html(html_content);
+  return gridjs.html(html_content);
 }
 
 function confirmRegister(title = "", text = "", id = null, type = null) {

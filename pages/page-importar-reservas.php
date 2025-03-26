@@ -12,12 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-
-/*
- * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-salas-script', get_stylesheet_directory_uri() . '/assets/js/salas.js', array( 'jquery' ), false, false );
- */
-
 global $wpdb;
 
 $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';

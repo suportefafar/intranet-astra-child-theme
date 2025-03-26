@@ -12,13 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-
-/*
- * Importanto script JS customizado
- * wp_enqueue_script_module( 'intranet-fafar-visualizador-equipamento-script', get_stylesheet_directory_uri() . '/assets/js/visualizador-equipamento.js', array( 'jquery' ), false, false );
- */
-wp_enqueue_script( 'intranet-fafar-visualizar-ordem-de-servico-script', get_stylesheet_directory_uri() . '/assets/js/visualizar-ordem-de-servico.js', array( 'jquery' ), false, true );
-
 if( ! isset( $_GET["id"] ) ) {
     echo '<pre> Nenhum ID informado. </pre>';
     return;

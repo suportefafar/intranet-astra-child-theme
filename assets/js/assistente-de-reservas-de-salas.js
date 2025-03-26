@@ -1,5 +1,3 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
 /**
  * TABLE RENDER
  */
@@ -29,7 +27,7 @@ const ptBR = {
   error: "Ocorreu um erro ao buscar os dados",
 };
 
-const gridjs = new Grid({
+const grid = new gridjs.Grid({
   columns: [
     { name: "Sala", formatter: descPlaceFormatter },
     "Capacidade",
@@ -97,7 +95,7 @@ async function onSubmitHandler(e) {
 
   document.getElementById("table-wrapper").classList.remove("d-none");
 
-  gridjs
+  grid
     .updateConfig({
       search: true,
       data: salas,
@@ -112,7 +110,7 @@ async function onSubmitHandler(e) {
 function descPlaceFormatter(current) {
   const { number, block, floor, desc } = JSON.parse(current);
 
-  return html(`
+  return gridjs.html(`
     ${number}${desc ? " " + desc + " " : ""}(Bloco: ${block} / Andar: ${floor}º)
   `);
 }
@@ -135,5 +133,5 @@ function formatterHandler(current) {
   </div>  
       `;
 
-  return html(html_content);
+  return gridjs.html(html_content);
 }

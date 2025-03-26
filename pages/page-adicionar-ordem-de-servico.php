@@ -13,13 +13,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 
-/*
- * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-adicionar-ordem-de-servico-script', get_stylesheet_directory_uri() . '/assets/js/adicionar-ordem-de-servico.js', array( 'jquery' ), false, false );
- */
-wp_enqueue_script_module( 'intranet-fafar-adicionar-ordem-de-servico-script', get_stylesheet_directory_uri() . '/assets/js/adicionar-ordem-de-servico.js', array( 'jquery' ), false, false );
-
-
 get_header(); ?>
 
 <?php if ( astra_page_layout() == 'left-sidebar' ) : ?>

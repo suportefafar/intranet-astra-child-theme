@@ -12,13 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-
-/*
- * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-equipamentos-script', get_stylesheet_directory_uri() . '/assets/js/equipamentos.js', array( 'jquery' ), false, false );
- */
-wp_enqueue_script_module( 'intranet-fafar-ordens-de-servico-recebidas-script', get_stylesheet_directory_uri() . '/assets/js/ordens-de-servico-recebidas.js', array( 'jquery' ), false, false );
-
 $tabs_metadata = array( 
     array(
         'text' => 'Minhas',

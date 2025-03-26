@@ -1,5 +1,3 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
 /*
  * LISTENER'S
  */
@@ -237,7 +235,7 @@ function renderDataOnTable(data) {
 function assetColFormatter(current) {
   const { id, asset, internal_asset } = JSON.parse(current);
 
-  return html(`
+  return gridjs.html(`
       <div class="d-flex flex-column gap-1">
         <div>
           <span class="me-1"><i class="bi bi-upc-scan"></i></span>
@@ -368,7 +366,7 @@ function descColFormatter(current) {
     </div>
   `;
 
-  return html(htmlContent);
+  return gridjs.html(htmlContent);
 }
 
 function getOsIconByOsType(type) {
@@ -426,10 +424,10 @@ function statusColFormatter(current) {
         break;
     }
 
-    return html(`<span class="badge ${type}">${status_text}</span>`);
+    return gridjs.html(`<span class="badge ${type}">${status_text}</span>`);
   } catch (error) {
     console.error("Invalid JSON input:", current, error);
-    return html('<span class="badge text-bg-secondary">Erro</span>');
+    return gridjs.html('<span class="badge text-bg-secondary">Erro</span>');
   }
 }
 
@@ -462,7 +460,7 @@ function actionColFormatter(current) {
       }
     </div>`;
 
-  return html(html_content);
+  return gridjs.html(html_content);
 }
 
 function confirmDelete(id) {

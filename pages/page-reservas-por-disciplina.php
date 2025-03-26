@@ -12,14 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-
-/*
- * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-reservas-por-disciplina-script', get_stylesheet_directory_uri() . '/assets/js/reservas-por-disciplina.js', array( 'jquery' ), false, false );
- */
-// wp_enqueue_script_module( 'intranet-fafar-reservas-por-disciplina-script', get_stylesheet_directory_uri() . '/assets/js/reservas-por-disciplina.js', array( 'jquery' ), false, false );
-wp_enqueue_script( 'intranet-fafar-reservas-por-disciplina-script', get_stylesheet_directory_uri() . '/assets/js/reservas-por-disciplina.js', array(), false, true );
-
 $class_subject_title     = null;
 $reservations_by_subject = array();
 

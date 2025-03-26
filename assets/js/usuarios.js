@@ -1,5 +1,3 @@
-import { Grid, html } from "https://unpkg.com/gridjs?module";
-
 // Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
   // Export listed users
@@ -55,7 +53,7 @@ const ptBR = {
   error: "Ocorreu um erro ao buscar os dados",
 };
 
-const grid = new Grid({
+const grid = new gridjs.Grid({
   columns: [
     { name: "Nome", formatter: nameColFormatter },
     { name: "Posição", formatter: positionColFormatter },
@@ -158,7 +156,7 @@ function nameColFormatter(current) {
     user_email,
   } = JSON.parse(current);
 
-  return html(`
+  return gridjs.html(`
     <div class="d-flex gap-2">
       <div>
         <img src="${avatar_url}" width="128" class="rounded-3">
@@ -199,7 +197,7 @@ function nameColFormatter(current) {
 
 function positionColFormatter(current) {
   const { public_servant_bond_category, role } = JSON.parse(current);
-  return html(`
+  return gridjs.html(`
     <div class="d-flex gap-2 flex-column">
       <div class="d-flex gap-1">
         <i class="bi bi-bookmark"></i>
@@ -223,7 +221,7 @@ function createdAtColFormatter(current) {
       removido: "text-bg-danger",
     }[bond_status.toLowerCase()] || "text-bg-info";
 
-  return html(`
+  return gridjs.html(`
       <div class="d-flex gap-2">
       ${
         user_registered
@@ -245,7 +243,7 @@ function actionColFormatter(current) {
   // Esse objeto é passado de forma global pelo page-usuario.php
   const { userLogin } = userLogged;
 
-  return html(`
+  return gridjs.html(`
     <div class="d-flex gap-2">
       <a class="btn btn-outline-secondary" href="/membros/${user_login}/profile/" target="_blank" title="Detalhes">
         <i class="bi bi-info-lg"></i>

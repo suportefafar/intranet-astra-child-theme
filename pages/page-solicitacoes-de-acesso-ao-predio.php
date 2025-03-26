@@ -12,13 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-
-/*
- * Importanto script JS customizado
- * wp_enqueue_script( 'intranet-fafar-solicitacoes-de-acesso-ao-predio-script', get_stylesheet_directory_uri() . '/assets/js/solicitacoes-de-acesso-ao-predio.js', array( 'jquery' ), false, false );
- */
-wp_enqueue_script_module( 'intranet-fafar-solicitacoes-de-acesso-ao-predio-script', get_stylesheet_directory_uri() . '/assets/js/solicitacoes-de-acesso-ao-predio.js', array( 'jquery' ), false, false );
-
 $tabs_metadata = array( 
     array(
         'text' => 'Todas',
@@ -60,7 +53,7 @@ get_header(); ?>
     * Início
 --> 
         <!-- TABS -->
-
+        <?php if ( defined( 'WP_DEV_ENV' ) && WP_DEV_ENV === true ): ?>
         <ul id="ul_os_status_tabs" class="nav nav-tabs ms-0">
 
         <?php
@@ -85,6 +78,7 @@ get_header(); ?>
         ?>
 
         </ul>
+        <?php endif; ?>
 
         <br />
         <!-- TABLES -->
