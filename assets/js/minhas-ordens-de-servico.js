@@ -55,108 +55,135 @@ const grid = new gridjs.Grid({
       formatter: numberColFormatter,
     },
     {
-      name: "Atribuído à",
-      formatter: assignedToColFormatter,
+      name: "Descrição",
+      formatter: descColFormatter,
     },
-    "Departamento",
+    {
+      name: "Departamento",
+      formatter: deparmentColFormatter,
+    },
     {
       name: "Status",
       formatter: statusColFormatter,
     },
-    "Tipo",
     {
-      name: "Atualizado",
-      formatter: (current) => formatDateTime(current),
-    },
-    {
-      name: "Criado",
-      formatter: (current) => formatDateTime(current),
+      name: "Criado/Atualizado",
+      formatter: createdAtColFormatter,
     },
     {
       name: "Ações",
       formatter: actionColFormatter,
     },
   ],
-  data: fetchDataHandler,
+  search: {
+    server: {
+      url: (prev, keyword) => {
+        let junction = prev.indexOf("?") > 0 ? "&" : "?";
+        return `${prev}${junction}keyword=${keyword}`;
+      },
+    },
+  },
   pagination: {
-    limit: 20,
+    limit: 10,
+    server: {
+      url: (prev, page, limit) => {
+        let junction = prev.indexOf("?") > 0 ? "&" : "?";
+        return `${prev}${junction}limit=${limit}&offset=${page + 1}`;
+      },
+    },
     summary: true,
   },
-  search: true,
+  server: {
+    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/service_tickets/by_user",
+    then: renderDataOnTable,
+    total: (data) => data.count,
+  },
   sort: true,
   resizable: true,
   autoWidth: true,
   language: ptBR,
 }).render(document.getElementById("table-wrapper"));
 
-async function fetchDataHandler() {
-  let response;
+/*
+ * Para adicionar listeners aos spans com descrição, e abrir o Popover
+ */
+const observer = new MutationObserver((mutationsList) => {
+  for (const mutation of mutationsList) {
+    if (mutation.type === "childList") {
+      // Reinitialize popovers when new elements are added
+      const popoverTriggerList = [].slice.call(
+        document.querySelectorAll('[data-bs-toggle="popover"]')
+      );
+      popoverTriggerList.map((popoverTriggerEl) => {
+        return new bootstrap.Popover(popoverTriggerEl);
+      });
+    }
+  }
+});
+// Start observing the table container for changes
+const tableContainer = document.getElementById("table-wrapper");
+observer.observe(tableContainer, { childList: true, subtree: true });
 
-  try {
-    response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/service_tickets/by_user"
-    );
-  } catch (error) {
-    console.log(error.response.data.message);
+function renderDataOnTable(data) {
+  // Early return if data is invalid or empty
+  if (!data || !Array.isArray(data.results)) {
     return [];
   }
 
-  const submissions = response.data;
+  // Map through the results and transform each submission
+  return data.results.map((submission) => {
+    const { id, data, updated_at, created_at } = submission;
+    const {
+      assigned_to,
+      status,
+      type,
+      number,
+      user_report,
+      departament_assigned_to,
+    } = data;
 
-  console.log(submissions);
-
-  let table_arr = [];
-  for (const submission of submissions) {
-    const submission_data = submission.data;
-
-    const prevent_write = submission_data.prevent_write ? "1" : "0";
-    const prevent_exec = submission_data.prevent_exec ? "1" : "0";
+    const prevent_write = data.prevent_write ? "1" : "0";
+    const prevent_exec = data.prevent_exec ? "1" : "0";
     const permissions = prevent_write + prevent_exec;
 
     const number_column_data = JSON.stringify({
-      id: submission.id,
-      permissions,
-      number: submission_data.number,
+      id,
+      number,
+    });
+
+    const desc_column_data = JSON.stringify({
+      type,
+      user_report,
+    });
+
+    const departament_column_data = JSON.stringify({
+      assigned_to,
+      departament_assigned_to,
+    });
+
+    const date_column_data = JSON.stringify({
+      updated_at,
+      created_at,
     });
 
     const action_column_data = JSON.stringify({
-      id: submission.id,
+      id,
       permissions,
     });
-
-    table_arr.push([
+    // submission_data.departament_assigned_to.role_display_name
+    return [
       number_column_data,
-      submission_data.assigned_to,
-      submission_data.departament_assigned_to.role_display_name ?? "--",
-      submission_data.status ?? "--",
-      submission_data.type ?? "--",
-      submission.updated_at,
-      submission.created_at,
+      desc_column_data,
+      departament_column_data,
+      status,
+      date_column_data,
       action_column_data,
-    ]);
-  }
-
-  return table_arr;
+    ];
+  });
 }
 
-async function renderGridJS(data = []) {
-  if (!data) data = [];
-
-  if (data.length === 0) data = await fetchDataHandler();
-
-  grid
-    .updateConfig({
-      data,
-    })
-    .forceRender();
-}
-
-function numberColFormatter(current, row) {
-  const { id, permissions, number } = JSON.parse(current);
-
-  const prevent_write = parseInt(permissions.split("")[0]);
-
-  //console.log(current);
+function numberColFormatter(current) {
+  const { id, number } = JSON.parse(current);
 
   const html_content = `
     <div class="d-flex gap-2">
@@ -168,18 +195,61 @@ function numberColFormatter(current, row) {
   return gridjs.html(html_content);
 }
 
-function assignedToColFormatter(current, row) {
-  console.log(current);
-  if (!current.data) {
-    return "--";
-  }
+function descColFormatter(current) {
+  const { type, user_report } = JSON.parse(current);
 
-  const html_content = `<a href="/membros/${current.data.user_login}/" target="blank" title="${current.data.display_name}">${current.data.display_name}</a>`;
+  const MAX_CHAR_DESC = 80;
 
-  return gridjs.html(html_content);
+  const short_user_report =
+    user_report && user_report.length > MAX_CHAR_DESC
+      ? user_report.slice(0, MAX_CHAR_DESC) + "..."
+      : user_report;
+
+  return gridjs.html(`
+    <div class="d-flex flex-column gap-1">
+      <div>
+        <span>
+          ${type}
+        </span>
+      </div>
+
+      <a 
+          class="d-inline-block text-secondary fafar-cursor-pointer" 
+          tabindex="0" 
+          data-bs-toggle="popover" 
+          data-bs-trigger="focus" 
+          data-bs-title="Relato" 
+          data-bs-content="${user_report.replaceAll('"', "'")}">
+        ${short_user_report.replaceAll('"', "'")}
+        </a>
+    </div>
+    `);
 }
 
-function statusColFormatter(current, row) {
+function deparmentColFormatter(current) {
+  const { assigned_to, departament_assigned_to } = JSON.parse(current);
+
+  return gridjs.html(`
+    <div class="d-flex flex-column gap-1">
+      <div>
+        <i class="bi bi-bookmark"></i>
+        <span>${departament_assigned_to.role_display_name ?? "--"}</span>
+      </div>
+
+      <div>
+        <i class="bi bi-person"></i>
+        ${
+          assigned_to.data
+            ? `<a href="/membros/${assigned_to.data.user_login}/" target="blank" title="${assigned_to.data.display_name}">${assigned_to.data.display_name}</a>`
+            : "--"
+        }
+        
+      </div>
+    </div>
+  `);
+}
+
+function statusColFormatter(current) {
   let type = "text-bg-info";
   const current_lower = current.toLowerCase();
 
@@ -192,12 +262,36 @@ function statusColFormatter(current, row) {
   return gridjs.html(`<span class="badge ${type}">${current}</span>`);
 }
 
-function actionColFormatter(current, row) {
+function createdAtColFormatter(current) {
+  const { updated_at, created_at } = JSON.parse(current);
+
+  const formatted_created_at = formatDateTime(created_at);
+
+  const formatted_updated_at = formatDateTime(updated_at);
+
+  const how_long_created_at = getDateAsHowLongFormatted(created_at);
+
+  const how_long_updated_at = getDateAsHowLongFormatted(updated_at);
+
+  return gridjs.html(`
+    <div class="d-flex flex-column gap-1">
+      <div>
+        <i class="bi bi-clock"></i>
+        <a href="#" class="text-decoration-none" title="Criado em ${formatted_created_at}">${how_long_created_at}</a>
+      </div>
+
+      <div>
+        <i class="bi bi-arrow-clockwise"></i>
+        <a href="#" class="text-decoration-none" title="Atualizado em ${formatted_updated_at}">${how_long_updated_at}</a>
+      </div>
+    </div>
+  `);
+}
+
+function actionColFormatter(current) {
   const { id, permissions } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
-
-  console.log(current, row);
 
   const html_content = `
     <div class="d-flex gap-2">
@@ -240,11 +334,11 @@ async function deleteSubmission(id) {
       "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
     );
 
-    console.log(response);
+    //console.log(response);
 
     showAlert("Excluído com sucesso!", "success", true, 3000);
 
-    renderGridJS();
+    grid.forceRender();
   } catch (error) {
     let error_msg = "[1010]Unknow error on try catch";
 

@@ -73,7 +73,7 @@ const grid = new gridjs.Grid({
       formatter: assignedToColFormatter,
     },
     {
-      name: "Criado",
+      name: "Criado/Atualizado",
       formatter: (current) => createdAtColFormatter(current),
     },
     {
@@ -229,7 +229,6 @@ function renderDataOnTable(data) {
 
     const number_column_data = JSON.stringify({
       id,
-      permissions,
       number,
     });
 
@@ -261,7 +260,7 @@ function renderDataOnTable(data) {
 }
 
 function numberColFormatter(current) {
-  const { id, permissions, number } = JSON.parse(current);
+  const { id, number } = JSON.parse(current);
 
   const html_content = `
     <div class="d-flex gap-2">
@@ -362,9 +361,9 @@ function statusColFormatter(current) {
 function createdAtColFormatter(current) {
   const { updated_at, created_at } = JSON.parse(current);
 
-  const formatted_created_at = formatDateTime(created_at); //new Date(created_at).toLocaleString();
+  const formatted_created_at = formatDateTime(created_at);
 
-  const formatted_updated_at = formatDateTime(updated_at); //new Date(updated_at).toLocaleString();
+  const formatted_updated_at = formatDateTime(updated_at);
 
   const how_long_created_at = getDateAsHowLongFormatted(created_at);
 
@@ -400,25 +399,4 @@ function actionColFormatter(current) {
     </div>`;
 
   return gridjs.html(html_content);
-}
-
-function getDateAsHowLongFormatted(d) {
-  const date = new Date(d);
-  date.setHours(date.getHours() - 3);
-
-  const now = new Date();
-
-  const diff_seconds = (now.getTime() - date.getTime()) / 1000;
-
-  if (diff_seconds < 60) {
-    return "Agora";
-  } else if (diff_seconds < 60 * 60) {
-    return (diff_seconds / 60).toFixed(0) + "min";
-  } else if (diff_seconds < 60 * 60 * 24) {
-    return (diff_seconds / (60 * 60)).toFixed(0) + "h";
-  } else if (diff_seconds < 60 * 60 * 24 * 30) {
-    return (diff_seconds / (60 * 60 * 24)).toFixed(0) + "d";
-  } else {
-    return date.toLocaleDateString();
-  }
 }

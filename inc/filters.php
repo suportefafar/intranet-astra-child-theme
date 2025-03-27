@@ -28,3 +28,21 @@ function set_session_to_browser_close() {
     return YEAR_IN_SECONDS; // Session expires when the browser is closed
 }
 
+// Add this to your child theme's functions.php or a custom plugin
+function modify_off_canvas_menu($menu_items, $args) {
+    // Only target the off-canvas menu
+    if ($args->theme_location === 'off_canvas') { // Change to your menu location
+        // Modify menu items dynamically
+        foreach ($menu_items as &$item) {
+            // Example: Add a class to all items
+            $item->classes[] = 'dynamic-class';
+            
+            // Example: Change specific item titles
+            if ($item->title === 'Original Text') {
+                $item->title = 'New Dynamic Text';
+            }
+        }
+    }
+    return $menu_items;
+}
+// add_filter('wp_nav_menu_objects', 'modify_off_canvas_menu', 10, 2);

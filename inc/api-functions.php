@@ -682,77 +682,114 @@ function intranet_fafar_api_get_loans_by_equipament( $id ) {
 }
 
 function intranet_fafar_api_get_service_tickets_by_user_handler( $request ) {
+    $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
+    $offset  = $request->get_param('offset') ? intval($request->get_param('offset')) : 1;
+    $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
+    $user_id = $request->get_param('user_id') && is_numeric( $request->get_param('user_id') ) ? intval($request->get_param('user_id')) : null;
 
-    $submissions = intranet_fafar_api_get_service_tickets_by_user();
+    $submissions = intranet_fafar_api_get_service_tickets_by_user( $user_id, $keyword, $offset, $limit );
 
-    if ( isset( $submissions['error_msg'] ) ) {
-
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
-
+    if( ! $submissions ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 500 ),
+        );
     }
 
-    return rest_ensure_response( $submissions );
+    if( count( $submissions ) == 0 ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+        );
+    }
+
+    return rest_ensure_response(
+        array(
+            'count'    => $submissions['pagination']['total_items'],
+            'next'     => null,
+            'previous' => null,
+            'results'  => $submissions['data'],
+        )
+    );
 
 }
 
-function intranet_fafar_api_get_service_tickets_by_user() {
+function intranet_fafar_api_get_service_tickets_by_user(
+    $user_id = null,
+    $keyword = '', 
+    $offset = 1, 
+    $limit = -1, 
+    $substitute_value = true
+) {
+    $query_params = array(
+        'filters'  => array(
+            array(
+                'column'   => 'object_name',
+                'value'    => 'service_ticket',
+                'operator' => '=',
+            )
+        ),
+        'order_by' => array(
+            'orderby_json' => 'created_at',
+            'order'        => 'DESC',
+        ),
+        'page'     => $offset,   
+        'per_page' => $limit,
+        'keyword'  => $keyword, 
+    );
 
-    $user_id = get_current_user_id();
+    if ( ! $user_id )
+        $user_id = get_current_user_id();
 
-    //$query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $new_code . "\"', '$.code')";
+    // Se não for Administrador
+    if ( $user_id !== 1 ) {
+        $query_params['filters'][] = array(
+            'column'   => 'owner',
+            'value'    => $user_id,
+            'operator' => '=',
+        );
+    }
 
-    $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND `owner` = '" . $user_id . "' ORDER BY created_at DESC";
+    $submissions = intranet_fafar_api_read( args: $query_params );
 
-    // Se for Administrador, então acessa todas as ordens de serviço
-    if ( $user_id === 1 )
-        $query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' ORDER BY created_at DESC";
-
-
-    $service_tickets = intranet_fafar_api_read( $query );
-
-    if ( isset( $service_tickets['error_msg'] ) )
-        return $service_tickets['error_msg'];
-
-    if ( empty( $service_tickets ) )
-        return array( 'error_msg' => 'Nenhuma ordem de serviço encontrada do usuário atual!' );
+    // null ou []
+    if ( empty( $submissions ) ) return $submissions;
     
-    for ( $i = 0; $i < count( $service_tickets ); $i++ ) {
+    if ( ! $substitute_value ) return $submissions;
+    
+    $submissions['data'] = array_map( function ( $submission ) {
+        if ( isset( $submission['owner'] ) && is_numeric( $submission['owner'] ) )
+            $submission['owner'] = intranet_fafar_api_get_user_by_id( $submission['owner'] );
 
-       /*
-        * Substituir os campos que tem ID de outro objeto,
-        * pelo objeto de mesmo ID
-        */ 
-        if ( isset( $service_tickets[$i]['owner'] ) && is_numeric( $service_tickets[$i]['owner'] ) )
-            $service_tickets[$i]['owner'] = intranet_fafar_api_get_user_by_id( $service_tickets[$i]['owner'] );
+        if ( isset( $submission['data']['place'][0] ) )
+            $submission['data']['place'] = intranet_fafar_api_get_submission_by_id( $submission['data']['place'][0] );
 
-        if ( isset( $service_tickets[$i]['data']['place'][0] ) )
-            $service_tickets[$i]['data']['place'] = intranet_fafar_api_create_service_ticket( $service_tickets[$i]['data']['place'][0] );
-
-        if ( isset( $service_tickets[$i]['data']['departament_assigned_to'][0] ) ) {
+        if ( isset( $submission['data']['departament_assigned_to'][0] ) ) {
 
             // Get the display name of the role
-            $role_slug = $service_tickets[$i]['data']['departament_assigned_to'][0];
+            $role_slug = $submission['data']['departament_assigned_to'][0];
                 
             $role_display_name = '--';
                 
             if ( isset( wp_roles()->roles[ $role_slug ] ) )
                 $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
 
-            $service_tickets[$i]['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
+            $submission['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
 
         }
 
-        
-        if ( isset( $service_tickets[$i]['data']['assigned_to'] ) ) {
+        if ( isset( $submission['data']['assigned_to'] ) ) {
 
-            $service_tickets[$i]['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $service_tickets[$i]['data']['assigned_to'] );
+            $submission['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $submission['data']['assigned_to'] );
 
         }
 
-    }
+        return $submission;
+    }, $submissions['data'] );
 
-    return $service_tickets;    
-
+    return $submissions;   
 }
 
 function intranet_fafar_api_get_service_tickets_by_departament_handler( $request ) {

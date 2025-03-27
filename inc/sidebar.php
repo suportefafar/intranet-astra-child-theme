@@ -62,9 +62,7 @@ function intranet_fafar_sidebar_menu() {
         in_array( $role_slug,  $roles_with_custom_menu ) && 
         isset( wp_roles()->roles[ $role_slug ] )
     ) {
-
         $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
-
     }
 
     echo '<div style="min-height:16em">';

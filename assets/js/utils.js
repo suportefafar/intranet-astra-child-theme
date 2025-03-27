@@ -39,3 +39,24 @@ function formatDateToDDMMYYYY(dateString) {
 function removeAccents(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
+
+function getDateAsHowLongFormatted(d) {
+  const date = new Date(d);
+  date.setHours(date.getHours() - 3);
+
+  const now = new Date();
+
+  const diff_seconds = (now.getTime() - date.getTime()) / 1000;
+
+  if (diff_seconds < 60) {
+    return "Agora";
+  } else if (diff_seconds < 60 * 60) {
+    return (diff_seconds / 60).toFixed(0) + "min";
+  } else if (diff_seconds < 60 * 60 * 24) {
+    return (diff_seconds / (60 * 60)).toFixed(0) + "h";
+  } else if (diff_seconds < 60 * 60 * 24 * 30) {
+    return (diff_seconds / (60 * 60 * 24)).toFixed(0) + "d";
+  } else {
+    return date.toLocaleDateString();
+  }
+}
