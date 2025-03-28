@@ -2357,13 +2357,14 @@ function intranet_fafar_api_get_user_by_id( $id ) {
         $user_data['workplace_place']     = intranet_fafar_api_get_submission_by_id( esc_attr( get_the_author_meta( 'workplace_place', $user->ID ) ) );
         $user_data['workplace_extension'] = esc_attr( get_the_author_meta( 'workplace_extension', $user->ID ) );
 
+        $user_data['personal_phone'] = esc_attr( get_the_author_meta( 'personal_phone', $user->ID ) );
+
         $user_data['prevent_read']  = false;
         $user_data['prevent_write'] = true;
         $user_data['prevent_exec']  = true;
 
         if( ! $can_view_personal_info ) return $user_data;
 
-        $user_data['personal_phone']             = esc_attr( get_the_author_meta( 'personal_phone', $user->ID ) );
         $user_data['personal_birthday']          = esc_attr( get_the_author_meta( 'personal_birthday', $user->ID ) );
         $user_data['personal_cpf']               = esc_attr( get_the_author_meta( 'personal_cpf', $user->ID ) );
         $user_data['personal_ufmg_registration'] = esc_attr( get_the_author_meta( 'personal_ufmg_registration', $user->ID ) );

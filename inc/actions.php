@@ -81,6 +81,7 @@ function fafar_intranet_actions_add_custom_profile_info() {
           
     $workplace_place     = intranet_fafar_api_get_submission_by_id( esc_attr( get_the_author_meta( 'workplace_place', $user_id ) ) );
     $workplace_extension = esc_attr( get_the_author_meta( 'workplace_extension', $user_id ) );
+    $personal_phone = esc_attr( get_the_author_meta( 'personal_phone', $user_id ) );
 
     $role_slug  = ( isset( $user['roles'][0] ) ? $user['roles'][0] : '' );
 
@@ -98,6 +99,22 @@ function fafar_intranet_actions_add_custom_profile_info() {
                 <?php endif; ?>
             </div>
             <div>
+                <i class="bi bi-geo-alt"></i>
+                <span class="fw-medium">
+                    <?php if ( ! empty( $workplace_place ) && ! isset( $workplace_place['error_msg'] ) ): ?>
+                    <a href="/visualizar-sala?id=<?= $workplace_place['id'] ?>" target="_blank" title="Perfil da sala <?= $workplace_place['data']['number'] ?>">
+                        <?= $workplace_place['data']['number'] ?>
+                    </a>
+                    <?php endif; ?>
+                </span>
+            </div>
+            <div>
+                <i class="bi bi-telephone fs-6 fw-light"></i>
+                <?php if ( ! empty( $workplace_extension ) ): ?>
+                <span class="fw-medium"><?php echo ( $workplace_extension ) ?></span>
+                <?php endif; ?>
+            </div>
+            <div>
                 <i class="bi bi-envelope"></i>
                 <span class="fw-medium">
                     <?php if ( ! empty( $user['data']->user_email ) ): ?>
@@ -108,19 +125,11 @@ function fafar_intranet_actions_add_custom_profile_info() {
                 </span>
             </div>
             <div>
-                <i class="bi bi-geo-alt"></i>
-                <span class="fw-medium">
-                    <?php if ( ! empty( $workplace_place ) && ! isset( $workplace_place['error_msg'] ) ): ?>
-                    <a href="/visualizar-sala?id=<?= $workplace_place['id'] ?>" target="_blank" title="Perfil de <?= $workplace_place['data']['number'] ?>">
-                        <?= $workplace_place['data']['number'] ?>
-                    </a>
-                    <?php endif; ?>
-                </span>
-            </div>
-            <div>
                 <i class="bi bi-telephone fs-6 fw-light"></i>
-                <?php if ( ! empty( $workplace_extension ) ): ?>
-                <span class="fw-medium"><?php echo ( $workplace_extension ) ?></span>
+                <?php if ( ! empty( $personal_phone ) ): ?>
+                <a href="tel:<?= $personal_phone ?>" target="_blank" title="Ligar para <?= $personal_phone ?>">
+                    <?= $personal_phone ?>
+                </a>
                 <?php endif; ?>
             </div>
         </div>

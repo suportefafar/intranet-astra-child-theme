@@ -118,6 +118,7 @@ function renderDataOnTable(data) {
       bond_status,
       user_registered,
       workplace_place,
+      personal_phone,
       prevent_write,
     } = user;
 
@@ -128,6 +129,7 @@ function renderDataOnTable(data) {
       user_login,
       workplace_place,
       user_email,
+      personal_phone,
     });
 
     const positionData = JSON.stringify({
@@ -154,6 +156,7 @@ function nameColFormatter(current) {
     user_login,
     workplace_place,
     user_email,
+    personal_phone,
   } = JSON.parse(current);
 
   return gridjs.html(`
@@ -185,12 +188,21 @@ function nameColFormatter(current) {
           </div>
         </div>
         
-        <span class="fs-6">
-          <i class="bi bi-envelope"></i>
-          <a href="mailto:${user_email}" target="_blank" title="Envie e-mail para ${user_email}">
-            ${user_email}
-          </a>
-        </span>
+        <div class="d-flex gap-2">
+          <span class="fs-6">
+            <i class="bi bi-envelope"></i>
+            <a href="mailto:${user_email}" target="_blank" title="Envie e-mail para ${user_email}">
+              ${user_email}
+            </a>
+          </span>
+
+          <span class="fs-6">
+            <i class="bi bi-telephone"></i>
+            <a href="tel:${personal_phone}" target="_blank" title="Ligar para o telefone ${personal_phone}">
+              ${personal_phone}
+            </a>
+          </span>
+        </div>
       </div>
     </div>`);
 }
