@@ -120,12 +120,12 @@ function intranet_fafar_initial_setup() {
          * Grava os setores de trabalho possíveis, como 
          * 'roles' do WordPress
          */
-        $work_sectors = intranet_fafar_add_custom_roles();
+        intranet_fafar_add_custom_roles();
 
         /*
-         * Cria menus para cada setor 
+         * Cria menus padrões
          */
-        intranet_fafar_add_custom_roles_menus( $work_sectors );
+        intranet_fafar_add_custom_roles_menus();
     }
 }
 
@@ -148,7 +148,6 @@ function intranet_fafar_remove_all_roles_except_admin() {
 }
 
 function intranet_fafar_add_custom_roles() {
-
     intranet_add_custom_capabilities();
 
     /* 
@@ -437,26 +436,19 @@ function intranet_fafar_add_custom_roles() {
     }
 
     return $work_sectors;
-
 }
 
-function intranet_fafar_add_custom_roles_menus( $sectors = null ) {
+function intranet_fafar_add_custom_roles_menus() {
 
-    if( ! $sectors ) return;
+    $menus = array( 'ADMINISTRATOR', 'DEFAULT', 'HEADER' );
 
-    foreach( $sectors as $sector ) {
-        /* 
-         * Registra um menu para cada setor 
-         */
-        $menu_exists = wp_get_nav_menu_object( $sector['display_name'] );
+    foreach( $menus as $menu ) {
+        $menu_exists = wp_get_nav_menu_object( $menu );
         
         if ( ! $menu_exists ) {
-
-            $menu_id = wp_create_nav_menu( $sector['display_name'] );
-
+            wp_create_nav_menu( $menu );
         }
     }
-
 }
 
 function intranet_add_custom_capabilities() {

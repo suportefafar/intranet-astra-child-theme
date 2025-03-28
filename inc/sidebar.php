@@ -38,36 +38,19 @@ function intranet_fafar_sidebar_profile() {
 }
 
 function intranet_fafar_sidebar_menu() {
+    $menu_name = 'DEFAULT';
 
-    $roles_with_custom_menu = array(
-        'pessoal',
-        'administrator',
-        'ppgca',
-        'ppgact',
-        'ppgcf',
-        'ppgmaf',
-        'alm',
-        'tecnologia_da_informacao_e_suporte',
-        'apoio_logistico_e_operacional',
-        'portaria',
-        'colegiado_de_graduacao_biomedicina',
-        'colegiado_de_graduacao_farmacia'
-    );
+    $role_slug         = ( isset( wp_get_current_user()->roles[0] ) ? wp_get_current_user()->roles[0] : '' );
+    $role_display_name = isset( wp_roles()->roles[ $role_slug ] ) ? wp_roles()->roles[ $role_slug ]['name'] : '';
+    $menu              = wp_get_nav_menu_object( strtoupper( $role_display_name ) );
 
-    $role_display_name = 'default';
-
-    $role_slug = ( isset( wp_get_current_user()->roles[0] ) ? wp_get_current_user()->roles[0] : '' );
-
-    if (
-        in_array( $role_slug,  $roles_with_custom_menu ) && 
-        isset( wp_roles()->roles[ $role_slug ] )
-    ) {
-        $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
+    if ( $menu ) {
+        $menu_name = strtoupper( $role_slug );
     }
 
     echo '<div style="min-height:16em">';
         echo wp_nav_menu(array(
-            'menu' => $role_display_name,
+            'menu' => $menu_name,
             'container' => false,
             'menu_class' => '',
             'fallback_cb' => '__return_false',
