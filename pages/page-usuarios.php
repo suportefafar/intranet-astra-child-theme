@@ -12,24 +12,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
+get_header(); 
 
 /*
  * Obtendo o setor do usuário para limitar ou permitir algumas funcionalidades
  */
-$user        = wp_get_current_user();
-$sector_slug = $user->roles[0];
+$user = wp_get_current_user();
 
+// Safely get the first role (if exists)
+$sector_slug = !empty($user->roles) ? $user->roles[0] : '';
+
+// Only expose necessary information
 $user_logged_params = array(
     'displayName' => $user->display_name,
-    'userLogin'   => $user->user_login
+    // Consider if user_login is actually needed
+    'userLogin' => $user->user_login,
+    'sectorSlug' => $sector_slug
 );
 
-get_header(); ?>
-
-<script>
-    const userLogged = <?php echo wp_json_encode( $user_logged_params, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
-</script>
-
+// Only localize if the script is registered
+if ( wp_script_is( 'intranet-fafar-usuarios', 'registered' ) ) {
+    wp_localize_script( 'intranet-fafar-usuarios', 'userLogged', $user_logged_params );
+} else {
+    error_log( 'Script intranet-fafar-usuarios not registered' );
+}
+?>
 
 <?php if ( astra_page_layout() == 'left-sidebar' ) : ?>
 

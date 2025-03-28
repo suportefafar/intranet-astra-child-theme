@@ -359,50 +359,181 @@ function intranet_fafar_mail_on_set_auditorium_reservation_technical( $reservati
 }
 
 function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $attachments = null ) {
-  error_log( print_r( array( $to, $subject, $message, $headers, $attachments ), true) );
+  error_log( print_r( array( $to, $subject, $message, $headers, $attachments ), true ) );
 
   $html_mail_body_template = '
     <!DOCTYPE html>
     <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Atualizações na Intranet - Faculdade de Farmácia da UFMG</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-            <!-- Header -->
-            <tr>
-                <td style="background-color: #404040; color: #ffffff; padding: 20px; text-align: center;">
-                    <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                        <tr>
-                            <td width="64" align="center">
-                                <img src="https://intranet.farmacia.ufmg.br/wp-content/uploads/2025/03/logo-fafar-white-gray.png" alt="Ícone da Faculdade de Farmácia da UFMG" style="display: block; width: 64px; height: 64px;">
-                            </td>
-                            <td align="left" style="font-size: 24px; padding-left: 10px; font-weight: bold;">Faculdade de Farmácia da UFMG</td>
-                        </tr>
+        <style type="text/css">
+          @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap");
+          body,
+          table,
+          td,
+          a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+          }
+          table,
+          td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+          }
+          img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+          }
+          body {
+            font-family: "Open Sans", Arial, sans-serif;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+        </style>
+      </head>
+      <body style="background-color: #f7f9fc; margin: 0; padding: 0">
+        <!-- Preheader text -->
+        <div style="display: none; max-height: 0px; overflow: hidden">
+          Atualizações importantes na intranet da Faculdade de Farmácia da UFMG
+        </div>
+
+        <!-- Email container -->
+        <table
+          border="0"
+          cellpadding="0"
+          cellspacing="0"
+          width="100%"
+          style="background-color: #f7f9fc"
+        >
+          <tr>
+            <td align="center" valign="top">
+              <table
+                border="0"
+                cellpadding="0"
+                cellspacing="0"
+                width="600"
+                style="border-radius: 6px; overflow: hidden"
+              >
+                <!-- Header -->
+                <tr>
+                  <td align="center" bgcolor="#404040" style="padding: 30px 20px">
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td align="center" style="padding-bottom: 20px">
+                          <img
+                            src="https://intranet.farmacia.ufmg.br/wp-content/uploads/2025/03/logo-fafar-white-gray.png"
+                            alt="Faculdade de Farmácia da UFMG"
+                            width="80"
+                            style="display: block"
+                          />
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          align="center"
+                          style="
+                            color: #ffffff;
+                            font-size: 24px;
+                            font-weight: 700;
+                            padding-bottom: 10px;
+                          "
+                        >
+                          Faculdade de Farmácia da UFMG
+                        </td>
+                      </tr>
                     </table>
-                </td>
-            </tr>
+                  </td>
+                </tr>
 
-            <!-- Content -->
-            <tr>
-                <td style="padding: 20px; color: #333333; font-size: 16px; line-height: 1.6;">
-                    <p>Prezado(a),</p>
-                    <p>' . $message . '</p>
-                    <p>Atenciosamente,<br>Equipe de Suporte da Faculdade de Farmácia da UFMG</p>
-                </td>
-            </tr>
+                <!-- Content -->
+                <tr>
+                  <td bgcolor="#ffffff" style="padding: 40px 30px">
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td
+                          style="
+                            color: #2c3e50;
+                            font-size: 16px;
+                            line-height: 1.6;
+                            padding-bottom: 20px;
+                          "
+                        >
+                          Prezado(a),
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          style="
+                            color: #34495e;
+                            font-size: 15px;
+                            line-height: 1.6;
+                            padding-bottom: 20px;
+                          "
+                        >
+                          ' . $message . '
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          style="
+                            color: #7f8c8d;
+                            font-size: 14px;
+                            line-height: 1.6;
+                            padding-top: 20px;
+                            border-top: 1px solid #ecf0f1;
+                          "
+                        >
+                          <em>Atenciosamente,</em><br />
+                          <strong style="color: #2c3e50"
+                            >Equipe de Suporte da Faculdade de Farmácia da
+                            UFMG</strong
+                          >
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
 
-            <!-- Footer -->
-            <tr>
-                <td style="background-color: #f1f1f1; text-align: center; padding: 10px; font-size: 14px; color: #666666;">
-                    <p>Este é um e-mail automático. Por favor, não responda diretamente a esta mensagem.</p>
-                    <p>Dúvidas? Entre em contato: <a href="mailto:suporte@farmacia.ufmg.br" style="color: #004a8d; text-decoration: none;">suporte@farmacia.ufmg.br</a></p>
-                </td>
-            </tr>
+                <!-- Footer -->
+                <tr>
+                  <td bgcolor="#ecf0f1" style="padding: 30px">
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td
+                          align="center"
+                          style="color: #7f8c8d; font-size: 12px; line-height: 1.6"
+                        >
+                          <p style="margin: 0 0 15px 0">
+                            Este é um e-mail automático. Por favor, não responda
+                            diretamente a esta mensagem.
+                          </p>
+                          <p style="margin: 0 0 15px 0">
+                            Dúvidas? Entre em contato:
+                            <a
+                              href="mailto:suporte@farmacia.ufmg.br"
+                              style="color: #2980b9; text-decoration: none"
+                              >suporte@farmacia.ufmg.br</a
+                            >
+                          </p>
+                          <p style="margin: 0">
+                            2025 Faculdade de Farmácia da UFMG
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
         </table>
-    </body>
+      </body>
     </html>';
 
     if ( ! is_email( $to ) ) {

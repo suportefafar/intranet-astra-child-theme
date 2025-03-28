@@ -151,6 +151,7 @@ function intranet_fafar_conditional_scripts() {
 
     // Check if file exists and enqueue
     if ( file_exists( $full_script_path ) ) {
+        error_log("intranet-fafar-{$slug}");
         wp_enqueue_script(
             "intranet-fafar-{$slug}",
             get_stylesheet_directory_uri() . $relative_script_path,
