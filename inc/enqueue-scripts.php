@@ -5,10 +5,10 @@ if (!defined('ABSPATH')) {
 }
 
 // Hook to enqueue styles
-add_action('wp_enqueue_scripts', 'intranet_fafar_enqueue_scripts_styles');
+add_action( 'wp_enqueue_scripts', 'intranet_fafar_enqueue_scripts_styles' );
 
 // Hook to enqueue scripts
-add_action('wp_enqueue_scripts', 'intranet_fafar_conditional_scripts');
+add_action( 'wp_enqueue_scripts', 'intranet_fafar_conditional_scripts' );
 
 // Enqueue theme scripts and styles with proper dependency management
 function intranet_fafar_enqueue_scripts_styles() {
@@ -130,6 +130,21 @@ function intranet_fafar_enqueue_scripts_styles() {
             array( 'jquery', 'bootstrap-bundle' ),
             filemtime( get_stylesheet_directory() . $path ),
             true
+        );
+    }
+
+    /**
+     * Esse arquivo é uma gambiarra porque acredito que o ideal 
+     * era ter essa funcionalidade na página de edição do usuário 
+     * dentro da área de administração do WP.
+     */
+    if ( bp_is_user() ) {
+        wp_enqueue_script( 
+            'intranet-fafar-perfil-bp', 
+            get_stylesheet_directory_uri() . '/assets/js/perfil-bp.js', 
+            array('jquery'), 
+            filemtime( get_stylesheet_directory() . '/assets/js/perfil-bp.js' ), 
+            true 
         );
     }
 }

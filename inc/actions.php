@@ -81,7 +81,7 @@ function fafar_intranet_actions_add_custom_profile_info() {
           
     $workplace_place     = intranet_fafar_api_get_submission_by_id( esc_attr( get_the_author_meta( 'workplace_place', $user_id ) ) );
     $workplace_extension = esc_attr( get_the_author_meta( 'workplace_extension', $user_id ) );
-    $personal_phone = esc_attr( get_the_author_meta( 'personal_phone', $user_id ) );
+    $personal_phone      = esc_attr( get_the_author_meta( 'personal_phone', $user_id ) );
 
     $role_slug  = ( isset( $user['roles'][0] ) ? $user['roles'][0] : '' );
 
@@ -90,8 +90,26 @@ function fafar_intranet_actions_add_custom_profile_info() {
         $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
     }
 
+    $category = get_the_author_meta( 'public_servant_bond_category', $user_id );
+
+    $has_collaborators = false;
+    if ( strtolower( $category) === 'docente' ) $has_collaborators = true;
+
+    if ( $has_collaborators ) {
+        $laboratory_team = intranet_fafar_api_get_laboratory_team_by_owner_id( $user_id );
+        $teamId          = null; 
+        if ( $laboratory_team ) {
+            $teamId = $laboratory_team['id'];
+        }
+
+        wp_localize_script( 'intranet-fafar-perfil-bp', 'teamId', $teamId );
+        wp_localize_script( 'intranet-fafar-perfil-bp', 'teamOwnerId', $user_id );
+    }
+    $lab_team_update_permission = ( ( $user_id === get_current_user_id() ) ? 1 : 0 );
+    wp_localize_script( 'intranet-fafar-perfil-bp', 'labTeamUpdatePermission', $lab_team_update_permission );
+
     ?>
-        <div class="d-flex gap-4 flex-column flex-sm-row">
+        <div class="d-flex align-items-center gap-4 flex-column flex-sm-row">
             <div>
                 <i class="bi bi-bookmark"></i>
                 <?php if ( ! empty( $role_display_name ) ): ?>
@@ -131,6 +149,41 @@ function fafar_intranet_actions_add_custom_profile_info() {
                     <?= $personal_phone ?>
                 </a>
                 <?php endif; ?>
+            </div>
+            <?php if ( $has_collaborators ): ?>
+            <a class="btn btn-outline-primary" id="btn-collaborators-list" title="Listar colaboradores">
+                <i class="bi bi-people fs-6 fw-light"></i>
+                Colaboradores
+            </a>
+            <?php endif; ?>
+        </div>
+
+        <!-- Modal para lista de colaboradores intranetFafarCollaboratorsList -->
+        <div class="modal fade" id="intranetFafarCollaboratorsList" tabindex="-1" aria-labelledby="intranetFafarCollaboratorsListLabel" aria-hidden="true">
+            <div class="modal-dialog" id="modal-container-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <span class="modal-title fs-5" id="intranetFafarCollaboratorsListLabel">Colaboradores</span>
+                    <a class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"></a>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table border-start-0" id="table-collaborators-list">
+                            <thead>
+                                <tr>
+                                <th scope="col">Nome</th>
+                                <th scope="col">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-primary" id="btn-new-line">Adicionar</a>
+                    <a class="btn btn-secondary" data-bs-dismiss="modal">Fechar</a>
+                </div>
+                </div>
             </div>
         </div>
     <?php 

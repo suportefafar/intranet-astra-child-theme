@@ -181,7 +181,7 @@ function nameColFormatter(current) {
               <div>
                 <i class="bi bi-geo-alt"></i>
                 <span>${
-                  workplace_place.data ? workplace_place.data.number : ""
+                  workplace_place?.data ? workplace_place.data.number : ""
                 }</span>
               </div>
             </div>

@@ -18,7 +18,6 @@ if( ! isset( $_GET["id"] ) ) {
 }
 
 function fafar_intranet_format_date_local( $datetime ) {
-
     // Create a DateTime object with the input string, assuming it's in UTC
     $date = new DateTime( $datetime, new DateTimeZone( 'UTC' ) );
 
@@ -26,7 +25,6 @@ function fafar_intranet_format_date_local( $datetime ) {
     $date->setTimezone( new DateTimeZone( 'America/Sao_Paulo' ) );
 
     return $date->format( 'd/m/Y, H:i:s' );
-
 }
 
 function fafar_intranet_get_status_badge( $status ) {
@@ -326,7 +324,7 @@ get_header(); ?>
                                     <?php
                                         if ( ! isset( $service_ticket['data']['assigned_to'] ) ) $service_ticket['data']['assigned_to'] = 0;
 
-                                        $users_by_departament = intranet_fafar_get_user_by_departament( $service_ticket_departament_role_slug, 'ATIVO' );
+                                        $users_by_departament = intranet_fafar_get_users_by_departament_as_options( $service_ticket_departament_role_slug, 'ATIVO' );
                                     ?>
 
                                         <option value="0" <?php selected( strval( $service_ticket['data']['assigned_to'] ), 0 ); ?> >Selecione um</option>

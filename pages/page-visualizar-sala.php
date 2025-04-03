@@ -140,28 +140,6 @@ get_header(); ?>
                                 <td>Capacidade</td>
                                 <td class="fw-medium"><?php echo ( ( $place['data']['capacity'] ) ?? '' ) ?></td>
                             <tr>
-                            <?php if ( ! empty( $place['data']['object_sub_type'][0] ) && $place['data']['object_sub_type'][0] === 'lab' ): ?>
-                            <tr>
-                                <td>Professor responsável</td>
-                                <td class="fw-medium">
-                                    <?php if ( $professor_responsible ): ?>
-                                    <a href="/membros/<?= $professor_responsible['data']->user_login ?>" target="_blank" title="Perfil de <?= $professor_responsible['data']->display_name ?>">
-                                        <?= $professor_responsible['data']->display_name ?>
-                                    </a>
-                                    <?php endif; ?>
-                                </td>
-                            <tr>
-                            <tr>
-                                <td>TAE responsável</td>
-                                <td class="fw-medium">
-                                    <?php if ( $tae_responsible ): ?>
-                                    <a href="/membros/<?= $tae_responsible['data']->user_login ?>" target="_blank" title="Perfil de <?= $tae_responsible['data']->display_name ?>">
-                                        <?= $tae_responsible['data']->display_name ?>
-                                    </a>
-                                    <?php endif; ?>
-                                </td>
-                            <tr>
-                            <?php endif; ?>
                             <tr>
                                 <td>Dono</td>
                                 <td class="fw-medium">

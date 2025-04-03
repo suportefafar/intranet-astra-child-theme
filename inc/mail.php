@@ -333,8 +333,6 @@ function intranet_fafar_mail_on_set_auditorium_reservation_technical( $reservati
   // Responsável do equipamento
   $user_info      = get_userdata( $reservation['data']['technical'] );
   $technical_name = $user_info ? $user_info->display_name : '';
-
-  $applicant_name = $reservation['data']['applicant_name'];
   
   $message = '
     <p>😊 Informamos que o técnico ' . $technical_name . ' foi designado para acompanhar o seu evento e garantir que tudo funcione perfeitamente.</p>
@@ -352,6 +350,31 @@ function intranet_fafar_mail_on_set_auditorium_reservation_technical( $reservati
 
   $subject = 'Técnico Designado para Sua Reserva de Auditório 🛠️';
   $to      = $reservation['data']['applicant_email'];
+
+  intranet_fafar_mail_notify( $to, $subject, $message );
+
+  return true;
+}
+
+function intranet_fafar_mail_on_update_laboratory_team( $laboratory_team, $action, $collaborator_id ) {
+  if ( empty( $laboratory_team ) || empty( $action ) ) return false;
+
+  // Professor responsável
+  $professor = get_userdata( (int) $laboratory_team['owner'] );
+  if ( ! $professor ) return false;
+  
+  $message = '<p>É um prazer tê-lo(a) conosco! Você foi adicionado(a) como colaborador do Prof(a) ' . $professor->display_name . '.</p>';
+
+  if ( $action === 'remove' ) {
+    $message = '<p>Informamos que você foi removido(a) como colaborador do Prof(a) ' . $professor->display_name . '.</p>';
+  }
+
+  // Colaborador alvo
+  $collaborator = get_userdata( (int) $collaborator_id );
+  if ( ! $collaborator ) return false;
+
+  $subject = 'Atualização Em Equipe De Laboratório 🛠️';
+  $to      = $collaborator->user_email;
 
   intranet_fafar_mail_notify( $to, $subject, $message );
 
@@ -510,11 +533,10 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
                           style="color: #7f8c8d; font-size: 12px; line-height: 1.6"
                         >
                           <p style="margin: 0 0 15px 0">
-                            Este é um e-mail automático. Por favor, não responda
-                            diretamente a esta mensagem.
+                            Este é um e-mail automático, mas sinta-se a vontade para respondê-lo com dúvidas ou sugestões. :-)
                           </p>
                           <p style="margin: 0 0 15px 0">
-                            Dúvidas? Entre em contato:
+                            Ou entre em contato diretamente:
                             <a
                               href="mailto:suporte@farmacia.ufmg.br"
                               style="color: #2980b9; text-decoration: none"
@@ -522,7 +544,7 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
                             >
                           </p>
                           <p style="margin: 0">
-                            2025 Faculdade de Farmácia da UFMG
+                            ' . date('Y') . ' Faculdade de Farmácia da UFMG
                           </p>
                         </td>
                       </tr>

@@ -109,6 +109,20 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_auditorium_reservations_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/submissions/laboratory-team/(?P<owner_id>[\w]+)', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_laboratory_team_by_owner_id_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/submissions/laboratory-team/new_collaborators/(?P<id>[\w]+)', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_possible_collaborators_laboratory_team_handler',
+    ) );
+
     register_rest_route( 'intranet/v1', '/submissions/object/(?P<object>[\w]+)', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
@@ -159,6 +173,20 @@ function intranet_fafar_api_register_submission_routes() {
     ) );
 
     // EDITABLE
+
+    register_rest_route( 'intranet/v1', '/submissions/laboratory-team/(?P<id>[\w]+)/add/', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::EDITABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_add_collaborator_on_lab_team_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/submissions/laboratory-team/(?P<id>[\w]+)/remove/', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::EDITABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_remove_collaborator_on_lab_team_handler',
+    ) );
 
     register_rest_route( 'intranet/v1', '/submissions/reservations/(?P<id>[\w]+)/set_technical', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
@@ -331,7 +359,7 @@ function intranet_fafar_api_get_reservable_places() {
 }
 
 function intranet_fafar_api_get_not_reservable_places() {
-    $places = intranet_fafar_api_get_submissions_by_object_name(
+    $places = intranet_fafar_api_get_submissions_by_object_name (
         'place', 
         array(
             'orderby_json' => 'number',
@@ -340,18 +368,17 @@ function intranet_fafar_api_get_not_reservable_places() {
         false
     );
 
-    if( empty( $places ) || empty( $places['data'] ) ) return [];
+    if ( empty( $places ) || empty( $places['data'] ) ) return [];
 
     $reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
 
-    return array_filter( $places['data'], function ( $place ) use ( $reservables ) {
+    return array_filter ( $places['data'], function ( $place ) use ( $reservables ) {
         return (
-            empty( $place['data']['object_sub_type'][0] ) ||   
-            ! in_array( $place['data']['object_sub_type'][0], $reservables )
+            empty ( $place['data']['object_sub_type'][0] ) ||   
+            ! in_array ( $place['data']['object_sub_type'][0], $reservables )
         );
     } );
 }
-
 
 function intranet_fafar_api_get_place_reservations_handler( $request ) {
     $place_id = (string) $request['place'];
@@ -1352,7 +1379,6 @@ function intranet_fafar_api_create_auditorium_reservation( $auditorium_reservati
 }
 
 function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
-
     // Get all query parameters
     $query_params = $request->get_query_params();
 
@@ -1368,7 +1394,6 @@ function intranet_fafar_api_get_auditorium_reservations_handler( $request ) {
     }
 
     return rest_ensure_response( $submissions );
-
 }
 
 function intranet_fafar_api_get_auditorium_reservations( $status = null, $order = null ) {
@@ -1928,7 +1953,6 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
  * @param String $duration_str DateTime->format('%H:%I') string format
 */
 function intranet_fafar_api_get_event_start_and_end( $timestamp, $duration_str ) {
-
     if ( ! $timestamp )
         return false;
 
@@ -1954,7 +1978,6 @@ function intranet_fafar_api_get_event_start_and_end( $timestamp, $duration_str )
         'start' => $startDateTime->getTimestamp(),
         'end' => $endDateTime->getTimestamp(),
     );
-
 }
 
 function intranet_fafar_api_does_reservations_overlaps( $reservation_a, $reservation_b ) {
@@ -2026,21 +2049,290 @@ function intranet_fafar_api_get_weekday_by_timestamp( $timestamp ) {
     return (int) $d->format("w");
 
 }
-  
-function intranet_fafar_api_get_submission_by_id_handler( $request ) {
 
-    $id = (string) $request['id'];
+function intranet_fafar_api_get_laboratory_team_by_owner_id_handler( $request ) {
+    if ( empty( $request['owner_id'] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'ID não fornecido', 'intranet-fafar-api' ), 
+            400
+        );
+    }
 
-    $submission = intranet_fafar_api_get_submission_by_id( $id );
+    $owner_id   = (string) $request['owner_id'];
+    $submission = intranet_fafar_api_get_laboratory_team_by_owner_id( $owner_id );
 
-    if ( isset( $submission['error_msg'] ) ) {
-
-        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
-
+    if ( ! $submission ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Nenhum usuário com ID ' . $owner_id . ' inválido', 'intranet-fafar-api' ), 
+            404
+        );
     }
 
     return rest_ensure_response( $submission );
+}
 
+function intranet_fafar_api_get_laboratory_team_by_owner_id( $owner_id = null ) {
+    if ( ! $owner_id ) return [];
+
+    $category = get_the_author_meta( 'public_servant_bond_category', $owner_id );
+
+    if ( strtolower( $category) !== 'docente' ) return [];
+
+    $submission = intranet_fafar_api_read (
+        args: array(
+            'filters'  => array(
+                array(
+                    'column'   => 'object_name',
+                    'value'    => 'laboratory_team',
+                    'operator' => '=',
+                ),
+                array(
+                    'column'   => 'owner',
+                    'value'    => $owner_id,
+                    'operator' => '=',
+                )
+            ),
+            'single'  => true,  
+        )
+    );
+    
+    // Criamos uma equipe de laboratório para o prof, se já não tiver
+    if ( ! $submission ) {
+
+        $user = get_userdata( $owner_id );
+
+        if ( ! $user || empty( $user->roles[0] ) )
+            return null;
+        
+        $user_role = $user->roles[0];
+        
+        $submission = array(
+            'object_name' => 'laboratory_team',
+            'owner' => $owner_id,
+            'group_owner' => $user_role,
+            'permissions' => '744',
+            'data' => array(
+                'collaborators' => [],
+            ),
+        );
+
+        $result = intranet_fafar_api_create( $submission );
+
+        if ( isset( $result['error_msg'] ) ) {
+            return null;
+        }
+
+        $submission['id'] = $result['id'];
+    }
+
+    /*
+     * Substituir os campos que tem ID de outro objeto,
+     * pelo objeto de mesmo ID
+     */ 
+    $submission['data']['collaborators'] = array_map( function ( $collaborator_id ) {
+        $user = intranet_fafar_api_get_user_by_id( $collaborator_id );
+
+        $collaborator = array(
+            'ID'           => $user['data']->ID,
+            'display_name' => $user['data']->display_name,
+            'user_login'   => $user['data']->user_login,
+        );
+
+        return $collaborator;
+    }, $submission['data']['collaborators'] );
+
+    return $submission;
+}
+
+function intranet_fafar_api_get_possible_collaborators_laboratory_team_handler( $request ) {
+    if ( empty( $request['id'] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'ID não fornecido', 'intranet-fafar-api' ), 
+            400
+        );
+    }
+
+    $id          = (string) $request['id'];
+    $submissions = intranet_fafar_api_get_possible_collaborators_laboratory_team( $id );
+
+    if ( ! $submissions ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Nenhum usuário com ID ' . $id . ' inválido', 'intranet-fafar-api' ), 
+            404
+        );
+    }
+
+    return rest_ensure_response( $submissions );
+}
+
+function intranet_fafar_api_get_possible_collaborators_laboratory_team( $team_id = null ) {
+    if ( ! $team_id ) return null;
+
+    $submission = intranet_fafar_api_read (
+        args: array(
+            'filters'  => array(
+                array(
+                    'column'   => 'object_name',
+                    'value'    => 'laboratory_team',
+                    'operator' => '=',
+                ),
+                array(
+                    'column'   => 'id',
+                    'value'    => $team_id,
+                    'operator' => '=',
+                )
+            ),
+            'single'  => true,  
+        )
+    );
+
+    if ( ! $submission ) return [];
+
+    $new_collaborators = intranet_fafar_api_get_users(
+        array(
+            'status'   => 'ATIVO',
+            'category' => 'TAE',
+            'role'     => $submission['group_owner'],
+            'exclude'  => $submission['data']['collaborators'], 
+        ), 
+        false // Old return = false
+    );
+
+    return $new_collaborators;
+}
+
+function intranet_fafar_api_add_collaborator_on_lab_team_handler( $request ) {
+    if ( empty( $request['id'] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'ID não fornecido', 'intranet-fafar-api' ), 
+            400
+        );
+    }
+
+    if ( empty( $request['collaborator_id'] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Colaborador não fornecido', 'intranet-fafar-api' ), 
+            400
+        );
+    }
+
+    $id              = (string) $request['id'];
+    $collaborator_id = (string) $request['collaborator_id'];
+    $submission      = intranet_fafar_api_update_laboratory_team( $id, 'add', $collaborator_id );
+
+    if ( ! $submission ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Nenhum usuário com ID ' . $id . ' inválido', 'intranet-fafar-api' ), 
+            404
+        );
+    }
+
+    intranet_fafar_mail_on_update_laboratory_team( $submission['submission'], 'add', $collaborator_id ); 
+
+    return rest_ensure_response( $submission );
+}
+
+function intranet_fafar_api_remove_collaborator_on_lab_team_handler( $request ) {
+    if ( empty( $request['id'] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'ID não fornecido', 'intranet-fafar-api' ), 
+            400
+        );
+    }
+
+    if ( empty( $request['collaborator_id'] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Colaborador não fornecido', 'intranet-fafar-api' ), 
+            400
+        );
+    }
+
+    $id              = (string) $request['id'];
+    $collaborator_id = (string) $request['collaborator_id'];
+    $submission      = intranet_fafar_api_update_laboratory_team( $id, 'remove', $collaborator_id );
+
+    if ( ! $submission ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Nenhum usuário com ID ' . $id . ' inválido', 'intranet-fafar-api' ), 
+            404
+        );
+    }
+
+    intranet_fafar_mail_on_update_laboratory_team( $submission['submission'], 'remove', $collaborator_id ); 
+
+    return rest_ensure_response( $submission );
+}
+
+function intranet_fafar_api_update_laboratory_team( $id, $action, $collaborator_id ) {
+    $submission = intranet_fafar_api_read(
+        args: array(
+            'filters'  => array(
+                array(
+                    'column'   => 'id',
+                    'value'    => $id,
+                    'operator' => '=',
+                ),
+            ),
+            'single' => true,
+        )
+    );
+
+    if ( ! $submission ) { 
+        return null;
+    }
+
+    if ( $submission['owner'] != get_current_user_id() ) return null;
+
+    if ( $action === 'add' ) {
+        $submission['data']['collaborators'][] = $collaborator_id;
+        $submission = intranet_fafar_api_update( $id, $submission );
+        if ( isset( $submission['error_msg'] ) ) return null;
+    }
+
+    if ( $action === 'remove' ) {
+        $submission['data']['collaborators'] = array_filter(
+            $submission['data']['collaborators'],
+            function ( $col_id ) use ( $collaborator_id ) { return $col_id !== $collaborator_id; }
+        );
+        $submission['data']['collaborators'] = array_values( $submission['data']['collaborators'] );
+        $submission = intranet_fafar_api_update( $id, $submission );
+        if ( isset( $submission['error_msg'] ) ) return null;
+    }
+
+    return $submission;
+}
+  
+function intranet_fafar_api_get_submission_by_id_handler( $request ) {
+    if ( empty( $request['id'] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'ID não fornecido', 'intranet-fafar-api' ), 
+            400
+        );
+    }
+    
+    $id         = (string) $request['id'];
+    $submission = intranet_fafar_api_get_submission_by_id( $id );
+
+    if ( ! $submission ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Nenhum objeto com ID ' . $id, 'intranet-fafar-api' ), 
+            404
+        );
+    }
+
+    return rest_ensure_response( $submission );
 }
 
 function intranet_fafar_api_get_submission_by_id(
@@ -2049,8 +2341,7 @@ function intranet_fafar_api_get_submission_by_id(
     $check_permissions = true, 
     $check_is_active = true,
 ) {
-
-    $submissions = intranet_fafar_api_read(
+    $submission = intranet_fafar_api_read(
         args: array(
             'filters'  => array(
                 array(
@@ -2061,28 +2352,22 @@ function intranet_fafar_api_get_submission_by_id(
             ),
             'check_permissions' => $check_permissions,
             'check_is_active'   => $check_is_active,
+            'single'            => true,
         )
     );
     
-    if ( empty( $submissions ) )
-        return [];
-
-    $submission = ( isset( $submissions['data'][0] ) ?  $submissions['data'][0] : [] );
-    
-    if ( empty( $submission ) || ! $substitute_value )
+    if ( ! $submission || ! $substitute_value )
         return $submission;
 
-    if( $substitute_value ) {
-        if ( isset( $submission['owner'] ) && is_numeric( $submission['owner'] ) ) {
-            $submission['owner'] = intranet_fafar_api_get_user_by_id( $submission['owner'] );
-        }
+    if ( isset( $submission['owner'] ) && is_numeric( $submission['owner'] ) ) {
+        $submission['owner'] = intranet_fafar_api_get_user_by_id( $submission['owner'] );
+    }
 
-        if ( isset( $submission['data']['place'] ) && 
-             is_array( $submission['data']['place'] ) && 
-             count( $submission['data']['place'] ) > 0 ) {
+    if ( isset( $submission['data']['place'] ) && 
+        is_array( $submission['data']['place'] ) && 
+        count( $submission['data']['place'] ) > 0 ) {
 
-            $submission['data']['place'] = intranet_fafar_api_get_submission_by_id( $submission['data']['place'][0] );
-        }
+        $submission['data']['place'] = intranet_fafar_api_get_submission_by_id( $submission['data']['place'][0] );
     }
 
     return $submission;
@@ -2187,7 +2472,6 @@ function intranet_fafar_api_get_submissions_by_object_name(
         )
     );
     
-
     if ( empty( $submissions ) ) {
         if( $old ) return array('error_msg' => 'Erro ao processar');
         
@@ -2200,42 +2484,42 @@ function intranet_fafar_api_get_submissions_by_object_name(
         return $submissions;
     }
 
-
-
     /*
      * Substituir os campos que tem ID de outro objeto,
      * pelo objeto de mesmo ID
      */ 
     $submissions['data'] = array_map( function ( $s ) {
-
         if ( isset( $s['owner'] ) && is_numeric( $s['owner'] ) ) {
-
             $s['owner'] = intranet_fafar_api_get_user_by_id( $s['owner'] );
-    
         }
 
         return $s;
-        
     }, $submissions['data'] );
 
     return $old ? $submissions['data'] : $submissions;
-
 }
 
 function intranet_fafar_api_get_user_by_id_handler( $request ) {
+    if ( empty( $request['id'] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'ID não fornecido', 'intranet-fafar-api' ), 
+            400
+        );
+    }
 
-    $id = (string) $request['id'];
-
+    $id         = (string) $request['id'];
     $submission = intranet_fafar_api_get_user_by_id( $id );
 
-    if ( isset( $submission['error_msg'] ) ) {
-
-        return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
-
+    if ( ! $submission ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Nenhum usuário com ID ' . $id, 'intranet-fafar-api' ), 
+            404
+        );
     }
 
     return rest_ensure_response( $submission );
-
 }
 
 function intranet_fafar_api_get_user_by_id( $id ) {
@@ -2264,25 +2548,64 @@ function intranet_fafar_api_get_user_by_id( $id ) {
     $role     = $request->get_param('role') ? $request->get_param('role') : '';
     $place    = $request->get_param('place') ? $request->get_param('place') : '';
 
+    return rest_ensure_response(
+        intranet_fafar_api_get_users(
+            array(
+                'offset'   => $offset,
+                'limit'    => $limit,
+                'keyword'  => $keyword,
+                'status'   => $status,
+                'category' => $category,
+                'role'     => $role,
+                'place'    => $place,
+            ), 
+            false // Old return = false
+        )
+    );
+}
+
+function intranet_fafar_api_get_users( $args = array(), $old = true ) {
+    // Default parameters
+    $defaults = array(
+        'status'            => 'ATIVO', 
+        'category'          => null,
+        'role'              => '', 
+        'place'             => null, 
+        'check_permissions' => true, 
+        'check_is_active'   => true,
+        'order_by'          => 'display_name',
+        'order'             => 'ASC',
+        'offset'            => 1,
+        'limit'             => -1,
+        'keyword'           => '',
+        'substitute_value'  => true,
+        'exclude'           => array(1),
+    );
+    
+    // Merge user-provided arguments with defaults
+    $args = wp_parse_args( $args, $defaults );
+    
+    $args['exclude'] = array_map( fn( $id ) => is_numeric( $id ) ? ( int ) $id : 0, $args['exclude'] );
+
     $meta_query = array();
-    if( $status ) {
+    if( $args['status'] ) {
         $meta_query[] = array(
             'key' => 'bond_status',
-            'value' => $status,
+            'value' => $args['status'],
             'compare' => '=',
         );
     }
 
-    if( $category ) {
+    if( $args['category'] ) {
         $meta_query[] = array(
             'key' => 'public_servant_bond_category',
-            'value' => $category,
+            'value' => $args['category'],
             'compare' => '=',
         );
     }
 
-    if( $place ) {
-        $match_places = intranet_fafar_api_search_place( $place );
+    if( $args['place'] ) {
+        $match_places = intranet_fafar_api_search_place( $args['place'] );
         $places_ids   = array_map( fn( $place ) => $place['id'], $match_places );
         $meta_query[] = array(
             'key' => 'workplace_place',
@@ -2301,16 +2624,16 @@ function intranet_fafar_api_get_user_by_id( $id ) {
     }
 
     // Query users with pagination
-    $user_query = new WP_User_Query(array(
-        'number'     => $limit,
-        'offset'     => $offset,
-        'search'     => '*' . $keyword . '*', // Search for users with "john" in their username, email, or display name
-        'role'       => $role,
+    $user_query = new WP_User_Query( array(
+        'number'     => $args['limit'],
+        'offset'     => $args['offset'],
+        'search'     => '*' . $args['keyword'] . '*', // Search for users with "john" in their username, email, or display name
+        'role'       => $args['role'],
         'meta_query' => $meta_query,
-        'orderby'    => 'display_name',
-        'order'      => 'ASC',
-        'exclude'    => array(1), // Exclude Administrator(ID:1)
-    ));
+        'orderby'    => $args['order_by'],
+        'order'      => $args['order'],
+        'exclude'    => $args['exclude'], // Exclude Administrator(ID:1)
+    ) );
 
     $users = $user_query->get_results();
 
@@ -2386,160 +2709,26 @@ function intranet_fafar_api_get_user_by_id( $id ) {
 
     }, $users );
 
-    return rest_ensure_response(
-        array(
-            'count'    => $total_users,
-            'next'     => null,
-            'previous' => null,
-            'results'  => $results,
-        )
+    if ( $old ) return $results;
+
+    return array(
+        'count'    => $total_users,
+        'next'     => null,
+        'previous' => null,
+        'results'  => $results,
     );
 }
 
 function intranet_fafar_api_get_users_by_sector_slug_handler( $request ) {
-
     $sector = (string) $request['sector'];
 
-    $submissions = intranet_fafar_api_get_users_by_sector_slug( $sector );
+    $submissions = intranet_fafar_api_get_users( array( 'role' => $sector ) );
 
-    if ( isset( $submissions['error_msg'] ) ) {
-
-        return new WP_Error( 'rest_api_sad', esc_html__( $submissions['error_msg'], 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
-
+    if ( ! $submissions ) {
+        return new WP_Error( 'rest_api_sad', esc_html__( 'Nenhum usuário encontrado', 'intranet-fafar-api' ), ( ( $submissions['http_status'] ) ?? 400 ) );
     }
 
     return rest_ensure_response( $submissions );
-
-}
-
-function intranet_fafar_api_get_users_by_sector_slug( $sector ) {
-
-    $submissions = intranet_fafar_api_get_users();
-
-    if ( isset( $submissions['error_msg'] ) ) {
-
-        return $submissions;
-
-    }
-
-    $submissions_by_sector = array_filter( $submissions, function ( $submission ) use ( $sector ) {
-        $lower_slug_sector = strtolower( ( ! empty( $submission['role']['slug'] ) ? $submission['role']['slug'] : '' ) );
-        return ( $lower_slug_sector === strtolower( $sector ) );
-
-    } );
-
-    return $submissions_by_sector;
-
-}
-
-/*
- * get_users() return:
- * Array ( [0] => WP_User Object ( 
- *              [data] => stdClass Object ( 
- *                  [ID] => 4 
- *                  [user_login] => gabrielrotsen 
- *                  [user_pass] => $P$B2LLFfBJZalSWEYuuydE/5chv6u83O. 
- *                  [user_nicename] => gabrielrotsen 
- *                  [user_email] => gabrielrotsen@gmail.com 
- *                  [user_url] => 
- *                  [user_registered] => 2024-07-23 14:57:44 
- *                  [user_activation_key] => 
- *                  [user_status] => 0 
- *                  [display_name] => Gabriel Rotsen 
- *              ) 
- *              [ID] => 4 
- *              [caps] => Array ( [subscriber] => 1 ) 
- *              [cap_key] => wp_capabilities 
- *              [roles] => Array ( [0] => subscriber ) 
- *              [allcaps] => Array ( 
- *                  [read] => 1 
- *                  [level_0] => 1 
- *                  [subscriber] => 1 
- *              ) 
- *              [filter] => [site_id:WP_User:private] => 1 
- *          ),
- *          ...
- * )
- */
-function intranet_fafar_api_get_users() {
-
-    $users = get_users();
-
-    if( ! $users || count( $users ) === 0 ) {
-
-        return array( 'error_msg' => 'Nenhum usuário encontrado', 'http_status' => 400 );
-
-    }
-
-    $users = array_map( function ( $user ) {
-
-        // Lidando com permissões
-        $current_user_role = ( isset( wp_get_current_user()->roles[0] ) ? wp_get_current_user()->roles[0] : '' );
-
-        $can_view_personal_info = false;
-
-        if(
-            $current_user_role === 'administrator' || 
-            $current_user_role === 'pessoal' || 
-            $user->ID === get_current_user_id()
-        ) $can_view_personal_info = true;
-
-        
-        $user_data = (
-            $can_view_personal_info ? 
-            ( (array) $user->data ) : 
-            array(
-                'ID' => $user->ID,
-                'display_name' => $user->data->display_name,
-                'user_email'   => $user->data->user_email,
-                'user_login'   => $user->data->user_login,
-            )
-        );
-
-        // Informações abertas
-        $user_data['avatar_url'] = get_avatar_url( $user->ID );
-        
-        $user_data['public_servant_bond_type']     = esc_attr( get_the_author_meta( 'public_servant_bond_type', $user->ID ) );
-        $user_data['public_servant_bond_category'] = esc_attr( get_the_author_meta( 'public_servant_bond_category', $user->ID ) );
-        $user_data['public_servant_bond_position'] = esc_attr( get_the_author_meta( 'public_servant_bond_position', $user->ID ) );
-        $user_data['public_servant_bond_class']    = esc_attr( get_the_author_meta( 'public_servant_bond_class', $user->ID ) );
-        $user_data['public_servant_bond_level']    = esc_attr( get_the_author_meta( 'public_servant_bond_level', $user->ID ) );
-        $user_data['role']                         = intranet_fafar_api_get_roles( esc_attr( isset( $user->roles[0] ) ? $user->roles[0] : '' ) );
-        $user_data['bond_status']                  = esc_attr( get_the_author_meta( 'bond_status', $user->ID ) );
-              
-        $user_data['workplace_place']     = intranet_fafar_api_get_submission_by_id( esc_attr( get_the_author_meta( 'workplace_place', $user->ID ) ) );
-        $user_data['workplace_extension'] = esc_attr( get_the_author_meta( 'workplace_extension', $user->ID ) );
-
-        $user_data['prevent_read']  = false;
-        $user_data['prevent_write'] = true;
-        $user_data['prevent_exec']  = true;
-
-        if( ! $can_view_personal_info ) return $user_data;
-
-        $user_data['personal_phone']             = esc_attr( get_the_author_meta( 'personal_phone', $user->ID ) );
-        $user_data['personal_birthday']          = esc_attr( get_the_author_meta( 'personal_birthday', $user->ID ) );
-        $user_data['personal_cpf']               = esc_attr( get_the_author_meta( 'personal_cpf', $user->ID ) );
-        $user_data['personal_ufmg_registration'] = esc_attr( get_the_author_meta( 'personal_ufmg_registration', $user->ID ) );
-        $user_data['personal_siape']             = esc_attr( get_the_author_meta( 'personal_siape', $user->ID ) );
-            
-        $user_data['address_cep_code']     = esc_attr( get_the_author_meta( 'address_cep_code', $user->ID ) );
-        $user_data['address_uf']           = esc_attr( get_the_author_meta( 'address_uf', $user->ID ) );
-        $user_data['address_city']         = esc_attr( get_the_author_meta( 'address_city', $user->ID ) );
-        $user_data['address_neighborhood'] = esc_attr( get_the_author_meta( 'address_neighborhood', $user->ID ) );
-        $user_data['address_public_place'] = esc_attr( get_the_author_meta( 'address_public_place', $user->ID ) );
-        $user_data['address_number']       = esc_attr( get_the_author_meta( 'address_number', $user->ID ) );
-        $user_data['address_complement']   = esc_attr( get_the_author_meta( 'address_complement', $user->ID ) );
-
-        $user_data['prevent_read']  = false;
-        $user_data['prevent_write'] = false;
-        $user_data['prevent_exec']  = false;
-
-        return $user_data;
-
-    }, $users );
-    
-    return $users;
-
 }
 
 function intranet_fafar_api_get_roles( $slug = null ) {
@@ -2761,7 +2950,6 @@ function intranet_fafar_api_get_reservation_by_id( $id ) {
 }
 
 function intranet_fafar_api_set_reservation_technical_handler( $request ) {
-
     $id = (string) $request['id'];
 
     // Get data from the request
@@ -2776,7 +2964,6 @@ function intranet_fafar_api_set_reservation_technical_handler( $request ) {
     }
 
     return rest_ensure_response( $reservation );
-
 }
 
 function intranet_fafar_api_set_reservation_technical( $reservation_id, $technical_id ) {
@@ -2806,36 +2993,53 @@ function intranet_fafar_api_set_reservation_technical( $reservation_id, $technic
     intranet_fafar_mail_on_set_auditorium_reservation_technical( $reservation );
 
     return $submission;
-
 }
 
-function intranet_fafar_get_user_by_departament( $role_slug = null, $status = '' ) {
-
+function intranet_fafar_get_users_by_departament( $role_slug = null, $status = null, $category = null, $exclude = array() ) {
     if ( ! $role_slug )
         return array();
 
-    $users = get_users( 
-        array ( 
-                'role__not_in' => 'Administrator', 
-                'orderby' => 'display_name', 
-                'order' => 'ASC', 
-                'role' => $role_slug
-            ) 
-        );
+    $args = array(
+        'role'     => $role_slug,
+        'status'   => $status,
+        'category' => $category,
+    );
+
+    if ( ! empty( $exclude ) ) {
+        $args['exclude'] = $exclude;
+    }
+
+    return intranet_fafar_api_get_users( $args );
+}
+
+function intranet_fafar_get_users_by_departament_as_options( $role_slug = null, $status = null, $category = null, $exclude = array() ) {
+    if ( ! $role_slug )
+        return array();
+
+    $args = array(
+        'role'     => $role_slug,
+        'status'   => $status,
+        'category' => $category,
+    );
+
+    if ( ! empty( $exclude ) ) {
+        $args['exclude'] = $exclude;
+    }
+
+    $users = intranet_fafar_api_get_users( $args );
 
     $options = array();
 
     foreach ( $users as $user ) {
         if(
             $status && 
-            strtolower( $status ) !== strtolower( get_user_meta( $user->ID, 'bond_status', true ) )
+            strtolower( $status ) !== strtolower( get_user_meta( $user['ID'], 'bond_status', true ) )
         ) continue;
 
-        $options[esc_attr( $user->ID )] = esc_html( $user->display_name );
+        $options[esc_attr( $user['ID'] )] = esc_html( $user['display_name'] );
     }
 
     return $options;
-
 }
 
 function intranet_fafar_api_get_ips_handler( $request ) {
@@ -2946,10 +3150,11 @@ function intranet_fafar_api_create( $submission, $check_permissions = true, $do_
  *                                    array( 'orderby_json' => 'age', 'order' => 'ASC', 'inet_aton' => true ).
  *     @type string $keyword           Optional. A keyword to search across all JSON properties.
  *     @type bool   $return_count_only Optional. If true, returns only the row count and pagination metadata. Default false.
+ *     @type int    $single            Optional. If provided, returns a single submission.
  * }
  *
- * @return array {
- *     An array containing the processed submissions and pagination metadata.
+ * @return array|array|null {
+ *     An array containing the processed submissions and pagination metadata, or a single submission if single_id is provided.
  *
  *     @type array $data {
  *         An array of processed submissions. Empty if `return_count_only` is true.
@@ -2986,6 +3191,7 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
         'order_by'          => array(), // Ordering configuration
         'keyword'           => '',    // Keyword to search across all JSON properties
         'return_count_only' => false, // If true, returns only the row count
+        'single'            => false,  // If provided, returns the single submission or the first
     );
 
     // Merge user-provided arguments with defaults
@@ -2998,6 +3204,12 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
 
     // Base query
     $query_completed = "SELECT SQL_CALC_FOUND_ROWS * FROM $table_name";
+
+    // If single is true
+    if ( $args['single'] ) {
+        // When searching by single ID, we only want one result
+        $args['per_page'] = 1;
+    }
 
     // Build the WHERE clause from filters
     $where_clause = '';
@@ -3134,6 +3346,10 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
         }
 
         if ( empty( $submissions ) ) {
+            // If we're looking for a single submission and found nothing, return null
+            if ( $args['single'] ) {
+                return null;
+            }
             return array();
         }
     }
@@ -3183,6 +3399,11 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
 
         // Add the processed submission to the result array
         array_push( $submissions_checked, $submission );
+    }
+
+    // If we're looking for a single submission, return just that submission or null
+    if ( $args['single'] ) {
+        return ! empty( $submissions_checked ) ? $submissions_checked[0] : null;
     }
 
     // Return the results with pagination metadata
@@ -3473,4 +3694,3 @@ function intranet_fafar_api_san_arr( $arr ) {
     return $arr;
 
 }
-

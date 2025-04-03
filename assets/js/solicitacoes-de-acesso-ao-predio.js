@@ -260,9 +260,9 @@ function periodColFormatter(current) {
         <div>
           <span class="me-1"><i class="bi bi-calendar-range"></i></span>
           <span>
-            ${new Date(start_date).toLocaleDateString()} - ${new Date(
+            ${formatDateToDDMMYYYY(start_date)} - ${formatDateToDDMMYYYY(
     end_date
-  ).toLocaleDateString()}
+  )}
           </span>
         </div>
       </div>

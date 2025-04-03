@@ -172,7 +172,7 @@ get_header(); ?>
                     <div class="modal-body">
                         <label for="selectSetTechnical" class="form-label">Selecione um técnico</label>
                         <?php
-                            $technicals = intranet_fafar_api_get_users_by_sector_slug( 'tecnologia_da_informacao_e_suporte' );
+                            $technicals = intranet_fafar_api_get_users( array( 'role' => 'tecnologia_da_informacao_e_suporte' ) );
                             
                             //print_r($technicals);
                             

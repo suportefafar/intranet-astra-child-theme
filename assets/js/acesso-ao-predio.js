@@ -40,11 +40,11 @@ const grid = new gridjs.Grid({
     "Laboratório",
     {
       name: "Início",
-      formatter: (current) => new Date(current).toLocaleDateString(),
+      formatter: (current) => formatDateToDDMMYYYY(current),
     },
     {
       name: "Fim",
-      formatter: (current) => new Date(current).toLocaleDateString(),
+      formatter: (current) => formatDateToDDMMYYYY(current),
     },
     {
       name: "Ações",
