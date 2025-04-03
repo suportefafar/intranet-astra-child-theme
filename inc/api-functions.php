@@ -759,8 +759,8 @@ function intranet_fafar_api_get_service_tickets_by_user(
             )
         ),
         'order_by' => array(
-            'orderby_json' => 'created_at',
-            'order'        => 'DESC',
+            'orderby_column' => 'created_at',
+            'order'          => 'DESC',
         ),
         'page'     => $offset,   
         'per_page' => $limit,
