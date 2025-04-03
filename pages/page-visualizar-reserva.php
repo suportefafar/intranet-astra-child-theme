@@ -65,6 +65,10 @@ $reservation   = intranet_fafar_api_get_reservation_by_id( $ID );
 
 $prevent_write = isset( $reservation['data']['prevent_write'] );
 
+$place = null;
+if ( ! empty( $reservation['data']['place'][0] ) ) {
+    $place = intranet_fafar_api_get_submission_by_id( $reservation['data']['place'][0] );
+}
 
 get_header(); ?>
 
@@ -136,10 +140,10 @@ get_header(); ?>
                                 <td class="fw-medium">
                                     <?php 
                                         echo ( 
-                                            isset( $reservation['data']['discipline']['data'] ) ?
-                                            $reservation['data']['discipline']['data']['code'] . 
+                                            isset( $reservation['data']['class_subject']['data'] ) ?
+                                            $reservation['data']['class_subject']['data']['code'] . 
                                             ' - ' . 
-                                            $reservation['data']['discipline']['data']['group'] : 
+                                            $reservation['data']['class_subject']['data']['group'] : 
                                             '' 
                                             ) 
                                     ?>
@@ -167,6 +171,16 @@ get_header(); ?>
                                     '' 
                                     ) 
                                 ?>
+                                </td>
+                            <tr>
+                            <tr>
+                                <td>Local</td>
+                                <td class="fw-medium">
+                                <?php if ( $place ): ?>
+                                    <a href="/visualizar-sala/?id=<?= $place['id'] ?>" target="_blank" title="Perfil da sala">
+                                        <?= $place['data']['number'] . ( $place['data']['desc'] ? ' - ' . $place['data']['desc'] : '' ) ?>
+                                    </a>
+                                <?php endif; ?>
                                 </td>
                             <tr>
                             <tr>
