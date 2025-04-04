@@ -89,23 +89,6 @@ get_header(); ?>
             </div>
         </div>-->
 
-        <!-- TABS -->
-
-        <!--<ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#">Active</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-            </li>
-        </ul>-->
-
         <!-- STATS -->
 
         <h5>Uso dos IPs</h5>
@@ -143,10 +126,10 @@ get_header(); ?>
                     <?= number_format( $ips_111_usage_percentage, 2 ) ?>%
                 </div>
             </div>
-            <div class="d-flex gap-5">
-                <small class="fst-italic">Total: <?= count( $ips_110_in_use + $ips_111_in_use ) . '/' . count( $ips ) ?></small>
-                <small class="fst-italic">Sub-rede 110: <?= count( $ips_110_in_use ) . '/' . $TOTAL_110_ADDRESS ?></small>
-                <small class="fst-italic">Sub-rede 111: <?= count( $ips_111_in_use ) . '/' . $TOTAL_111_ADDRESS ?></small>
+            <div class="d-flex gap-3">
+                <small class="fst-italic">Total: <strong><?= count( $ips_110_in_use + $ips_111_in_use ) . '/' . count( $ips ) ?></strong></small>
+                <small class="fst-italic">Sub-rede 110: <strong><?= count( $ips_110_in_use ) . '/' . $TOTAL_110_ADDRESS ?></strong></small>
+                <small class="fst-italic">Sub-rede 111: <strong><?= count( $ips_111_in_use ) . '/' . $TOTAL_111_ADDRESS ?></strong></small>
             </div>
         </div>
 

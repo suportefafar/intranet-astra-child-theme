@@ -220,7 +220,8 @@ function renderDataOnTable(data) {
 
   // Map through the results and transform each submission
   return data.results.map((submission) => {
-    const { id, data, owner, updated_at, created_at } = submission;
+    const { id, data, owner, updated_at, created_at, relationships } =
+      submission;
     const { assigned_to, status, type, number, user_report } = data;
 
     const prevent_write = data.prevent_write ? "1" : "0";
@@ -250,9 +251,9 @@ function renderDataOnTable(data) {
     return [
       number_column_data,
       desc_column_data,
-      owner,
+      getSafeValue(() => relationships.applicant, null),
       status,
-      assigned_to,
+      getSafeValue(() => relationships.assigned_to, null),
       date_column_data,
       action_column_data,
     ];
@@ -264,7 +265,7 @@ function numberColFormatter(current) {
 
   const html_content = `
     <div class="d-flex gap-2">
-      <a href="/visualizar-ordem-de-servico/?id=${id}" title="Detalhes">
+      <a href="/visualizar-ordem-de-servico/?id=${id}" target="_blank" title="Detalhes">
         ${number}
       </a>
     </div>`;
@@ -303,7 +304,7 @@ function descColFormatter(current) {
 }
 
 function ownerColFormatter(current) {
-  let { user_login = "", display_name = "N/A" } = current.data ?? {};
+  let { user_login = "", display_name = "N/A" } = current ?? {};
 
   if (!user_login && !display_name) {
     user_login = "";
@@ -320,14 +321,13 @@ function ownerColFormatter(current) {
 }
 
 function assignedToColFormatter(current) {
-  //console.log(current);
-  if (!current.data) {
+  if (!current) {
     return "--";
   }
 
-  const html_content = `<a href="/membros/${current.data.user_login}/" target="blank" title="${current.data.display_name}">${current.data.display_name}</a>`;
-
-  return gridjs.html(html_content);
+  return gridjs.html(
+    `<a href="/membros/${current.user_login}/" target="blank" title="${current.display_name}">${current.display_name}</a>`
+  );
 }
 
 function statusColFormatter(current) {
@@ -387,13 +387,9 @@ function createdAtColFormatter(current) {
 function actionColFormatter(current) {
   const { id, permissions } = JSON.parse(current);
 
-  const prevent_write = parseInt(permissions.split("")[0]);
-
-  //console.log(current);
-
   const html_content = `
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-primary" href="/visualizar-ordem-de-servico/?id=${id}" title="Detalhes">
+      <a class="btn btn-outline-primary" href="/visualizar-ordem-de-servico/?id=${id}" target="_blank" title="Detalhes">
         <i class="bi bi-folder2-open"></i>
       </a>
     </div>`;

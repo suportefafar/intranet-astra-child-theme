@@ -122,13 +122,18 @@ async function renderGridJS(data = []) {
 function statusColFormatter(current) {
   const { equipament_id, is_active } = JSON.parse(current);
 
+  let status_text = "Indisponível";
+  let type = "text-bg-danger";
+
   if (is_active === "0") {
-    return "Desativado";
+    status_text = "Desativado";
+    type = "text-bg-dark";
   } else if (!equipament_id) {
-    return "Disponível";
-  } else {
-    return "Indisponível";
+    status_text = "Disponível";
+    type = "text-bg-success";
   }
+
+  return gridjs.html(`<span class="badge ${type}">${status_text}</span>`);
 }
 
 function actionColFormatter(current, row) {

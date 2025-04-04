@@ -187,7 +187,7 @@ function numberColFormatter(current) {
 
   const html_content = `
     <div class="d-flex gap-2">
-      <a href="/visualizar-ordem-de-servico/?id=${id}" title="Detalhes">
+      <a href="/visualizar-ordem-de-servico/?id=${id}" title="Detalhes" target="_blank">
         ${number}
       </a>
     </div>`;
@@ -295,14 +295,14 @@ function actionColFormatter(current) {
 
   const html_content = `
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary" href="/visualizar-ordem-de-servico/?id=${id}" title="Detalhes">
+      <a class="btn btn-outline-secondary" href="/visualizar-ordem-de-servico/?id=${id}" target="_blank" title="Detalhes">
         <i class="bi bi-info-lg"></i>
       </a>
       ${
         prevent_write
           ? ""
           : `
-      <a class="btn btn-outline-secondary" href="/editar-ordem-de-servico/?id=${id}" title="Editar">
+      <a class="btn btn-outline-secondary" href="/editar-ordem-de-servico/?id=${id}" target="_blank" title="Editar">
         <i class="bi bi-pencil"></i>
       </a>
       <button class="btn btn-outline-danger btn-delete-submission" data-id="${id}" title="Excluir">

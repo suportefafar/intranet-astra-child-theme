@@ -861,8 +861,7 @@ function intranet_fafar_api_get_service_tickets_by_departament(
     $assigned_to = null, 
     $keyword = '', 
     $offset = 1, 
-    $limit = -1, 
-    $substitute_value = true
+    $limit = -1
 ) {
     if ( ! $departament ) {
         $user        = wp_get_current_user();
@@ -890,6 +889,22 @@ function intranet_fafar_api_get_service_tickets_by_departament(
         'page'     => $offset,   
         'per_page' => $limit,
         'keyword'  => $keyword, 
+        'relationships' => array(
+            'applicant' => array(
+                'type'          => 'user',
+                'local_path'    => 'owner',
+            ),
+            'place' => array(
+                'type'          => 'submission',
+                'local_path'    => 'data->place',
+                'array_compare' => true,
+            ),
+            'assigned_to' => array(
+                'type'          => 'user',
+                'local_path'    => 'data->assigned_to',
+                'array_compare' => true,
+            ),
+        ), 
     );
 
     if ( isset( $assigned_to ) ) {
@@ -913,22 +928,15 @@ function intranet_fafar_api_get_service_tickets_by_departament(
         );
     }
     
+    error_log(print_r($query_params,true));
+
     $submissions = intranet_fafar_api_read( args: $query_params );
 
     // null ou []
     if ( empty( $submissions ) ) return $submissions;
-    
-    if ( ! $substitute_value ) return $submissions;
-    
+
     $submissions['data'] = array_map( function ( $submission ) {
-        if ( isset( $submission['owner'] ) && is_numeric( $submission['owner'] ) )
-            $submission['owner'] = intranet_fafar_api_get_user_by_id( $submission['owner'] );
-
-        if ( isset( $submission['data']['place'][0] ) )
-            $submission['data']['place'] = intranet_fafar_api_get_submission_by_id( $submission['data']['place'][0] );
-
         if ( isset( $submission['data']['departament_assigned_to'][0] ) ) {
-
             // Get the display name of the role
             $role_slug = $submission['data']['departament_assigned_to'][0];
                 
@@ -937,14 +945,7 @@ function intranet_fafar_api_get_service_tickets_by_departament(
             if ( isset( wp_roles()->roles[ $role_slug ] ) )
                 $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
 
-            $submission['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
-
-        }
-
-        if ( isset( $submission['data']['assigned_to'] ) ) {
-
-            $submission['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $submission['data']['assigned_to'] );
-
+            $submission['data']['relationships']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
         }
 
         return $submission;
@@ -1149,6 +1150,22 @@ function intranet_fafar_api_get_access_building_request( $by_owner = false, $key
         'page'     => $offset,   
         'per_page' => $limit,
         'keyword'  => $keyword, 
+        'relationships' => array(
+            'applicant' => array(
+                'type'          => 'user',
+                'local_path'    => 'owner',
+            ),
+            'place' => array(
+                'type'          => 'submission',
+                'local_path'    => 'data->place',
+                'array_compare' => true,
+            ),
+            'logs' => array(
+                'type'          => 'submission',
+                'local_path'    => 'data->logs',
+                'array_compare' => true,
+            ),
+        ),
     );
     
     if ( $by_owner ) {
@@ -2776,32 +2793,7 @@ function intranet_fafar_api_get_equipaments_handler( $request ) {
     $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
     $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
     
-    $submissions = intranet_fafar_api_read(
-        args: array(
-            'filters'  => array(
-                array(
-                    'column'   => 'object_name',
-                    'value'    => 'equipament',
-                    'operator' => '=',
-                ),
-            ),
-            'order_by' => array(
-                'orderby_column' => 'created_at',
-                'order'          => 'DESC',
-            ),
-            'page'          => $offset,   
-            'per_page'      => $limit,
-            'keyword'       => $keyword,
-            'relationships' => [
-                'applicant' => [
-                    'type'          => 'user',
-                    'local_path'    => 'data->applicant', // Direct column reference
-                    'array_compare' => true, // Direct column reference
-                    'meta_fields'   => ['workplace_extension'], // Include these user meta fields
-                ],
-            ],
-        )
-    );
+    $submissions = intranet_fafar_api_get_equipaments( $keyword, $offset, $limit );
 
     if ( ! $submissions ) {
         return new WP_Error(
@@ -2829,7 +2821,7 @@ function intranet_fafar_api_get_equipaments_handler( $request ) {
     );
 }
 
-function intranet_fafar_api_get_equipaments( $keyword = '', $offset = 1, $limit = -1, $substitute_value = true ) {
+function intranet_fafar_api_get_equipaments( $keyword = '', $offset = 1, $limit = -1 ) {
     $submissions = intranet_fafar_api_read(
         args: array(
             'filters'  => array(
@@ -2843,40 +2835,33 @@ function intranet_fafar_api_get_equipaments( $keyword = '', $offset = 1, $limit 
                 'orderby_column' => 'created_at',
                 'order'          => 'DESC',
             ),
-            'page'     => $offset,   
-            'per_page' => $limit,
-            'keyword'  => $keyword, 
+            'page'          => $offset,   
+            'per_page'      => $limit,
+            'keyword'       => $keyword,
+            'relationships' => [
+                'applicant' => [
+                    'type'          => 'user',
+                    'local_path'    => 'data->applicant',
+                    'array_compare' => true,
+                    'meta_fields'   => ['workplace_extension'],
+                ],
+                'place' => [
+                    'type'          => 'submission',
+                    'local_path'    => 'data->place',
+                    'array_compare' => true,
+                ],
+                'ip' => [
+                    'type'          => 'submission',
+                    'local_path'    => 'data->ip',
+                    'array_compare' => true,
+                ],
+            ],
         )
     );
 
     // null ou []
     if ( empty( $submissions ) ) return $submissions;
     
-    if ( ! $substitute_value ) return $submissions;
-
-    /*
-     * Substituir os campos que tem ID de outro objeto,
-     * pelo objeto de mesmo ID
-     */ 
-    $submissions['data'] = array_map ( function ( $s ) {
-
-        if ( ! empty( $s['data']['place'][0] ) ) {
-            $s['data']['place'] = intranet_fafar_api_get_submission_by_id( $s['data']['place'][0] );
-        }
-
-        if ( ! empty( $s['data']['applicant'][0] ) ) {
-            $applicant = get_userdata( $s['data']['applicant'][0] );
-            $s['data']['applicant'] = ( $applicant ? $applicant->get( 'display_name' ) : '' );
-        }
-
-        if ( ! empty( $s['data']['ip'][0] ) ) {
-            $s['data']['ip'] = intranet_fafar_api_get_submission_by_id( $s['data']['ip'][0] );
-        }
-
-        return $s;
-        
-    }, $submissions['data'] );
-
     return $submissions;
 }
 
@@ -3232,6 +3217,8 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
     $select_fields = "$table_name.*";
     $join_clauses = '';
     $additional_selects = '';
+    $temporary_tables = array();
+    $index_temporary_tables = array();
 
     // Handle relationships - more flexible version
     if ( ! empty( $args['relationships'] ) ) {
@@ -3244,27 +3231,34 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
             $join_alias = "rel_$rel_name";
             
             if ( $relation_type === 'submission' ) {
+
+                // Cria tabela temporária para cada obj relacionado
+                $temporary_tables[] = "CREATE TEMPORARY TABLE temp_$rel_name AS SELECT id, data FROM $table_name WHERE $table_name.object_name = '$rel_name'; ";
+
+                $index_temporary_tables[] = "ALTER TABLE temp_$rel_name ADD INDEX (id); ";
+
                 // Join with another submission
-                $join_clauses .= " LEFT JOIN $table_name AS $join_alias ";
+                $join_clauses .= " LEFT JOIN temp_$rel_name AS $join_alias ";
                 
                 if ( $is_json_path ) {
                     $json_key = substr($local_path, 6); // Remove 'data->'
                     if ( isset( $relationship['array_compare'] ) && $relationship['array_compare'] ) {
-                        $join_clauses .= "ON JSON_CONTAINS($table_name.data, CAST($join_alias.ID AS JSON), '$.$json_key') OR ";
-                        $join_clauses .=    "JSON_CONTAINS($table_name.data, JSON_QUOTE(CAST($join_alias.ID AS CHAR)), '$.$json_key') ";
+                        $join_clauses .= "ON JSON_CONTAINS($table_name.data, JSON_QUOTE($join_alias.id), '$.$json_key') ";
                     } else {
-                        $join_clauses .= "ON $join_alias.ID = CAST( JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key')) AS UNSIGNED) ";
+                        $join_clauses .= "ON $join_alias.id = CAST( JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key')) AS UNSIGNED) ";
                     }
                 } else {
                     // Direct column reference
-                    $join_clauses .= "ON $join_alias.ID = $table_name.$local_path ";
+                    $join_clauses .= "ON $join_alias.id = $table_name.$local_path ";
                 }
                 
                 // Add fields from related submission
                 $additional_selects .= ", $join_alias.data AS {$rel_name}_data";
-                $additional_selects .= ", $join_alias.ID AS {$rel_name}_id";
+                $additional_selects .= ", $join_alias.id AS {$rel_name}_id";
                 
             } elseif ( $relation_type === 'user' ) {
+                error_log(print_r('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<', true));
+                error_log(print_r($relationship, true));
                 // Join with WordPress users table
                 $users_table = $wpdb->users;
                 $usermeta_table = $wpdb->usermeta;
@@ -3273,7 +3267,7 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
                 if ( $is_json_path ) {
                     $json_key = substr($local_path, 6); // Remove 'data->'
                     if ( isset( $relationship['array_compare'] ) && $relationship['array_compare'] ) {
-                        $join_clauses .= "ON JSON_CONTAINS($table_name.data, CAST($join_alias.ID AS JSON), '$.$json_key') OR ";
+                        $join_clauses .= "ON JSON_CONTAINS($table_name.data, CAST($join_alias.ID AS CHAR), '$.$json_key') OR ";
                         $join_clauses .=    "JSON_CONTAINS($table_name.data, JSON_QUOTE(CAST($join_alias.ID AS CHAR)), '$.$json_key') ";
                     } else {
                         $join_clauses .= "ON $join_alias.ID = CAST( JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key')) AS UNSIGNED) ";
@@ -3284,9 +3278,10 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
                 }
                 
                 // Add user fields
-                $additional_selects .= ", $join_alias.display_name AS {$rel_name}_name";
-                $additional_selects .= ", $join_alias.user_email AS {$rel_name}_email";
-                $additional_selects .= ", $join_alias.ID AS {$rel_name}_id";
+                $additional_selects .= ", $join_alias.display_name AS {$rel_name}_display_name";
+                $additional_selects .= ", $join_alias.user_login AS {$rel_name}_user_login";
+                $additional_selects .= ", $join_alias.user_email AS {$rel_name}_user_email";
+                $additional_selects .= ", $join_alias.ID AS {$rel_name}_ID";
                 
                 // Optional: join usermeta for additional user fields
                 if (!empty($relationship['meta_fields'])) {
@@ -3294,15 +3289,12 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
                         $meta_alias = "um_{$rel_name}_{$meta_index}";
                         $join_clauses .= " LEFT JOIN $usermeta_table AS $meta_alias ";
                         $join_clauses .= "ON ($meta_alias.user_id = $join_alias.ID AND $meta_alias.meta_key = '$meta_key') ";
-                        // $additional_selects .= ", $meta_alias.meta_value AS {$rel_name}_{$meta_key}"; Se não deu problema, então exclui
+                        $additional_selects .= ", $meta_alias.meta_value AS {$rel_name}_{$meta_key}";
                     }
                 }
             }
         }
     } 
-
-    // Base query
-    $query_completed = "SELECT SQL_CALC_FOUND_ROWS $select_fields $additional_selects FROM $table_name $join_clauses";
 
     // Build the WHERE clause from filters
     $where_clause = '';
@@ -3337,18 +3329,18 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
                     $in_values = implode( ',', $escaped_values );
 
                     if ( $case_sensitive ) {
-                        $where_conditions[] = "JSON_UNQUOTE(JSON_EXTRACT(data, '$.$json_key')) IN ($in_values)";
+                        $where_conditions[] = "JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key')) IN ($in_values)";
                     } else {
-                        $where_conditions[] = "LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.$json_key'))) IN ($in_values)";
+                        $where_conditions[] = "LOWER(JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key'))) IN ($in_values)";
                     }
                 } else {
                     // Handle other operators for JSON data
                     $escaped_value = $wpdb->prepare( '%s', $value );
 
                     if ( $case_sensitive ) {
-                        $where_conditions[] = "JSON_UNQUOTE(JSON_EXTRACT(data, '$.$json_key')) $operator $escaped_value";
+                        $where_conditions[] = "JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key')) $operator $escaped_value";
                     } else {
-                        $where_conditions[] = "LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.$json_key'))) $operator LOWER($escaped_value)";
+                        $where_conditions[] = "LOWER(JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key'))) $operator LOWER($escaped_value)";
                     }
                 }
             } else {
@@ -3367,18 +3359,18 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
                     $in_values = implode( ',', $escaped_values );
 
                     if ( $case_sensitive ) {
-                        $where_conditions[] = "$column IN ($in_values)";
+                        $where_conditions[] = "$table_name.$column IN ($in_values)";
                     } else {
-                        $where_conditions[] = "LOWER($column) IN ($in_values)";
+                        $where_conditions[] = "LOWER($table_name.$column) IN ($in_values)";
                     }
                 } else {
                     // Handle other operators for regular columns
                     $escaped_value = $wpdb->prepare( '%s', $value );
 
                     if ( $case_sensitive ) {
-                        $where_conditions[] = "$column $operator $escaped_value";
+                        $where_conditions[] = "$table_name.$column $operator $escaped_value";
                     } else {
-                        $where_conditions[] = "LOWER($column) $operator LOWER($escaped_value)";
+                        $where_conditions[] = "LOWER($table_name.$column) $operator LOWER($escaped_value)";
                     }
                 }
             }
@@ -3400,16 +3392,17 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
         if ( ! empty( $args['relationships'] ) ) {
             foreach ( $args['relationships'] as $rel_name => $relationship ) {
                 if ( $relationship['type'] === 'submission' ) {
-                    $keyword_conditions[] = "JSON_SEARCH(LOWER(rel_$rel_name.data), 'one', '%$keyword%') IS NOT NULL";
+                    $keyword_conditions[] = "JSON_SEARCH(LOWER(rel_$rel_name.data), 'one', LOWER('%$keyword%')) IS NOT NULL";
                 } elseif ( $relationship['type'] === 'user' ) {
-                    $keyword_conditions[] = "LOWER(rel_$rel_name.display_name) LIKE '%$keyword%'";
-                    $keyword_conditions[] = "LOWER(rel_$rel_name.user_email) LIKE '%$keyword%'";
+                    $keyword_conditions[] = "LOWER(rel_$rel_name.display_name) LIKE LOWER('%$keyword%')";
+                    $keyword_conditions[] = "LOWER(rel_$rel_name.user_login) LIKE LOWER('%$keyword%')";
+                    $keyword_conditions[] = "LOWER(rel_$rel_name.user_email) LIKE LOWER('%$keyword%')";
                     
                     // Search in user meta fields if specified
                     if ( ! empty( $relationship['meta_fields'] ) ) {
                         foreach ( $relationship['meta_fields'] as $meta_index => $meta_key ) {
                             $meta_alias = "um_{$rel_name}_{$meta_index}";
-                            $keyword_conditions[] = "LOWER($meta_alias.meta_value) LIKE '%$keyword%'";
+                            $keyword_conditions[] = "LOWER($meta_alias.meta_value) LIKE LOWER('%$keyword%')";
                         }
                     }
                 }
@@ -3425,8 +3418,10 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
         }
     }
 
+    $select_fields = " $table_name.* ";
+
     // Build the ORDER BY clause
-    $order_by_clause = '';
+    $order_by_clause = "";
     if ( ! empty( $args['order_by'] ) ) {
         $order = isset( $args['order_by']['order'] ) && strtoupper( $args['order_by']['order'] ) === 'DESC' ? 'DESC' : 'ASC';
 
@@ -3439,12 +3434,14 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
             $inet_function = isset( $args['order_by']['inet_aton'] ) && $args['order_by']['inet_aton'] ? 'INET_ATON' : '';
 
             // Modify the query to include the JSON property for ordering
-            $query_completed = "SELECT SQL_CALC_FOUND_ROWS *, $inet_function(JSON_UNQUOTE(JSON_EXTRACT(data, '$.$json_key'))) AS json_prop FROM $table_name";
+            $select_fields .= ", $inet_function(JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key'))) AS json_prop ";
             $order_by_clause = ' ORDER BY json_prop ' . $order;
         }
     }
 
-    $pagination_query = $query_completed . $where_clause . $order_by_clause;
+    $query_head = "SELECT SQL_CALC_FOUND_ROWS $select_fields $additional_selects FROM $table_name $join_clauses";
+
+    $full_query = $query_head . $where_clause . $order_by_clause;
     
     // If single is true
     if ( $args['single'] ) {
@@ -3455,14 +3452,26 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
     // Add pagination to the query
     if ( $args['per_page'] > -1 && ! $args['return_count_only'] ) {
         $offset = ( $args['page'] - 1 ) * $args['per_page'];
-        $pagination_query .= " LIMIT {$args['per_page']} OFFSET $offset";
+        $full_query .= " LIMIT {$args['per_page']} OFFSET $offset";
     }
 
-    error_log( $pagination_query );
+    error_log( '----------------------------------->' );
+    error_log( $full_query );
+
+    // Criar as tabelas temporárias e indexá-las, se necessário
+    if ( ! empty( $temporary_tables ) && ! empty( $index_temporary_tables ) ) {
+        foreach ( $temporary_tables as $temporary_table_query ) {
+            $wpdb->query( $temporary_table_query );
+        }
+
+        foreach ( $index_temporary_tables as $index_temporary_tables_query ) {
+            $wpdb->query( $index_temporary_tables_query );
+        }
+    }
 
     // Execute the query
     if ( ! $args['return_count_only'] ) {
-        $submissions = $wpdb->get_results( $pagination_query, 'ARRAY_A' );
+        $submissions = $wpdb->get_results( $full_query, 'ARRAY_A' );
 
         // Handle query errors or empty results
         if ( $submissions === null ) {
@@ -3518,9 +3527,11 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
                     
                 } elseif ( $relation_type === 'user' ) {
                     $user_data = array(
-                        'id' => $submission["{$rel_name}_id"],
-                        'name' => $submission["{$rel_name}_name"] ?? '',
-                        'email' => $submission["{$rel_name}_email"] ?? ''
+                        'ID' => $submission["{$rel_name}_ID"],
+                        'display_name' => $submission["{$rel_name}_display_name"] ?? '',
+                        'user_email' => $submission["{$rel_name}_user_email"] ?? '',
+                        'user_login' => $submission["{$rel_name}_user_login"] ?? '',
+
                     );
                     
                     // Add user meta fields if requested
@@ -3531,7 +3542,12 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
                     }
                     
                     $submission['relationships'][$rel_name] = $user_data;
-                    unset( $submission["{$rel_name}_id"], $submission["{$rel_name}_name"], $submission["{$rel_name}_email"] );
+                    unset(
+                        $submission["{$rel_name}_ID"], 
+                        $submission["{$rel_name}_display_name"], 
+                        $submission["{$rel_name}_user_email"], 
+                        $submission["{$rel_name}_user_login"]
+                    );
                     
                     // Clean up meta fields
                     if ( ! empty( $relationship['meta_fields'] ) ) {

@@ -156,7 +156,7 @@ function renderDataOnTable(data) {
 
   // Map through the results and transform each submission
   return data.results.map((submission) => {
-    const { id, data: submissionData } = submission;
+    const { id, data: submissionData, relationships } = submission;
 
     // Destructure the submission data
     const {
@@ -224,8 +224,8 @@ function renderDataOnTable(data) {
     return [
       assetColumnData,
       descColumnData,
-      place?.data?.number ?? "", // Use optional chaining and nullish coalescing for safety
-      applicant ?? "", // Use nullish coalescing for safety
+      getSafeValue(() => relationships.place.data.number, ""),
+      getSafeValue(() => relationships.applicant.display_name, ""),
       statusColumnData,
       actionColumnData,
     ];
@@ -403,32 +403,29 @@ function getOsIconByOsType(type) {
 }
 
 function statusColFormatter(current) {
-  try {
-    const { status, on_loan } = JSON.parse(current);
+  const { status, on_loan } = JSON.parse(current);
 
-    const status_text = on_loan ? "Emprestado" : status[0] || "Indefinido";
-    const normalizedStatus = status_text.toLowerCase();
+  const status_text = on_loan
+    ? "Emprestado"
+    : getSafeValue(() => status[0], "Indefinido");
+  const normalizedStatus = status_text.toLowerCase();
 
-    let type = "text-bg-info";
-    switch (normalizedStatus) {
-      case "emprestado":
-        type = "text-bg-warning";
-        break;
-      case "ativado":
-        type = "text-bg-primary";
-        break;
-      case "desativado":
-      case "quebrado":
-      case "desaparecido":
-        type = "text-bg-danger";
-        break;
-    }
-
-    return gridjs.html(`<span class="badge ${type}">${status_text}</span>`);
-  } catch (error) {
-    console.error("Invalid JSON input:", current, error);
-    return gridjs.html('<span class="badge text-bg-secondary">Erro</span>');
+  let type = "text-bg-info";
+  switch (normalizedStatus) {
+    case "emprestado":
+      type = "text-bg-warning";
+      break;
+    case "ativado":
+      type = "text-bg-primary";
+      break;
+    case "desativado":
+    case "quebrado":
+    case "desaparecido":
+      type = "text-bg-danger";
+      break;
   }
+
+  return gridjs.html(`<span class="badge ${type}">${status_text}</span>`);
 }
 
 function actionColFormatter(current) {

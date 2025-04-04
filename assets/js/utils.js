@@ -60,3 +60,11 @@ function getDateAsHowLongFormatted(d) {
     return date.toLocaleDateString();
   }
 }
+
+function getSafeValue(fn, defaultValue) {
+  try {
+    return fn();
+  } catch (e) {
+    return defaultValue;
+  }
+}
