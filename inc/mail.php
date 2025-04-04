@@ -363,7 +363,7 @@ function intranet_fafar_mail_on_update_laboratory_team( $laboratory_team, $actio
   $professor = get_userdata( (int) $laboratory_team['owner'] );
   if ( ! $professor ) return false;
   
-  $message = '<p>É um prazer tê-lo(a) conosco! Você foi adicionado(a) como colaborador do Prof(a) ' . $professor->display_name . '.</p>';
+  $message = '<p>Você foi adicionado(a) como colaborador do Prof(a) ' . $professor->display_name . '.</p>';
 
   if ( $action === 'remove' ) {
     $message = '<p>Informamos que você foi removido(a) como colaborador do Prof(a) ' . $professor->display_name . '.</p>';

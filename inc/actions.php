@@ -150,7 +150,7 @@ function fafar_intranet_actions_add_custom_profile_info() {
                 </a>
                 <?php endif; ?>
             </div>
-            <?php if ( $has_collaborators && false ): ?> <!-- Aguardando aprovação da diretoria -->
+            <?php if ( $has_collaborators ): ?>
             <a class="btn btn-outline-primary" id="btn-collaborators-list" title="Listar colaboradores">
                 <i class="bi bi-people fs-6 fw-light"></i>
                 Colaboradores

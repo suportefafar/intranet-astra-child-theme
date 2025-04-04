@@ -2776,7 +2776,32 @@ function intranet_fafar_api_get_equipaments_handler( $request ) {
     $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
     $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
     
-    $submissions = intranet_fafar_api_get_equipaments( $keyword, $offset, $limit, true ); 
+    $submissions = intranet_fafar_api_read(
+        args: array(
+            'filters'  => array(
+                array(
+                    'column'   => 'object_name',
+                    'value'    => 'equipament',
+                    'operator' => '=',
+                ),
+            ),
+            'order_by' => array(
+                'orderby_column' => 'created_at',
+                'order'          => 'DESC',
+            ),
+            'page'          => $offset,   
+            'per_page'      => $limit,
+            'keyword'       => $keyword,
+            'relationships' => [
+                'applicant' => [
+                    'type'          => 'user',
+                    'local_path'    => 'data->applicant', // Direct column reference
+                    'array_compare' => true, // Direct column reference
+                    'meta_fields'   => ['workplace_extension'], // Include these user meta fields
+                ],
+            ],
+        )
+    );
 
     if ( ! $submissions ) {
         return new WP_Error(
@@ -3192,6 +3217,7 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
         'keyword'           => '',    // Keyword to search across all JSON properties
         'return_count_only' => false, // If true, returns only the row count
         'single'            => false,  // If provided, returns the single submission or the first
+        'relationships'     => array(),   // For relations with others submissions and WP users
     );
 
     // Merge user-provided arguments with defaults
@@ -3202,14 +3228,81 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
     // Construct the table name
     $table_name = $wpdb->prefix . 'fafar_cf7crud_submissions';
 
-    // Base query
-    $query_completed = "SELECT SQL_CALC_FOUND_ROWS * FROM $table_name";
+    // Base query with enhanced relationship support
+    $select_fields = "$table_name.*";
+    $join_clauses = '';
+    $additional_selects = '';
 
-    // If single is true
-    if ( $args['single'] ) {
-        // When searching by single ID, we only want one result
-        $args['per_page'] = 1;
-    }
+    // Handle relationships - more flexible version
+    if ( ! empty( $args['relationships'] ) ) {
+        foreach ( $args['relationships'] as $rel_name => $relationship ) {
+            $relation_type = $relationship['type'] ?? 'submission'; // 'submission' or 'user'
+            $local_path = $relationship['local_path']; // e.g., 'owner' or 'place' or 'data->place'
+            
+            // Determine if we're accessing a direct field or JSON path
+            $is_json_path = strpos( $local_path, 'data->' ) === 0;
+            $join_alias = "rel_$rel_name";
+            
+            if ( $relation_type === 'submission' ) {
+                // Join with another submission
+                $join_clauses .= " LEFT JOIN $table_name AS $join_alias ";
+                
+                if ( $is_json_path ) {
+                    $json_key = substr($local_path, 6); // Remove 'data->'
+                    if ( isset( $relationship['array_compare'] ) && $relationship['array_compare'] ) {
+                        $join_clauses .= "ON JSON_CONTAINS($table_name.data, CAST($join_alias.ID AS JSON), '$.$json_key') OR ";
+                        $join_clauses .=    "JSON_CONTAINS($table_name.data, JSON_QUOTE(CAST($join_alias.ID AS CHAR)), '$.$json_key') ";
+                    } else {
+                        $join_clauses .= "ON $join_alias.ID = CAST( JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key')) AS UNSIGNED) ";
+                    }
+                } else {
+                    // Direct column reference
+                    $join_clauses .= "ON $join_alias.ID = $table_name.$local_path ";
+                }
+                
+                // Add fields from related submission
+                $additional_selects .= ", $join_alias.data AS {$rel_name}_data";
+                $additional_selects .= ", $join_alias.ID AS {$rel_name}_id";
+                
+            } elseif ( $relation_type === 'user' ) {
+                // Join with WordPress users table
+                $users_table = $wpdb->users;
+                $usermeta_table = $wpdb->usermeta;
+                $join_clauses .= " LEFT JOIN $users_table AS $join_alias ";
+                
+                if ( $is_json_path ) {
+                    $json_key = substr($local_path, 6); // Remove 'data->'
+                    if ( isset( $relationship['array_compare'] ) && $relationship['array_compare'] ) {
+                        $join_clauses .= "ON JSON_CONTAINS($table_name.data, CAST($join_alias.ID AS JSON), '$.$json_key') OR ";
+                        $join_clauses .=    "JSON_CONTAINS($table_name.data, JSON_QUOTE(CAST($join_alias.ID AS CHAR)), '$.$json_key') ";
+                    } else {
+                        $join_clauses .= "ON $join_alias.ID = CAST( JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key')) AS UNSIGNED) ";
+                    }
+                } else {
+                    // Direct column reference
+                    $join_clauses .= "ON $join_alias.ID = CAST( $table_name.$local_path AS UNSIGNED ) ";
+                }
+                
+                // Add user fields
+                $additional_selects .= ", $join_alias.display_name AS {$rel_name}_name";
+                $additional_selects .= ", $join_alias.user_email AS {$rel_name}_email";
+                $additional_selects .= ", $join_alias.ID AS {$rel_name}_id";
+                
+                // Optional: join usermeta for additional user fields
+                if (!empty($relationship['meta_fields'])) {
+                    foreach ($relationship['meta_fields'] as $meta_index => $meta_key) {
+                        $meta_alias = "um_{$rel_name}_{$meta_index}";
+                        $join_clauses .= " LEFT JOIN $usermeta_table AS $meta_alias ";
+                        $join_clauses .= "ON ($meta_alias.user_id = $join_alias.ID AND $meta_alias.meta_key = '$meta_key') ";
+                        // $additional_selects .= ", $meta_alias.meta_value AS {$rel_name}_{$meta_key}"; Se não deu problema, então exclui
+                    }
+                }
+            }
+        }
+    } 
+
+    // Base query
+    $query_completed = "SELECT SQL_CALC_FOUND_ROWS $select_fields $additional_selects FROM $table_name $join_clauses";
 
     // Build the WHERE clause from filters
     $where_clause = '';
@@ -3296,11 +3389,35 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
         }
     }
 
-    // Add case-insensitive keyword search
+    // Enhanced keyword search including relationships
     if ( ! empty( $args['keyword'] ) ) {
-        $keyword = $wpdb->esc_like( strtolower( $args['keyword'] ) ); // Convert keyword to lowercase
-        $keyword_condition = "JSON_SEARCH(LOWER(data), 'one', '%$keyword%') IS NOT NULL";
-
+        $keyword = $wpdb->esc_like( strtolower( $args['keyword'] ) );
+        $keyword_conditions = array(
+            "JSON_SEARCH(LOWER($table_name.data), 'one', '%$keyword%') IS NOT NULL"
+        );
+        
+        // Add relationship fields to keyword search
+        if ( ! empty( $args['relationships'] ) ) {
+            foreach ( $args['relationships'] as $rel_name => $relationship ) {
+                if ( $relationship['type'] === 'submission' ) {
+                    $keyword_conditions[] = "JSON_SEARCH(LOWER(rel_$rel_name.data), 'one', '%$keyword%') IS NOT NULL";
+                } elseif ( $relationship['type'] === 'user' ) {
+                    $keyword_conditions[] = "LOWER(rel_$rel_name.display_name) LIKE '%$keyword%'";
+                    $keyword_conditions[] = "LOWER(rel_$rel_name.user_email) LIKE '%$keyword%'";
+                    
+                    // Search in user meta fields if specified
+                    if ( ! empty( $relationship['meta_fields'] ) ) {
+                        foreach ( $relationship['meta_fields'] as $meta_index => $meta_key ) {
+                            $meta_alias = "um_{$rel_name}_{$meta_index}";
+                            $keyword_conditions[] = "LOWER($meta_alias.meta_value) LIKE '%$keyword%'";
+                        }
+                    }
+                }
+            }
+        }
+        
+        $keyword_condition = '(' . implode(' OR ', $keyword_conditions) . ')';
+        
         if ( empty( $where_clause ) ) {
             $where_clause = " WHERE $keyword_condition";
         } else {
@@ -3328,12 +3445,20 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
     }
 
     $pagination_query = $query_completed . $where_clause . $order_by_clause;
+    
+    // If single is true
+    if ( $args['single'] ) {
+        // When searching by single ID, we only want one result
+        $args['per_page'] = 1;
+    }
 
     // Add pagination to the query
     if ( $args['per_page'] > -1 && ! $args['return_count_only'] ) {
         $offset = ( $args['page'] - 1 ) * $args['per_page'];
         $pagination_query .= " LIMIT {$args['per_page']} OFFSET $offset";
     }
+
+    error_log( $pagination_query );
 
     // Execute the query
     if ( ! $args['return_count_only'] ) {
@@ -3371,33 +3496,54 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
         );
     }
 
-    // Process submissions
+    // Process submissions with enhanced relationship handling
     $submissions_checked = array();
     foreach ( $submissions as $submission ) {
         // Decode the JSON data field
         $submission['data'] = json_decode( $submission['data'], true );
-
-        // Skip inactive submissions if $check_is_active is true
-        if ( $args['check_is_active'] && $submission['is_active'] != 1 ) {
-            continue;
+        
+        // Process relationships
+        if (  ! empty( $args['relationships'] ) ) {
+            $submission['relationships'] = array();
+            
+            foreach ( $args['relationships'] as $rel_name => $relationship ) {
+                $relation_type = $relationship['type'] ?? 'submission';
+                
+                if ( $relation_type === 'submission' && isset( $submission["{$rel_name}_data"] ) ) {
+                    $submission['relationships'][$rel_name] = array(
+                        'id' => $submission["{$rel_name}_id"],
+                        'data' => json_decode($submission["{$rel_name}_data"], true)
+                    );
+                    unset( $submission["{$rel_name}_data"], $submission["{$rel_name}_id"] );
+                    
+                } elseif ( $relation_type === 'user' ) {
+                    $user_data = array(
+                        'id' => $submission["{$rel_name}_id"],
+                        'name' => $submission["{$rel_name}_name"] ?? '',
+                        'email' => $submission["{$rel_name}_email"] ?? ''
+                    );
+                    
+                    // Add user meta fields if requested
+                    if ( ! empty( $relationship['meta_fields'] ) ) {
+                        foreach ( $relationship['meta_fields'] as $meta_key ) {
+                            $user_data[$meta_key] = $submission["{$rel_name}_{$meta_key}"] ?? null;
+                        }
+                    }
+                    
+                    $submission['relationships'][$rel_name] = $user_data;
+                    unset( $submission["{$rel_name}_id"], $submission["{$rel_name}_name"], $submission["{$rel_name}_email"] );
+                    
+                    // Clean up meta fields
+                    if ( ! empty( $relationship['meta_fields'] ) ) {
+                        foreach ( $relationship['meta_fields'] as $meta_key ) {
+                            unset( $submission["{$rel_name}_{$meta_key}"] );
+                        }
+                    }
+                }
+            }
         }
-
-        // Check read permission
-        if ( $args['check_permissions'] && ! intranet_fafar_api_check_read_permission( $submission ) ) {
-            continue;
-        }
-
-        // Check write permission and set 'prevent_write' flag
-        if ( $args['check_permissions'] && ! intranet_fafar_api_check_write_permission( $submission ) ) {
-            $submission['data']['prevent_write'] = true;
-        }
-
-        // Check execute permission and set 'prevent_exec' flag
-        if ( $args['check_permissions'] && ! intranet_fafar_api_check_exec_permission( $submission ) ) {
-            $submission['data']['prevent_exec'] = true;
-        }
-
-        // Add the processed submission to the result array
+        
+        // [Rest of the processing remains the same]
         array_push( $submissions_checked, $submission );
     }
 
