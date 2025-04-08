@@ -37,6 +37,13 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_create_auditorium_reservation_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/submissions/service_ticket_update', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::CREATABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_create_service_ticket_update_handler',
+    ) );
+
     register_rest_route( 'intranet/v1', '/submission/', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::CREATABLE,
@@ -562,8 +569,6 @@ function get_incremental_service_ticker_number() {
 }
 
 function intranet_fafar_api_create_rapid_service_ticket( $form_data ) {
-   
-
     // Verificações iniciais
     if ( ! isset( $form_data['object_name'] ) ) return $form_data;
 
@@ -633,7 +638,6 @@ function intranet_fafar_api_create_rapid_service_ticket( $form_data ) {
 }
 
 function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
-   
     // Verificações iniciais
     if ( ! isset( $form_data['object_name'] ) ) return $form_data;
 
@@ -661,11 +665,10 @@ function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
     $form_data['data'] = json_encode( $form_data['data'] );
 
     // Retorna uma obj genérico para concluir a submissão com sucesso
-    return $form_data;   
+    return $form_data;
 }
 
 function intranet_fafar_api_get_loans_by_equipament( $id ) {
-
     if( ! isset( $id ) || ! $id ) {
         
         intranet_fafar_logs_register_log(
@@ -705,7 +708,6 @@ function intranet_fafar_api_get_loans_by_equipament( $id ) {
     }
 
     return $submissions;
-
 }
 
 function intranet_fafar_api_get_service_tickets_by_user_handler( $request ) {
@@ -998,8 +1000,127 @@ function intranet_fafar_api_get_service_ticket_by_id( $id ) {
 
 }
 
-function intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler( $request ) {
+/**
+ * Essa função, diferente das outras, trata dados recebidos por um bot.
+ * Tais dados não virão de outra fonte.
+ */
+function intranet_fafar_api_create_service_ticket_update_handler( $request ) {
+    $request_data = $request->get_json_params();
 
+    if( ! $request_data ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'No data' , 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
+    }
+
+    $service_ticket = intranet_fafar_api_read(
+        args: array(
+            'filters'  => array(
+                array(
+                    'column'   => 'object_name',
+                    'value'    => 'service_ticket',
+                    'operator' => '=',
+                ),
+                array(
+                    'column'   => 'data->number',
+                    'value'    => str_pad( $request_data['intranet_service_ticket_number'], 6, "0", STR_PAD_LEFT ),
+                    'operator' => '=',
+                ),
+            ),
+            'single' => true,
+        )
+    );
+
+    if( ! $service_ticket ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Nenhuma OS encontrado' , 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
+    }
+
+    if ( $service_ticket['data']['status'] === 'Finalizada' && false ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'OS já finalizada' , 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
+    }
+
+    if ( $service_ticket['data']['status'] === 'Cancelada' ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'OS já cancelada' , 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
+    }
+
+    if (
+        in_array(
+            strtolower( $request_data['last_status'] ),
+            array(
+                'encerrada',
+                'cancelada',
+            )
+        )
+    ) $request_data['last_status'] = 'Finalizada';
+
+    if ( strtolower( $request_data['last_status'] ) === 'aberta' ) 
+        $request_data['last_status'] = 'Em andamento';
+
+    $new_service_ticket_update = array(
+        'object_name' => 'service_ticket_update',
+        'permissions' => '774',
+        'owner'       => '1745', // ID da Marilda Coura
+        'group_owner' => 'apoio_logistico_e_operacional',
+        'data'        => array(
+            'service_ticket' => $service_ticket['id'],
+            'status'         => array( $request_data['last_status'] ),
+            'service_report' => $request_data['last_full_report'],
+        ), 
+    );
+
+    // Atualizando a propriedade 'status' da ordem de serviço
+    if ( ! isset( $new_service_ticket_update['data']['status'][0] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Status não informado' , 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
+    }
+   
+    $service_ticket['data']['status'] = $new_service_ticket_update['data']['status'][0];
+   
+    $result = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
+
+    if ( empty( $result ) && isset( $result['error_msg'] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Erro no prepararo do objeto' , 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
+    }
+
+    $result = intranet_fafar_api_create( $new_service_ticket_update );
+
+    if ( isset( $result['error_msg'] ) ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Erro ao criar' , 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
+    }
+
+    error_log(print_r('---------------------------------------', true));
+    error_log(print_r($new_service_ticket_update, true));
+    error_log(print_r('---------------------------------------', true));
+
+    return rest_ensure_response( $result );
+}
+
+function intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler( $request ) {
     $service_ticket_id = (string) $request['id'];
 
     $submissions = intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $service_ticket_id );
@@ -1011,7 +1132,6 @@ function intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler
     }
 
     return rest_ensure_response( $submissions );
-
 }
 
 function intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $service_ticket_id ) {
@@ -1158,11 +1278,6 @@ function intranet_fafar_api_get_access_building_request( $by_owner = false, $key
             'place' => array(
                 'type'          => 'submission',
                 'local_path'    => 'data->place',
-                'array_compare' => true,
-            ),
-            'logs' => array(
-                'type'          => 'submission',
-                'local_path'    => 'data->logs',
                 'array_compare' => true,
             ),
         ),
@@ -1657,10 +1772,11 @@ function intranet_fafar_api_search_place($search) {
 */
 function intranet_fafar_api_create_or_update_reservation( $form_data, $submission_id = null ) {
 
-    error_log( 'INICIO-------------------------> ' );
+    error_log( ' -------------------------> ' );
+    error_log( ' DADOS RECEBIDOS PARA RESERVA: ' );
     error_log( print_r( $form_data, true ) );
     error_log( print_r( $submission_id, true ) );
-    error_log( 'INICIO-------------------------> ' );
+    error_log( ' -------------------------> ' );
 
     // Verificações iniciais
 
