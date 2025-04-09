@@ -53,7 +53,6 @@ function intranet_fafar_mail_on_create_service_ticket( $form_data ) {
 }
 
 function intranet_fafar_mail_on_create_service_ticket_update( $form_data ) {
-
   if( ! isset( $form_data['object_name'] ) ) return $form_data;
 
   if ( $form_data['object_name'] !== 'service_ticket_update' ) return $form_data;
@@ -75,12 +74,10 @@ function intranet_fafar_mail_on_create_service_ticket_update( $form_data ) {
   }
 
   $place_desc = '';
-  if ( ! empty( $service_ticket['data']['place'][0] ) ) {
-    $place = intranet_fafar_api_get_submission_by_id( $service_ticket['data']['place'][0] );
-
-    if ( ! empty( $place['data'] ) ) {
-      $place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
-    }
+  if ( ! empty( $service_ticket['data']['place']['data']['number'] ) ) {
+    $place = $service_ticket['data']['place'];
+    
+    $place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
   }
   
   $message = '
@@ -316,10 +313,6 @@ function intranet_fafar_mail_on_change_auditorium_reservation_status( $reservati
   $subject = 'Atualização no Status da Sua Reserva de Auditório 🔄';
   $to      = $reservation['data']['applicant_email'];
 
-  error_log(print_r($to,true));
-  error_log(print_r($subject,true));
-  error_log(print_r($message,true));
-
   intranet_fafar_mail_notify( $to, $subject, $message );
 
   return true;
@@ -382,8 +375,6 @@ function intranet_fafar_mail_on_update_laboratory_team( $laboratory_team, $actio
 }
 
 function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $attachments = null ) {
-  error_log( print_r( array( $to, $subject, $message, $headers, $attachments ), true ) );
-
   $html_mail_body_template = '
     <!DOCTYPE html>
     <html lang="pt-BR">
