@@ -67,6 +67,13 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_get_service_tickets_by_departament_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/submissions/service_tickets', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_service_tickets_handler',
+    ) );
+
     register_rest_route( 'intranet/v1', '/submissions/service_ticket_updates/by_service_ticket', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::READABLE,
@@ -710,6 +717,190 @@ function intranet_fafar_api_get_loans_by_equipament( $id ) {
     return $submissions;
 }
 
+function intranet_fafar_api_get_service_tickets_handler( $request ) {
+    $offset                  = $request->get_param('offset') ? intval($request->get_param('offset')) : 1;
+    $limit                   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
+    $number                  = $request->get_param('number') && is_numeric( $request->get_param('number') ) ? intval($request->get_param('number')) : null;
+    $status                  = $request->get_param('status') ? sanitize_text_field($request->get_param('status') ) : null;
+    $departament_assigned_to = $request->get_param('departament_assigned_to') ? sanitize_text_field( $request->get_param('departament_assigned_to') ) : null;
+    $type                    = $request->get_param('type') ? sanitize_text_field( $request->get_param('type') ) : null;
+    $created_at_from         = $request->get_param('created_at_from') ? sanitize_text_field( $request->get_param('created_at_from') ) : null;
+    $created_at_until        = $request->get_param('created_at_until') ? sanitize_text_field( $request->get_param('created_at_until') ) : null;
+    $place                   = $request->get_param('place') ? sanitize_text_field( $request->get_param('place') ) : null;
+    $owner                   = $request->get_param('owner') && is_numeric( $request->get_param('owner') ) ? intval($request->get_param('owner')) : null;
+    $assigned_to             = $request->get_param('assigned_to') && is_numeric( $request->get_param('assigned_to') ) ? intval($request->get_param('assigned_to')) : null;
+    $user_report             = $request->get_param('user_report') ? sanitize_text_field( $request->get_param('user_report') ) : null;
+    $service_report          = $request->get_param('service_report') ? sanitize_text_field( $request->get_param('service_report') ) : null;
+    
+
+    $query_params = array(
+        'filters'  => array(
+            array(
+                'column'   => 'object_name',
+                'value'    => 'service_ticket',
+                'operator' => '=',
+            ),
+        ),
+        'order_by' => array(
+            'orderby_json' => 'number',
+            'order'        => 'DESC',
+        ),
+        'page'     => $offset,   
+        'per_page' => $limit, 
+        'relationships' => array(
+            'applicant' => array(
+                'type'          => 'user',
+                'local_path'    => 'owner',
+            ),
+            'place' => array(
+                'type'          => 'submission',
+                'local_path'    => 'data->place',
+                'array_compare' => true,
+            ),
+            'assigned_to' => array(
+                'type'          => 'user',
+                'local_path'    => 'data->assigned_to',
+                'array_compare' => true,
+            ),
+        ), 
+    );
+
+    if ( $number ) {
+        $query_params['filters'][] = array(
+            'column'   => 'data->number',
+            'value'    => $number,
+            'operator' => 'LIKE',
+        );
+    }
+
+    if ( ! empty( $status ) && is_string( $status ) ) {
+        $status_arr = array_map( fn( $s ) => strtolower($s), explode( ',', $status ) );
+
+        $query_params['filters'][] = array(
+            'column'         => 'data->status',
+            'value'          => $status_arr,
+            'operator'       => 'IN',
+            'case_sensitive' => false,
+        );
+    }
+
+    if ( $departament_assigned_to ) {
+        $query_params['filters'][] = array(
+            'column'   => 'data->departament_assigned_to',
+            'value'    => '["' . $departament_assigned_to . '"]',
+            'operator' => '=',
+        );
+    }
+
+    if ( $type ) {
+        $query_params['filters'][] = array(
+            'column'   => 'data->type',
+            'value'    => $type,
+            'operator' => '=',
+        );
+    }
+
+    if ( $created_at_from ) {
+        $query_params['filters'][] = array(
+            'column'   => 'created_at',
+            'value'    => $created_at_from,
+            'operator' => '>',
+        );
+    }
+
+    if ( $created_at_until ) {
+        $query_params['filters'][] = array(
+            'column'   => 'created_at',
+            'value'    => $created_at_until,
+            'operator' => '<',
+        );
+    }
+
+    if ( $place ) {
+        $query_params['filters'][] = array(
+            'column'   => 'data->place',
+            'value'    => '["' . $place . '"]',
+            'operator' => '=',
+        );
+    }
+
+    if ( $owner ) {
+        $query_params['filters'][] = array(
+            'column'   => 'owner',
+            'value'    => $owner,
+            'operator' => '=',
+        );
+    }
+
+    if ( $assigned_to ) {
+        $query_params['filters'][] = array(
+            'column'   => 'data->assigned_to',
+            'value'    => $assigned_to,
+            'operator' => '=',
+        );
+    }
+
+    if ( $user_report ) {
+        $query_params['filters'][] = array(
+            'column'   => 'data->user_report',
+            'value'    => $user_report,
+            'operator' => 'LIKE',
+        );
+    }
+
+    if ( $service_report ) {
+        $query_params['keyword'] = $service_report;
+    }
+
+    error_log(print_r($query_params,true));
+
+    $submissions = intranet_fafar_api_read( args: $query_params );
+
+    if ( $submissions === false ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 500 ),
+        );
+    }
+
+    if ( empty( $submissions ) ) {
+        return rest_ensure_response(
+            array(
+                'count'    => 0,
+                'next'     => null,
+                'previous' => null,
+                'results'  => [],
+            )
+        );
+    }
+
+    $submissions['data'] = array_map( function ( $submission ) {
+        if ( isset( $submission['data']['departament_assigned_to'][0] ) ) {
+            // Get the display name of the role
+            $role_slug = $submission['data']['departament_assigned_to'][0];
+                
+            $role_display_name = '--';
+                
+            if ( isset( wp_roles()->roles[ $role_slug ] ) )
+                $role_display_name = wp_roles()->roles[ $role_slug ]['name'];
+
+            $submission['relationships']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
+        }
+
+        return $submission;
+    }, $submissions['data'] );
+
+    return rest_ensure_response(
+        array(
+            'count'    => $submissions['pagination']['total_items'],
+            'next'     => null,
+            'previous' => null,
+            'results'  => $submissions['data'],
+        )
+    );
+}
+
 function intranet_fafar_api_get_service_tickets_by_user_handler( $request ) {
     $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
     $offset  = $request->get_param('offset') ? intval($request->get_param('offset')) : 1;
@@ -718,7 +909,7 @@ function intranet_fafar_api_get_service_tickets_by_user_handler( $request ) {
 
     $submissions = intranet_fafar_api_get_service_tickets_by_user( $user_id, $keyword, $offset, $limit );
 
-    if( ! $submissions ) {
+    if ( $submissions === false ) {
         return new WP_Error(
             'rest_api_sad', 
             esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
@@ -726,11 +917,14 @@ function intranet_fafar_api_get_service_tickets_by_user_handler( $request ) {
         );
     }
 
-    if( count( $submissions ) == 0 ) {
-        return new WP_Error(
-            'rest_api_sad', 
-            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
-            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+    if ( empty( $submissions ) ) {
+        return rest_ensure_response(
+            array(
+                'count'    => 0,
+                'next'     => null,
+                'previous' => null,
+                'results'  => [],
+            )
         );
     }
 
@@ -2586,6 +2780,7 @@ function intranet_fafar_api_get_submissions_by_object_name(
         'limit'             => -1,
         'keyword'           => '',
         'substitute_value'  => true,
+        'relationships'     => array(),
     );
 
     // Merge user-provided arguments with defaults
@@ -2635,6 +2830,7 @@ function intranet_fafar_api_get_submissions_by_object_name(
 
     return $old ? $submissions['data'] : $submissions;
 }
+
 
 function intranet_fafar_api_get_user_by_id_handler( $request ) {
     if ( empty( $request['id'] ) ) {
@@ -3451,6 +3647,16 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
                     } else {
                         $where_conditions[] = "LOWER(JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key'))) IN ($in_values)";
                     }
+                } else if ( $operator === 'LIKE' ) {
+                    // Handle other operators for JSON data
+                    $escaped_value = $wpdb->esc_like( $value );
+                    
+
+                    if ( $case_sensitive ) {
+                        $where_conditions[] = "JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key')) LIKE '%$escaped_value%'";
+                    } else {
+                        $where_conditions[] = "LOWER(JSON_UNQUOTE(JSON_EXTRACT($table_name.data, '$.$json_key'))) LIKE LOWER('%$escaped_value%')";
+                    }
                 } else {
                     // Handle other operators for JSON data
                     $escaped_value = $wpdb->prepare( '%s', $value );
@@ -3573,7 +3779,7 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
         $full_query .= " LIMIT {$args['per_page']} OFFSET $offset";
     }
 
-    // error_log( $full_query );
+    error_log( $full_query );
 
     // Criar as tabelas temporárias e indexá-las, se necessário
     if ( ! empty( $temporary_tables ) && ! empty( $index_temporary_tables ) ) {

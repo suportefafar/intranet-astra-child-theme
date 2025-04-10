@@ -290,3 +290,18 @@ table.fc-col-header {
     opacity: 0.75 !important;
   }
 }
+
+/**
+ * Estilos para o filtro avançado de OS
+ */
+.advanced-filter-row {
+  display: flex !important;
+  gap: 1rem;
+  width: 100% !important;
+}
+
+.advanced-filter-row p {
+  flex-grow: 1 !important;
+  margin: 0;
+  padding: 0;
+}

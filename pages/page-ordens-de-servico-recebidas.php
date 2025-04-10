@@ -64,6 +64,14 @@ get_header(); ?>
     * Conteúdo customizado da página
     * Início
 --> 
+        <!-- HEADER BUTTONS -->
+
+        <div class="d-flex justify-content-start gap-2 mb-4">
+            <a href="/filtro-avancado-de-ordem-de-servico/" class="btn btn-outline-secondary text-decoration-none" target="_blank">
+                <i class="bi bi-funnel"></i>
+                Filtro Avançado
+            </a>
+        </div>
 
         <!-- CHARTS -->
 
