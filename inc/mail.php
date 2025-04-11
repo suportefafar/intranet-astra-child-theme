@@ -595,4 +595,6 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
         ),
       );
     }
+
+    return true;
 }
