@@ -51,6 +51,13 @@ function intranet_fafar_api_register_submission_routes() {
         'callback' => 'intranet_fafar_api_create_submission_handler',
     ) );
 
+    register_rest_route( 'intranet/v1', '/email/send', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::CREATABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_send_email',
+    ) );
+
     // READABLE
 
     register_rest_route( 'intranet/v1', '/submissions/service_tickets/by_user', array(
@@ -1195,6 +1202,42 @@ function intranet_fafar_api_get_service_ticket_by_id( $id ) {
 
 }
 
+function intranet_fafar_api_send_email( $request ) {
+    $request_data = $request->get_json_params();
+
+    if( ! $request_data ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'No data' , 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
+    }
+
+    if (
+        empty( $request_data['to'] ) || 
+        empty( $request_data['subject'] ) || 
+        empty( $request_data['message'] )
+    ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Missing to, suject and/or message' , 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
+    }
+
+    $response = intranet_fafar_mail_notify( $request_data['to'], $request_data['subject'], $request_data['message'] );
+
+    if ( ! $response ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( 'Fail to send email!' , 'http_status', 'intranet-fafar-api' ),
+            400,
+        );
+    }
+
+    return rest_ensure_response( array( 'msg' => 'Email sent successfully' ) );
+}
+
 /**
  * Essa função, diferente das outras, trata dados recebidos por um bot.
  * Tais dados não virão de outra fonte.
@@ -1237,19 +1280,11 @@ function intranet_fafar_api_create_service_ticket_update_handler( $request ) {
     }
 
     if ( $service_ticket['data']['status'] === 'Finalizada' ) {
-        return new WP_Error(
-            'rest_api_sad', 
-            esc_html__( 'OS já finalizada' , 'http_status', 'intranet-fafar-api' ),
-            400,
-        );
+        return rest_ensure_response( array( 'status' => 'Finalizada', 'msg' => 'OS conta como Finalizada' ) );
     }
 
     if ( $service_ticket['data']['status'] === 'Cancelada' ) {
-        return new WP_Error(
-            'rest_api_sad', 
-            esc_html__( 'OS já cancelada' , 'http_status', 'intranet-fafar-api' ),
-            400,
-        );
+        return rest_ensure_response( array( 'status' => 'Cancelada', 'msg' => 'OS conta como Cancelada' ) );
     }
 
     if (
