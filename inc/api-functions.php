@@ -1389,7 +1389,7 @@ function intranet_fafar_api_get_access_building_request_handler( $request ) {
     
     $submissions = intranet_fafar_api_get_access_building_request( false, $keyword, $offset, $limit, true ); 
 
-    if ( ! $submissions ) {
+    if ( $submissions === false ) {
         return new WP_Error(
             'rest_api_sad', 
             esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
@@ -1397,11 +1397,14 @@ function intranet_fafar_api_get_access_building_request_handler( $request ) {
         );
     }
 
-    if ( count( $submissions ) == 0 ) {
-        return new WP_Error(
-            'rest_api_sad', 
-            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
-            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+    if ( empty( $submissions ) ) {
+        return rest_ensure_response(
+            array(
+                'count'    => 0,
+                'next'     => null,
+                'previous' => null,
+                'results'  => [],
+            )
         );
     }
 
@@ -1423,7 +1426,7 @@ function intranet_fafar_api_get_access_building_request_by_owner_handler( $reque
     
     $submissions = intranet_fafar_api_get_access_building_request( true, $keyword, $offset, $limit, true ); 
 
-    if ( ! $submissions ) {
+    if ( $submissions === false ) {
         return new WP_Error(
             'rest_api_sad', 
             esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
@@ -1431,11 +1434,14 @@ function intranet_fafar_api_get_access_building_request_by_owner_handler( $reque
         );
     }
 
-    if ( count( $submissions ) == 0 ) {
-        return new WP_Error(
-            'rest_api_sad', 
-            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
-            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+    if ( empty( $submissions ) ) {
+        return rest_ensure_response(
+            array(
+                'count'    => 0,
+                'next'     => null,
+                'previous' => null,
+                'results'  => [],
+            )
         );
     }
 
@@ -2734,7 +2740,7 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
         false
     ); 
 
-    if ( ! $submissions ) {
+    if ( $submissions === false ) {
         return new WP_Error(
             'rest_api_sad', 
             esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
@@ -2742,11 +2748,14 @@ function intranet_fafar_api_get_submissions_by_object_name_handler( $request ) {
         );
     }
 
-    if ( count( $submissions ) == 0 ) {
-        return new WP_Error(
-            'rest_api_sad', 
-            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
-            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+    if ( empty( $submissions ) ) {
+        return rest_ensure_response(
+            array(
+                'count'    => 0,
+                'next'     => null,
+                'previous' => null,
+                'results'  => [],
+            )
         );
     }
 
@@ -3111,7 +3120,7 @@ function intranet_fafar_api_get_equipaments_handler( $request ) {
     
     $submissions = intranet_fafar_api_get_equipaments( $keyword, $offset, $limit );
 
-    if ( ! $submissions ) {
+    if ( $submissions === false ) {
         return new WP_Error(
             'rest_api_sad', 
             esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
@@ -3119,11 +3128,14 @@ function intranet_fafar_api_get_equipaments_handler( $request ) {
         );
     }
 
-    if ( count( $submissions ) == 0 ) {
-        return new WP_Error(
-            'rest_api_sad', 
-            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Nenhum resultado encontrado' ), 'http_status', 'intranet-fafar-api' ), 
-            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 404 ),
+    if ( empty( $submissions ) ) {
+        return rest_ensure_response(
+            array(
+                'count'    => 0,
+                'next'     => null,
+                'previous' => null,
+                'results'  => [],
+            )
         );
     }
 
