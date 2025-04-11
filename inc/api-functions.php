@@ -3789,6 +3789,10 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
         }
     }
 
+    if ( $args['check_is_active'] ) {
+        $where_clause .= ' AND is_active = 1 ';
+    }
+
     $select_fields = " $table_name.* ";
 
     // Build the ORDER BY clause
@@ -3880,6 +3884,27 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
     foreach ( $submissions as $submission ) {
         // Decode the JSON data field
         $submission['data'] = json_decode( $submission['data'], true );
+
+        // Checks for read permission
+        if( $check_permissions &&
+            ! intranet_fafar_api_check_read_permission( $submission ) )
+            continue;
+
+        /*
+         * Checks for read permission.
+         * If doesn't, set a 'prevent_write' prop to true
+         */
+        if( $check_permissions &&
+            ! intranet_fafar_api_check_write_permission( $submission ) )
+            $submission['data']['prevent_write'] = true;
+
+        /*
+         * Checks for read permission.
+         * If doesn't, set a 'prevent_exec' prop to true
+         */
+        if( $check_permissions &&
+            ! intranet_fafar_api_check_exec_permission( $submission ) )
+            $submission['data']['prevent_exec'] = true;
         
         // Process relationships
         if (  ! empty( $args['relationships'] ) ) {
@@ -3928,6 +3953,7 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
                 }
             }
         }
+        
         
         // [Rest of the processing remains the same]
         array_push( $submissions_checked, $submission );
@@ -4119,7 +4145,6 @@ function intranet_fafar_api_check_exec_permission( $submission, $user_id = null 
 }
 
 function intranet_fafar_api_check_permissions( $submission, $permission_digit_values, $user_id = null ) {
-
     $owner                              = (string) ( $submission['owner'] ?? 0 );
     // Caso receba um objeto submission com o valor do owner substituito pelos dados do owner
     $owner                              = (string) ( isset( $submission['owner']['ID'] ) ? $submission['owner']['ID'] : $submission['owner'] );
@@ -4127,8 +4152,8 @@ function intranet_fafar_api_check_permissions( $submission, $permission_digit_va
     $permissions                        = (string) ( $submission['permissions'] ?? '777' );
 
     $current_user_id                    = (string) ( $user_id ?? get_current_user_id() );
-    $user_meta                          = get_userdata( $current_user_id );
-    $user_roles                         = $user_meta->roles; // array( [0] => 'techs', ... )
+    $user_meta                          = get_userdata( (int) $current_user_id );
+    $user_roles                         = ( $user_meta ? $user_meta->roles : [] ); // array( [0] => 'techs', ... )
 
     $OWNER_PERMISSION_DIGIT_INDEX       = 0;
     $OWNER_GROUP_PERMISSION_DIGIT_INDEX = 1;
