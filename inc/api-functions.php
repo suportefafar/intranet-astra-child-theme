@@ -741,7 +741,7 @@ function intranet_fafar_api_get_service_tickets_handler( $request ) {
     
 
     $query_params = array(
-        'filters'  => array(
+        'filters' => array(
             array(
                 'column'   => 'object_name',
                 'value'    => 'service_ticket',
@@ -954,7 +954,7 @@ function intranet_fafar_api_get_service_tickets_by_user(
     $substitute_value = true
 ) {
     $query_params = array(
-        'filters'  => array(
+        'filters' => array(
             array(
                 'column'   => 'object_name',
                 'value'    => 'service_ticket',
@@ -1076,7 +1076,7 @@ function intranet_fafar_api_get_service_tickets_by_departament(
     }
 
     $query_params = array(
-        'filters'  => array(
+        'filters' => array(
             array(
                 'column'   => 'object_name',
                 'value'    => 'service_ticket',
@@ -1257,7 +1257,7 @@ function intranet_fafar_api_create_service_ticket_update_handler( $request ) {
 
     $service_ticket = intranet_fafar_api_read(
         args: array(
-            'filters'  => array(
+            'filters' => array(
                 array(
                     'column'   => 'object_name',
                     'value'    => 'service_ticket',
@@ -1494,7 +1494,7 @@ function intranet_fafar_api_get_access_building_request_by_owner_handler( $reque
 
 function intranet_fafar_api_get_access_building_request( $by_owner = false, $keyword = '', $offset = 1, $limit = -1, $substitute_value = true ) {
     $query_params = array(
-        'filters'  => array(
+        'filters' => array(
             array(
                 'column'   => 'object_name',
                 'value'    => 'access_building_request',
@@ -2456,7 +2456,7 @@ function intranet_fafar_api_get_laboratory_team_by_owner_id( $owner_id = null ) 
 
     $submission = intranet_fafar_api_read (
         args: array(
-            'filters'  => array(
+            'filters' => array(
                 array(
                     'column'   => 'object_name',
                     'value'    => 'laboratory_team',
@@ -2548,7 +2548,7 @@ function intranet_fafar_api_get_possible_collaborators_laboratory_team( $team_id
 
     $submission = intranet_fafar_api_read (
         args: array(
-            'filters'  => array(
+            'filters' => array(
                 array(
                     'column'   => 'object_name',
                     'value'    => 'laboratory_team',
@@ -2650,7 +2650,7 @@ function intranet_fafar_api_remove_collaborator_on_lab_team_handler( $request ) 
 function intranet_fafar_api_update_laboratory_team( $id, $action, $collaborator_id ) {
     $submission = intranet_fafar_api_read(
         args: array(
-            'filters'  => array(
+            'filters' => array(
                 array(
                     'column'   => 'id',
                     'value'    => $id,
@@ -2717,7 +2717,7 @@ function intranet_fafar_api_get_submission_by_id(
 ) {
     $submission = intranet_fafar_api_read(
         args: array(
-            'filters'  => array(
+            'filters' => array(
                 array(
                     'column'   => 'id',
                     'value'    => $id,
@@ -2834,7 +2834,7 @@ function intranet_fafar_api_get_submissions_by_object_name(
 
     $submissions = intranet_fafar_api_read(
         args: array(
-            'filters'  => array(
+            'filters' => array(
                 array(
                     'column'   => 'object_name',
                     'value'    => $object_name,
@@ -3189,7 +3189,7 @@ function intranet_fafar_api_get_equipaments_handler( $request ) {
 function intranet_fafar_api_get_equipaments( $keyword = '', $offset = 1, $limit = -1 ) {
     $submissions = intranet_fafar_api_read(
         args: array(
-            'filters'  => array(
+            'filters' => array(
                 array(
                     'column'   => 'object_name',
                     'value'    => 'equipament',

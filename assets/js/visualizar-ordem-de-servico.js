@@ -1,5 +1,3 @@
-console.log({ OS_NUMBER, USER_REPORT });
-
 /*
  * LISTENER'S
  */

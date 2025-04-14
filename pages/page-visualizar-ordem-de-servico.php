@@ -80,6 +80,49 @@ if ( isset( $updates['error_msg'] ) )
     $updates = array();
 
 
+// Obtendo IDs da OS anterior e próxima
+$service_tickets = intranet_fafar_api_read(
+    args: array(
+        'filters' => array(
+            array(
+                'column'   => 'object_name',
+                'value'    => 'service_ticket',
+                'operator' => '=',
+            ),
+            array(
+                'column'   => 'data->departament_assigned_to',
+                'value'    => '["'. $service_ticket_departament_role_slug . '"]',
+                'operator' => '=',
+            ),
+            array(
+                'column'   => 'data->status',
+                'value'    => $service_ticket['data']['status'],
+                'operator' => '=',
+            ),
+        ),
+        'order_by' => array(
+                'orderby_column' => 'created_at',
+                'order'          => 'ASC',
+            ),
+    )
+);
+
+$previous_ticket_service_url = '#';
+$next_ticket_service_url     = '#';
+foreach ( $service_tickets['data'] as $index => $ticket ) {
+    if ( $ticket['id'] === $ID ) {
+        if ( ! empty( $service_tickets['data'][$index - 1]['id'] ) ) {
+            $previous_ticket_service_url = '/visualizar-ordem-de-servico/?id=' . $service_tickets['data'][$index - 1]['id'];
+        }
+        
+        if ( ! empty( $service_tickets['data'][$index + 1]['id'] ) ) {
+            $next_ticket_service_url = '/visualizar-ordem-de-servico/?id=' . $service_tickets['data'][$index + 1]['id'];
+        }
+
+        break;
+    }
+}
+
 // Tratar dados para o botão de copiar
 $OS_NUMBER   = ( ! empty( $service_ticket['data']['number'] ) ? $service_ticket['data']['number'] : '' );
 $USER_REPORT = ( ! empty( $service_ticket['data']['user_report'] ) ? $service_ticket['data']['user_report'] : '' );
@@ -112,44 +155,24 @@ wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico', 'USER_REPORT',
         <!-- HEADER BUTTONS -->
         
         <div class="d-flex justify-content-start gap-2 mb-4">
-            <a class="btn btn-outline-primary text-decoration-none w-button <?php echo ( $prevent_write ? 'disabled' : '' ) ?>" 
-                <?php 
-                    echo ( 
-                            $prevent_write ? 
-                                'aria-disabled="true"'
-                                : 
-                                'href="/editar-ordem-de-servico/?id=' . $ID . '"'
-                        ) 
-                ?>  
-                title="Editar" >
+            <?php  if ( ! $prevent_write ) : ?>
+            <a 
+                href="/editar-ordem-de-servico/?id=<?= $ID ?>" 
+                class="btn btn-outline-primary text-decoration-none w-button" 
+                title="Editar">
                 <i class="bi bi-pencil"></i>
                 Editar
             </a>
-            <a class="btn btn-outline-danger text-decoration-none w-button <?php echo ( $prevent_write ? 'disabled' : '' ) ?>" 
-                <?php 
-                    echo ( 
-                            $prevent_write ? 
-                                'aria-disabled="true"'
-                                : 
-                                'id="btn_delete"' . 
-                                'data-id="' . $ID . '"'
-                        ) 
-                ?>
-                title="Excluir" >
+            <a 
+                class="btn btn-outline-danger text-decoration-none w-button" 
+                id="btn_delete" 
+                data-id="<?= $ID ?>" 
+                title="Excluir">
                 <i class="bi bi-trash"></i>
                 Excluir
             </a>
-            <?php  
-            if ( ! $prevent_insert_update ) :
-            ?>
-                <!-- <button 
-                    class="btn btn-info"
-                    id="btn_insert_update" 
-                    data-id="<?= $ID; ?>" 
-                    title="Inserir Atualização" >
-                        <i class="bi bi-node-plus"></i>
-                        Atualizar
-                </button> -->
+            <?php endif; ?>
+            <?php  if ( ! $prevent_insert_update ) : ?>
 
                 <button 
                     class="btn btn-secondary"
@@ -158,6 +181,24 @@ wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico', 'USER_REPORT',
                         <i class="bi bi-clipboard"></i>
                         Copiar
                 </button>
+                
+                <div class="btn-group" role="group" aria-label="Basic checkbox toggle button group">
+                    <a 
+                        href="<?= $previous_ticket_service_url ?>" 
+                        class="btn btn-outline-secondary" 
+                        id="btn_copy_data" 
+                        title="Ir para OS anterior">
+                            <i class="bi bi-chevron-left"></i>
+                    </a>
+
+                    <a 
+                        href="<?= $next_ticket_service_url ?>" 
+                        class="btn btn-outline-secondary" 
+                        id="btn_copy_data" 
+                        title="Ir para próxima OS">
+                            <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
             <?php
             endif;
             ?>
