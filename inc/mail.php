@@ -375,6 +375,7 @@ function intranet_fafar_mail_on_update_laboratory_team( $laboratory_team, $actio
 }
 
 function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $attachments = null ) {
+
   $html_mail_body_template = '
     <!DOCTYPE html>
     <html lang="pt-BR">

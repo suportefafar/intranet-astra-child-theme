@@ -357,7 +357,7 @@ function confirmRegister(title = "", text = "", id = null, type = null) {
 async function registerEntryOrExit(id, type) {
   //console.log("registerEntryOrExit", new Date().toLocaleString());
   hideConfirmModal();
-  showAlert("Por favor, aguarde...", "warning");
+  showAlert("Por favor, aguarde...", "warning", false, 0, true);
 
   const endpoint = `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request/${id}/register/`;
 
@@ -384,7 +384,7 @@ async function registerEntryOrExit(id, type) {
 }
 
 async function getAccessBuildingRequestByID(id) {
-  showAlert("Por favor, aguarde....", "warning");
+  showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   try {
     const response = await axios.get(

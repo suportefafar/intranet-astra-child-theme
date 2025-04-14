@@ -86,7 +86,7 @@ function getActivedTab() {
 }
 
 async function loadUI(tab_dataset = null) {
-  showAlert("Por favor, aguarde...", "warning");
+  showAlert("Por favor, aguarde...", "warning", false, 0, true);
 
   if (!tab_dataset) {
     tab_dataset = document.querySelectorAll(
@@ -496,7 +496,7 @@ async function updateReservation(id, reservation) {
 async function changeStatus(id, status) {
   console.log("Alterando status...");
 
-  showAlert("Por favor, aguarde...", "warning");
+  showAlert("Por favor, aguarde...", "warning", false, 0, true);
 
   const reservation = await getEventByID(id);
 
@@ -519,7 +519,7 @@ async function changeStatus(id, status) {
 }
 
 async function showDetails(id, status) {
-  showAlert("Por favor, aguarde....", "warning");
+  showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   console.log("Show Details:");
 
@@ -576,7 +576,7 @@ async function prepareToShowSetTechnicalModal(id, status) {
 
   console.log({ id, status });
 
-  showAlert("Por favor, aguarde....", "warning");
+  showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   const technical_users = await getTechnicalUsers();
 
@@ -590,7 +590,7 @@ async function prepareToShowSetTechnicalModal(id, status) {
 }
 
 async function setTechnicalHandler() {
-  showAlert("Por favor, aguarde...", "warning");
+  showAlert("Por favor, aguarde...", "warning", false, 0, true);
 
   const technical_id = document.querySelector("select[name='technical']").value;
 

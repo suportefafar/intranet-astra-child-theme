@@ -18,7 +18,6 @@ function fafar_intranet_format_date_local( $dt ) {
 
 function fafar_intranet_get_frequency_display_text( $f ) {
     switch( $f ){
-
         case 'once':
             return 'Única';
         case 'daily':
@@ -28,8 +27,7 @@ function fafar_intranet_get_frequency_display_text( $f ) {
         case 'monthly':
             return 'Mensalmente';
         default:
-            '--';
-            
+            '--'; 
     }
 }
 

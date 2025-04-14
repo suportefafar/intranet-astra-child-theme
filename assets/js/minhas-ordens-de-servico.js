@@ -327,7 +327,7 @@ function confirmDelete(id) {
 async function deleteSubmission(id) {
   hideConfirmModal();
 
-  showAlert("Por favor, aguarde....", "warning");
+  showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   try {
     const response = await axios.delete(

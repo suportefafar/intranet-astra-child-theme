@@ -84,10 +84,11 @@ if ( isset( $updates['error_msg'] ) )
 $OS_NUMBER   = ( ! empty( $service_ticket['data']['number'] ) ? $service_ticket['data']['number'] : '' );
 $USER_REPORT = ( ! empty( $service_ticket['data']['user_report'] ) ? $service_ticket['data']['user_report'] : '' );
 
-wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico-script', 'OS_NUMBER', $OS_NUMBER );
-wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico-script', 'USER_REPORT', $USER_REPORT );
+get_header();
 
-get_header(); ?>
+wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico', 'OS_NUMBER', $OS_NUMBER );
+wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico', 'USER_REPORT', $USER_REPORT ); 
+?>
 
 <?php if ( astra_page_layout() == 'left-sidebar' ) : ?>
 

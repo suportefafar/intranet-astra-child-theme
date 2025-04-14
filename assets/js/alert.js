@@ -5,7 +5,8 @@ function showAlert(
   message = "Operação realizada com sucesso!",
   type = "success",
   autohide = false,
-  delay = 5000
+  delay = 5000,
+  loadingIcon = false
 ) {
   hideAlert();
 
@@ -21,10 +22,18 @@ function showAlert(
     alert_icon_class = "bi-info-circle-fill";
   }
 
+  let icon = `<i class="bi ${alert_icon_class}"></i>`;
+
+  if (loadingIcon) {
+    icon = `<div class="spinner-border spinner-border-sm" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>`;
+  }
+
   const wrapper = document.createElement("div");
   wrapper.innerHTML = [
     `<div id="intranetFafarAlert" class="alert alert-${type} alert-dismissible d-flex align-items-center gap-1" role="alert">`,
-    `   <i class="bi ${alert_icon_class}"></i>`,
+    icon,
     `   <div class="mx-1">${message}</div>`,
     '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
     "</div>",

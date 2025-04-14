@@ -296,7 +296,7 @@ async function getUsers() {
  * Função para exportar os usuários
  */
 async function exportUsers() {
-  showAlert("Por favor, aguarde...", "info");
+  showAlert("Por favor, aguarde...", "info", false, 0, true);
 
   const response = await getUsers();
   const users = response.results;
@@ -412,7 +412,7 @@ function makeAndDownloadCSV(csvContent, filenamePrefix = "usuarios") {
  */
 async function copyEmailsToClipboard() {
   console.log("Copiando...");
-  showAlert("Por favor, aguarde...", "info");
+  showAlert("Por favor, aguarde...", "info", false, 0, true);
 
   const response = await getUsers();
   const users = response.results;

@@ -57,7 +57,7 @@ form.addEventListener("submit", onSubmitHandler);
 async function onSubmitHandler(e) {
   e.preventDefault();
 
-  showAlert("Buscando salas....", "warning");
+  showAlert("Buscando salas....", "warning", false, 0, true);
 
   const date = document.querySelector("#event_date").value;
   const start_time = document.querySelector("#start_time").value;

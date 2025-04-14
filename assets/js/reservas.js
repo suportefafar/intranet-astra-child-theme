@@ -134,7 +134,7 @@ function onClickTabHandler(e) {
 
 // Asynchronously fetch calendar data and render the table
 async function fetchCalendarData() {
-  showAlert("Carregando...", "warning");
+  showAlert("Carregando...", "warning", false, 0, true);
   // console.log("CURRENT_CLASSROOM:", CURRENT_CLASSROOM);
 
   // If CURRENT_CLASSROOM.id is missing, attempt to set it from the active tab
@@ -337,7 +337,7 @@ function confirmDelete(id) {
 async function deleteSubmission(id) {
   hideConfirmModal();
 
-  showAlert("Por favor, aguarde....", "warning");
+  showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   try {
     const response = await axios.delete(

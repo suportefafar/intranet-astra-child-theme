@@ -1,3 +1,5 @@
+console.log({ OS_NUMBER, USER_REPORT });
+
 /*
  * LISTENER'S
  */
@@ -46,7 +48,7 @@ if (btn_copy_data) {
 }
 
 async function setAssignedToUserProp(user_assigned_to_id) {
-  showAlert("Por favor, aguarde....", "warning");
+  showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   try {
     const service_ticket_id = getURLParam("id");
@@ -105,7 +107,7 @@ function confirmDelete(id) {
 async function deleteSubmission(id) {
   hideConfirmModal();
 
-  showAlert("Por favor, aguarde....", "warning");
+  showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   try {
     const response = await axios.delete(

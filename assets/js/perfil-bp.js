@@ -65,7 +65,7 @@ async function loadCollaboratorsTable() {
 async function getLaboratoryTeam() {
   hideConfirmModal();
 
-  showAlert("Por favor, aguarde....", "warning");
+  showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   try {
     const response = await axios.get(
@@ -142,7 +142,7 @@ async function insertNewLine() {
 async function getPossibleCollaborators() {
   hideConfirmModal();
 
-  showAlert("Por favor, aguarde....", "warning");
+  showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   try {
     const response = await axios.get(
@@ -196,7 +196,7 @@ const API_CONFIG = {
  */
 async function updateTeamCollaborator(action, collaborator_id) {
   hideConfirmModal();
-  showAlert("Por favor, aguarde...", "warning");
+  showAlert("Por favor, aguarde...", "warning", false, 0, true);
 
   try {
     // Validate action
