@@ -61,10 +61,6 @@ foreach( $building_requests['data'] as $building_request ) {
 
     print_r( $building_request['data']['status'] );
     print_r( '<br/><br/>' );
-
-    // $building_request['data']['status'] = $status;
-
-    // intranet_fafar_api_update( $building_request['id'], $building_request );
 }
 
 ?>    
