@@ -3,6 +3,86 @@
  */
 
 /*
+ * Aguarda até que a DOM seja carregada
+ */
+document.addEventListener("DOMContentLoaded", () => {
+  updateURLFetchBase();
+});
+
+/*
+ * Adiciona um listener para cada aba
+ */
+document.querySelectorAll("#ul_os_status_tabs .nav-link").forEach((el) => {
+  el.addEventListener("click", (e) => {
+    changeActiveTab(e);
+
+    updateURLFetchBase();
+  });
+});
+
+function changeActiveTab(el) {
+  const tabs = document.querySelectorAll("#ul_os_status_tabs .nav-link");
+
+  tabs.forEach((tab) => {
+    if (tab === el.target) {
+      tab.classList.add("active");
+    } else {
+      tab.classList.remove("active");
+    }
+  });
+}
+
+function getActiveTabData() {
+  const tab_el = getActiveTab();
+
+  if (!tab_el) {
+    showAlert(
+      "Ocorreu algum erro! Por favor, contate o setor de T.I.",
+      "danger"
+    );
+    console.error("Nenhuma aba ativada");
+    return null;
+  }
+
+  const { url } = tab_el.dataset;
+
+  if (!url) {
+    showAlert(
+      "Ocorreu algum erro! Por favor, contate o setor de T.I.",
+      "danger"
+    );
+    console.error("O elemento não contém os dados necessários (url).");
+    return null;
+  }
+
+  return { url };
+}
+
+function getActiveTab() {
+  return document.querySelector("#ul_os_status_tabs .nav-link.active");
+}
+
+async function updateURLFetchBase() {
+  const tab_data = getActiveTabData();
+  if (!tab_data) return;
+
+  const url =
+    "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions" +
+    tab_data.url;
+
+  console.log({ url });
+  grid
+    .updateConfig({
+      server: {
+        url,
+        then: renderDataOnTable,
+        total: (data) => data.count,
+      },
+    })
+    .forceRender();
+}
+
+/*
  * Adiciona um evento de clique à DOM,
  * e despara se o elemento que recebeu o clique tem
  * a classe 'btn-submission-details' ou é filho de um elemento
@@ -67,10 +147,6 @@ function handleRegisterClick(event) {
 }
 
 /*
- * CHARTS RENDER
- */
-
-/*
  * TABLE RENDER
  */
 const ptBR = {
@@ -109,9 +185,8 @@ const grid = new gridjs.Grid({
   search: {
     server: {
       url: (prev, keyword) => {
-        const url = `${prev}?keyword=${keyword}`;
-        //console.log(url); // Debugging: Log the search URL
-        return url;
+        let junction = prev.indexOf("?") > 0 ? "&" : "?";
+        return `${prev}${junction}keyword=${keyword}`;
       },
     },
   },
@@ -119,11 +194,8 @@ const grid = new gridjs.Grid({
     limit: 10, // Number of rows per page
     server: {
       url: (prev, page, limit) => {
-        let url = `${prev}?limit=${limit}&offset=${page + 1}`;
-        if (url.indexOf("keyword") > -1)
-          url = `${prev}&limit=${limit}&offset=${page + 1}`;
-        //console.log(url);
-        return url;
+        let junction = prev.indexOf("?") > 0 ? "&" : "?";
+        return `${prev}${junction}limit=${limit}&offset=${page + 1}`;
       },
     },
     summary: true, // Show pagination summary
@@ -158,7 +230,7 @@ function renderDataOnTable(data) {
       logs,
     } = data;
 
-    //console.log(submission);
+    console.log(submission);
 
     const user_column_data = JSON.stringify({
       access_building_request_type,
@@ -234,12 +306,12 @@ function userColFormatter(current) {
 function placeColFormatter(current) {
   const { place, lab } = JSON.parse(current);
 
+  const place_url = place?.id ? `/visualizar-objeto/?id=${place.id}` : "#";
+
   return gridjs.html(`
       <div>
         <span>
-          <a href="https://intranet.farmacia.ufmg.br/visualizar-objeto/?id=${
-            place.id
-          }" 
+          <a href="${place_url}" 
              class="text-decoration-none" 
              target="blank" 
              title="Detalhes da sala ${place.data?.number ?? ""}">

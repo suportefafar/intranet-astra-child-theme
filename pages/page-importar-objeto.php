@@ -35,56 +35,37 @@ get_header(); ?>
 --> 
 <?php
 
-$new_reserve = array ( 
-    'object_name' => 'reservation',
-    'data' => array ( 
-        'date'       => $pre_reservation['date'],
-        'start_time' => $pre_reservation['start_time'],
-        'end_time'   => $pre_reservation['end_time'],
-        'frequency'  => ['once'],
-        'capacity'   => 60,
+$building_requests = intranet_fafar_api_read(
+    args: array(
+        'filters' => array(
+            array(
+                'column'   => 'object_name',
+                'value'    => 'access_building_request',
+                'operator' => '=',
+            ),
+        ),
+        'order_by' => array(
+            'orderby_column' => 'created_at',
+            'order'          => 'DESC',
+        ),
     )
 );
 
-$places = intranet_fafar_api_get_reservable_places();
+foreach( $building_requests['data'] as $building_request ) {
+    $status = 'pending';
 
-// Pre-filter valid candidates to minimize API calls
-$required_capacity = $new_reserve['capacity'];
-$filtered_places = array_filter ( $places, function( $place ) use ( $reservables, $required_capacity ) {
-    // Check capacity requirement
-    return ( $place['data']['capacity'] >= $required_capacity );
-});
-
-// Prepare common reservation data once
-$common_data = array (
-    'date' => $pre_reservation['date'],
-    'start_time' => $pre_reservation['start_time'],
-    'end_time' => $pre_reservation['end_time'],
-    'frequency' => ['once'],
-);
-
-$availables = [];
-foreach ($filtered_places as $place) {
-    // Create reservation payload
-    $payload = $common_data;
-    $payload['place'] = [$place['id']];
-    
-    // Attempt to create reservation
-    $response = intranet_fafar_api_create_or_update_reservation(array(
-        'object_name' => 'reservation',
-        'data' => json_encode($payload),
-    ));
-
-    // Collect available places without errors
-    if (!isset($response['error_msg'])) {
-        $availables[] = $place;
+    if ( ! empty( $building_request['data']['logs'] ) ) {
+        $last_index = count( $building_request['data']['logs'] ) - 1;
+        $status = $building_request['data']['logs'][$last_index]['type'];
     }
-}
 
-$response = intranet_fafar_api_create_or_update_reservation(array(
-    'object_name' => 'reservation',
-    'data' => json_encode( $payload ),
-));
+    print_r( $building_request['data']['status'] );
+    print_r( '<br/><br/>' );
+
+    // $building_request['data']['status'] = $status;
+
+    // intranet_fafar_api_update( $building_request['id'], $building_request );
+}
 
 ?>    
 <!--

@@ -242,7 +242,6 @@ function intranet_fafar_api_register_submission_routes() {
 }
 
 function intranet_fafar_api_register_entry_and_exit_handler( $request ) {
-
     $id = (string) $request['id'];
 
     // Get data from the request
@@ -251,17 +250,13 @@ function intranet_fafar_api_register_entry_and_exit_handler( $request ) {
     $submission = intranet_fafar_api_register_entry_and_exit( $id, $data['type'] );
 
     if ( isset( $submission['error_msg'] ) ) {
-
         return new WP_Error( 'rest_api_sad', esc_html__( $submission['error_msg'], 'intranet-fafar-api' ), ( ( $submission['http_status'] ) ?? 400 ) );
-
     }
 
     return rest_ensure_response( $submission );
-
 }
 
 function intranet_fafar_api_register_entry_and_exit( $id, $type ) {
-
     if ( ! isset( $id ) )
         return array( 'error_msg' => 'Nenhum ID informado!' );
 
@@ -274,17 +269,14 @@ function intranet_fafar_api_register_entry_and_exit( $id, $type ) {
         return $submission;
 
     if( ! isset( $submission['data']['logs'] ) || count( $submission['data']['logs'] ) === 0 ) {
-        
         $submission['data']['logs'] = array( array( 'type' => $type, 'registered_at' => time() ) );
-
     } else {
-        
         array_push( $submission['data']['logs'], array( 'type' => $type, 'registered_at' => time() ) );
-
     }
 
-    return intranet_fafar_api_update( $id, $submission );
+    $submission['data']['status'] = $type;
 
+    return intranet_fafar_api_update( $id, $submission );
 }
 
 function intranet_fafar_api_update_submission_by_id_handler( $request ) {
@@ -1423,8 +1415,9 @@ function intranet_fafar_api_get_access_building_request_handler( $request ) {
     $offset  = $request->get_param('offset') ? intval($request->get_param('offset')) : 1;
     $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
     $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
+    $status  = $request->get_param('status') ? sanitize_text_field($request->get_param('status')) : '';
     
-    $submissions = intranet_fafar_api_get_access_building_request( false, $keyword, $offset, $limit, true ); 
+    $submissions = intranet_fafar_api_get_access_building_request( false, $status, $keyword, $offset, $limit, true ); 
 
     if ( $submissions === false ) {
         return new WP_Error(
@@ -1492,7 +1485,7 @@ function intranet_fafar_api_get_access_building_request_by_owner_handler( $reque
     );
 }
 
-function intranet_fafar_api_get_access_building_request( $by_owner = false, $keyword = '', $offset = 1, $limit = -1, $substitute_value = true ) {
+function intranet_fafar_api_get_access_building_request( $by_owner = false, $status = '', $keyword = '', $offset = 1, $limit = -1, $substitute_value = true ) {
     $query_params = array(
         'filters' => array(
             array(
@@ -1525,6 +1518,14 @@ function intranet_fafar_api_get_access_building_request( $by_owner = false, $key
         $query_params['filters'][] = array(
             'column'   => 'owner',
             'value'    => strval( get_current_user_id() ),
+            'operator' => '=',
+        );
+    }
+
+    if ( $status ) { 
+        $query_params['filters'][] = array(
+            'column'   => 'data->status',
+            'value'    => $status,
             'operator' => '=',
         );
     }

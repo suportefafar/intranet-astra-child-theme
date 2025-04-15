@@ -15,19 +15,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 $tabs_metadata = array( 
     array(
         'text' => 'Todas',
-        'url' => '/service_tickets/by_departament?assigned_to=-1&status=Nova,Aguardando,Em andamento'
+        'url' => '/access_building_request'
     ),
     array(
         'text' => 'Entrada',
-        'url' => '/service_tickets/by_departament?status=Nova'
+        'url' => '/access_building_request?status=entry'
     ),
     array(
         'text' => 'Pendente',
-        'url' => '/service_tickets/by_departament?status=Aguardando'
+        'url' => '/access_building_request?status=pending'
     ),
     array(
         'text' => 'Saída',
-        'url' => '/service_tickets/by_departament?status=Em andamento'
+        'url' => '/access_building_request?status=exit'
     ),
 );
 
@@ -53,9 +53,8 @@ get_header(); ?>
     * Início
 --> 
         <!-- TABS -->
-        <?php if ( defined( 'WP_DEV_ENV' ) && WP_DEV_ENV === true ): ?>
-        <ul id="ul_os_status_tabs" class="nav nav-tabs ms-0">
 
+        <ul id="ul_os_status_tabs" class="nav nav-tabs ms-0">
         <?php
 
             $first = true;
@@ -76,9 +75,7 @@ get_header(); ?>
             }
 
         ?>
-
         </ul>
-        <?php endif; ?>
 
         <br />
         <!-- TABLES -->

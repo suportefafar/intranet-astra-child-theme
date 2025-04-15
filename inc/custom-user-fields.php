@@ -254,21 +254,15 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
             <td>
                 <?php
                     $roles = intranet_fafar_utils_get_all_roles();
+
+                    $roles_display_names_without_adm = array_filter($roles, fn($role_slug) => ($role_slug !== 'administrator'), ARRAY_FILTER_USE_KEY);
                     
-                    $roles_display_names = array_map( function ( $role ) {
-                        return $role['name'];
-                    }, $roles );
+                    $roles_display_names = array_map( fn ( $role ) => $role['name'], $roles_display_names_without_adm );
                     $roles_display_names = array_values( $roles_display_names );
 
-                    $roles_slugs = array_map( function ( $slug ) {
-                        return $slug;
-                    }, array_keys( $roles ) );
+                    $roles_slugs = array_map( fn ( $slug ) => $slug, array_keys( $roles_display_names_without_adm ) );
 
                     $user_roles = get_userdata( $user->ID )->roles;
-
-            
-            
-            
                     
                     echo intranet_fafar_utils_render_dropdown_menu( 
                         array( 
