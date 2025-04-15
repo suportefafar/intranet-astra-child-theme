@@ -148,7 +148,8 @@ get_header(); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="d-flex justify-content-end">
+                    <div class="d-flex justify-content-between gap-4">
+                        <small class="fw-light fst-italic">Últimas 50 respostas</small>
                         <span class="fw-light fst-italic" id="span-history-counter"></span>
                     </div>
                     <table class="table border border-start-0 border-end-0" id="table-ip-history">

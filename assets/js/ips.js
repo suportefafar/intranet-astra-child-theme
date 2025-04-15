@@ -57,7 +57,7 @@ async function loadIpHistoryTable(id) {
 async function getIpCheckResults(id) {
   try {
     const response = await axios.get(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/ips/${id}/check-result`
+      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/ips/${id}/check-result?limit=50`
     );
 
     console.log(response.data);
