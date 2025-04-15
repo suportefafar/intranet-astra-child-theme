@@ -136,6 +136,36 @@ get_header(); ?>
         <!-- TABLES -->
 
         <div id="table-wrapper"></div>
+
+        <!-- MODAL -->
+
+        <!-- Modal para histórico de checagem de IP -->
+        <div class="modal fade" id="intranetFafarIpHistory" tabindex="-1" aria-labelledby="intranetFafarIpHistoryLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="intranetFafarIpHistoryLabel">Histórico</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-end">
+                        <span class="fw-light fst-italic" id="span-history-counter"></span>
+                    </div>
+                    <table class="table border border-start-0 border-end-0" id="table-ip-history">
+                        <thead>
+                            <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Em</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+            </div>
+        </div>
         
 <!--
     * Conteúdo customizado da página

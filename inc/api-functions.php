@@ -14,22 +14,6 @@ add_action( 'rest_api_init', 'intranet_fafar_api_register_submission_routes' );
  * This function is where we register our routes for our example endpoint.
  */
 function intranet_fafar_api_register_submission_routes() {
-    // Here we are registering our route for a collection of submissions and creation of submissions.
-    register_rest_route( 'intranet/v1', '/submissions', array(
-            // By using this constant we ensure that when the WP_REST_Server changes, our create endpoints will work as intended.
-            'methods'  => WP_REST_Server::CREATABLE,
-            // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
-            'callback' => 'intranet_fafar_api_create_submission',
-            /* 
-             * Define permissions for access to this end point
-             * 'permission_callback' => '__return_true', // Allows all users to access for simplicity.
-             * Ensure only logged-in users can access:
-             */ 
-            'permission_callback' => function() {
-                return is_user_logged_in();
-            }
-    ) );
-
     register_rest_route( 'intranet/v1', '/submissions/auditorium/reservation/', array(
         // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
         'methods'  => WP_REST_Server::CREATABLE,
@@ -114,6 +98,13 @@ function intranet_fafar_api_register_submission_routes() {
         'methods'  => WP_REST_Server::READABLE,
         // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
         'callback' => 'intranet_fafar_api_get_ips_handler',
+    ) );
+
+    register_rest_route( 'intranet/v1', '/submissions/ips/(?P<id>[\w]+)/check-result', array(
+        // By using this constant we ensure that when the WP_REST_Server changes our readable endpoints will work as intended.
+        'methods'  => WP_REST_Server::READABLE,
+        // Here we register our callback. The callback is fired when this endpoint is matched by the WP_REST_Server class.
+        'callback' => 'intranet_fafar_api_get_check_results_handler',
     ) );
 
     register_rest_route( 'intranet/v1', '/submissions/reservations/(?P<id>[\w]+)', array(
@@ -1561,7 +1552,6 @@ function intranet_fafar_api_get_access_building_request( $by_owner = false, $sta
 }
 
 function intranet_fafar_api_create_submission_handler( $request ) {
-
     $request_data = $request->get_json_params();
     
     if( 
@@ -1585,7 +1575,6 @@ function intranet_fafar_api_create_submission_handler( $request ) {
     }
 
     return rest_ensure_response( $submission );
-
 }
 
 
@@ -3419,7 +3408,6 @@ function intranet_fafar_get_users_by_departament_as_options( $role_slug = null, 
 }
 
 function intranet_fafar_api_get_ips_handler( $request ) {
-
     $submissions = intranet_fafar_api_get_ips();
 
     if ( isset( $submissions['error_msg'] ) ) {
@@ -3429,7 +3417,6 @@ function intranet_fafar_api_get_ips_handler( $request ) {
     }
 
     return rest_ensure_response( $submissions );
-
 }
 
 function intranet_fafar_api_get_ips() {
@@ -3456,6 +3443,91 @@ function intranet_fafar_api_get_ips() {
         return $ip;
     }, $ips );
 }
+
+function intranet_fafar_api_get_check_results_handler( $request ) {
+    $keyword = $request->get_param('keyword') ? sanitize_text_field($request->get_param('keyword')) : '';
+    $offset  = $request->get_param('offset') ? intval($request->get_param('offset')) : 1;
+    $limit   = $request->get_param('limit') ? intval($request->get_param('limit')) : -1;
+    $status  = $request->get_param('status') ? sanitize_text_field($request->get_param('status') ) : null;
+    $ip      = $request->get_param('id') ? sanitize_text_field($request->get_param('id') ) : null;
+
+    $submissions = intranet_fafar_api_get_check_results( $ip, $status, $keyword, $offset, $limit );
+
+    if ( $submissions === false ) {
+        return new WP_Error(
+            'rest_api_sad', 
+            esc_html__( ( ! empty( $submissions['error_msg'] ) ? $submissions['error_msg'] : 'Erro no processamento' ), 'http_status', 'intranet-fafar-api' ),
+            ( ! empty( $submissions['http_status'] ) ? $submissions['http_status'] : 500 ),
+        );
+    }
+
+    if ( empty( $submissions ) ) {
+        return rest_ensure_response(
+            array(
+                'count'    => 0,
+                'next'     => null,
+                'previous' => null,
+                'results'  => [],
+            )
+        );
+    }
+
+    return rest_ensure_response(
+        array(
+            'count'    => $submissions['pagination']['total_items'],
+            'next'     => null,
+            'previous' => null,
+            'results'  => $submissions['data'],
+        )
+    );
+}
+
+function intranet_fafar_api_get_check_results(
+    $ip = null,
+    $status = null,
+    $keyword = '', 
+    $offset = 1, 
+    $limit = -1
+) {
+    $query_params = array(
+        'filters' => array(
+            array(
+                'column'   => 'object_name',
+                'value'    => 'ip_check_result',
+                'operator' => '=',
+            ),
+        ),
+        'order_by' => array(
+            'orderby_column' => 'created_at',
+            'order'          => 'DESC',
+        ),
+        'page'     => $offset,   
+        'per_page' => $limit,
+        'keyword'  => $keyword, 
+    );
+
+    if ( ! empty( $ip ) && is_string( $ip ) ) {
+        $query_params['filters'][] = array(
+            'column'         => 'data->ip',
+            'value'          => $ip,
+            'operator'       => '=',
+        );
+    }
+
+    if ( ! empty( $status ) && is_string( $status ) ) {
+        $query_params['filters'][] = array(
+            'column'         => 'data->status',
+            'value'          => $status,
+            'operator'       => '=',
+            'case_sensitive' => false,
+        );
+    }
+
+    $submissions = intranet_fafar_api_read( args: $query_params );
+
+    return $submissions;
+}
+    
 
 /*
  * SIMPLE CREATE, READ, UPDATE and DELETE FUNCS

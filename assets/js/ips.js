@@ -1,6 +1,91 @@
-/**
- * CHARTS RENDER
+/*
+ * Adiciona um evento de clique à DOM,
+ * e despara se o elemento que recebeu o clique tem
+ * a classe 'btn-loan-equipament' ou é filho de um elemento
+ * com essa classe
  */
+document.addEventListener("click", (event) => {
+  const btn_ip_history = event.target.closest(".btn-ip-history");
+
+  if (btn_ip_history) {
+    loadIpHistoryTable(btn_ip_history.dataset.id);
+  }
+});
+
+async function loadIpHistoryTable(id) {
+  showAlert("Carregando...", "warning", false, 0, true);
+
+  const tbody_ip_history = document.querySelector("#table-ip-history tbody");
+
+  tbody_ip_history.innerHTML = "";
+
+  const ip_check_results = await getIpCheckResults(id);
+
+  if (!ip_check_results || !ip_check_results.results) return false;
+
+  let counter = 1;
+  for (const ip_check_result of ip_check_results.results) {
+    if (ip_check_result.data.status === "online") {
+      status_text = "Online";
+      type = "text-bg-success";
+    } else {
+      status_text = "Offline";
+      type = "text-bg-danger";
+    }
+
+    tbody_ip_history.innerHTML += `
+      <tr>
+        <th scope="row">${counter}</th>
+        <td><span class="badge ${type}">${status_text}</span></td>
+        <td>${formatDateTime(ip_check_result.created_at)}</td>
+        </tr>
+      <tr>
+    `;
+
+    counter++;
+  }
+
+  document.querySelector(
+    "#span-history-counter"
+  ).innerHTML = `Encontrado ${ip_check_results.results.length} item(s)`;
+
+  hideAlert();
+
+  showIpHistoryModal();
+}
+
+async function getIpCheckResults(id) {
+  try {
+    const response = await axios.get(
+      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/ips/${id}/check-result`
+    );
+
+    console.log(response.data);
+
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+}
+
+/*
+ * Controle do modal de histórico de IP
+ */
+function showIpHistoryModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarIpHistory")
+  );
+
+  modal.show();
+}
+
+function hideIpHistoryModal() {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("intranetFafarIpHistory")
+  );
+  modal.hide();
+}
 
 /**
  * TABLE RENDER
@@ -143,7 +228,7 @@ function actionColFormatter(current, row) {
 
   const html_content = `
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-warning" href="#" title="Histórico">
+      <a class="btn btn-outline-warning btn-ip-history" title="Histórico" data-id="${id}">
         <i class="bi bi-clock-history"></i>
       </a>
       ${
