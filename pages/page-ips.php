@@ -148,6 +148,9 @@ get_header(); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <span>Histórico de status do IP <mark><strong><span id="span-ip-address">150.164.xxx.yyy</span></strong></mark></span>
+                    </div>
                     <div class="d-flex justify-content-between gap-4">
                         <small class="fw-light fst-italic">Últimas 50 respostas</small>
                         <span class="fw-light fst-italic" id="span-history-counter"></span>

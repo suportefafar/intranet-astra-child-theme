@@ -8,12 +8,14 @@ document.addEventListener("click", (event) => {
   const btn_ip_history = event.target.closest(".btn-ip-history");
 
   if (btn_ip_history) {
-    loadIpHistoryTable(btn_ip_history.dataset.id);
+    loadHistoryModalComponents(btn_ip_history.dataset);
   }
 });
 
-async function loadIpHistoryTable(id) {
+async function loadHistoryModalComponents(dataset) {
   showAlert("Carregando...", "warning", false, 0, true);
+
+  const { id, ipAddress } = dataset;
 
   const tbody_ip_history = document.querySelector("#table-ip-history tbody");
 
@@ -48,6 +50,8 @@ async function loadIpHistoryTable(id) {
   document.querySelector(
     "#span-history-counter"
   ).innerHTML = `Encontrado ${ip_check_results.results.length} item(s)`;
+
+  document.querySelector("#span-ip-address").innerHTML = ipAddress;
 
   hideAlert();
 
@@ -184,6 +188,7 @@ async function fetchDataHandler() {
       id,
       permissions,
       equipament_id,
+      address,
     });
 
     table_arr.push([address, hostname, status_column_data, action_column_data]);
@@ -221,14 +226,14 @@ function statusColFormatter(current) {
   return gridjs.html(`<span class="badge ${type}">${status_text}</span>`);
 }
 
-function actionColFormatter(current, row) {
-  const { id, permissions, equipament_id } = JSON.parse(current);
+function actionColFormatter(current) {
+  const { id, permissions, equipament_id, address } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
 
   const html_content = `
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-warning btn-ip-history" title="Histórico" data-id="${id}">
+      <a class="btn btn-outline-warning btn-ip-history" title="Histórico" data-id="${id}" data-ip-address="${address}">
         <i class="bi bi-clock-history"></i>
       </a>
       ${
