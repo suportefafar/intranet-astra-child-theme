@@ -33,6 +33,7 @@ const ptBR = {
 const grid = new gridjs.Grid({
   columns: [
     "Tipo",
+    "Nome",
     {
       name: "Local",
       formatter: (current) => current?.data?.number ?? "",
@@ -93,7 +94,19 @@ function renderDataOnTable(data) {
   return data.results.map((submission) => {
     const submission_data = submission["data"];
 
-    // console.log(JSON.stringify(submission_data));
+    console.log(submission);
+
+    let user_name = getSafeValue(
+      () => submission.owner.data.display_name,
+      "--"
+    );
+    if (
+      submission_data["access_building_request_type"][0].toLowerCase() ===
+        "acesso para terceiros" &&
+      submission_data["third_party_name"]
+    ) {
+      user_name = submission_data["third_party_name"];
+    }
 
     const prevent_write = submission["prevent_write"] ? "1" : "0";
     const prevent_exec = submission["prevent_exec"] ? "1" : "0";
@@ -106,6 +119,7 @@ function renderDataOnTable(data) {
 
     return [
       submission_data["access_building_request_type"],
+      user_name,
       submission_data["place"],
       submission_data["lab"],
       submission_data["start_date"],
