@@ -188,3 +188,14 @@ function intranet_fafar_utils_format_date( $date, $inputFormat = 'Y-m-d', $outpu
     }
     return 'Invalid date!';
 }
+
+function intranet_fafar_utils_get_current_user_role() {
+    $user      = wp_get_current_user();
+    $role_slug = ( isset( $user->roles[0] ) ? $user->roles[0] : '' );
+
+    if ( ! empty( wp_roles()->roles[ $role_slug ] ) ) {
+        return [ 'slug' => $role_slug, 'name' => wp_roles()->roles[ $role_slug ]['name'] ];
+    }
+
+    return null;
+}

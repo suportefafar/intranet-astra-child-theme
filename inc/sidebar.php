@@ -51,18 +51,15 @@ function intranet_fafar_sidebar_menu() {
             $menu_name = $role_display_name;
         }
     }
-
-    echo '<div style="min-height:16em">';
-        echo wp_nav_menu(array(
-            'menu' => $menu_name,
-            'container' => false,
-            'menu_class' => '',
-            'fallback_cb' => '__return_false',
-            'items_wrap' => '<ul id="%1$s" class="navbar-nav me-auto mb-2 mb-md-0 %2$s">%3$s</ul>',
-            'depth' => 2,
-            'walker' => new bootstrap_5_wp_nav_menu_walker()
-        ));
-    echo '</div>';
+    
+    echo wp_nav_menu( array(
+        'menu'            => $menu_name,
+        'walker'          => new FAFAR_Sidebar_Menu_Walker(),
+        'container'       => 'nav',
+        'container_class' => 'navbar',
+        'menu_class'      => 'p-0 navbar-nav',
+        'fallback_cb'     => '__return_false',
+    ) );
 
     if ( defined( 'WP_DEV_ENV' ) && WP_DEV_ENV === true ) {
         echo '

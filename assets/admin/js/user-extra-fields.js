@@ -8,7 +8,7 @@ jQuery(document).ready(($) => {
   $("input.cep").mask("00000-000");
   $("input.cpf").mask("000.000.000-00");
   $("input.siape").mask("00.000.000");
-  $("input.extension").mask("0000");
+  $("input.extension").mask("0000-0000");
 });
 
 /*

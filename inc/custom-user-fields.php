@@ -255,12 +255,18 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
                 <?php
                     $roles = intranet_fafar_utils_get_all_roles();
 
-                    $roles_display_names_without_adm = array_filter($roles, fn($role_slug) => ($role_slug !== 'administrator'), ARRAY_FILTER_USE_KEY);
+                    $current_user_role = intranet_fafar_utils_get_current_user_role();
+                    if (
+                        empty( $current_user_role ) || 
+                        ! in_array( $current_user_role['slug'], ['administrator', 'tecnologia_da_informacao_e_suporte'] )
+                    ) {
+                        $roles = array_filter( $roles, fn($role_slug) => ($role_slug !== 'administrator'), ARRAY_FILTER_USE_KEY );
+                    }
                     
-                    $roles_display_names = array_map( fn ( $role ) => $role['name'], $roles_display_names_without_adm );
+                    $roles_display_names = array_map( fn ( $role ) => $role['name'], $roles );
                     $roles_display_names = array_values( $roles_display_names );
 
-                    $roles_slugs = array_map( fn ( $slug ) => $slug, array_keys( $roles_display_names_without_adm ) );
+                    $roles_slugs = array_map( fn ( $slug ) => $slug, array_keys( $roles ) );
 
                     $user_roles = get_userdata( $user->ID )->roles;
                     
@@ -307,9 +313,9 @@ function intranet_fafar_extra_user_profile_fields( $user ) { ?>
 
     <table class="form-table">
         <tr>
-            <th><label for="workplace_extension"><?php _e( "Ramal", "intranet-astra-child-theme" ); ?></label></th>
+            <th><label for="workplace_extension"><?php _e( "Telefone Institucional", "intranet-astra-child-theme" ); ?></label></th>
             <td>
-                <input type="number" name="workplace_extension" id="workplace_extension" value="<?php echo esc_attr( get_the_author_meta( 'workplace_extension', $user->ID ) ); ?>" class="regular-text extension" /><br />
+                <input type="text" name="workplace_extension" id="workplace_extension" value="<?php echo esc_attr( get_the_author_meta( 'workplace_extension', $user->ID ) ); ?>" class="regular-text extension" /><br />
             </td>
         </tr>
 

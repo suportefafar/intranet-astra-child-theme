@@ -41,8 +41,16 @@
  * START
  */
 
-.ast-container {
-  padding: 0;
+.site-content {
+  padding: 0 !important;
+}
+
+.ast-container,
+#primary,
+#secondary,
+#content {
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .ast-above-header-bar {
@@ -51,22 +59,15 @@
 }
 
 #primary {
-  padding: 1.25rem;
-  margin-top: 0;
+  padding: 48px 32px !important;
+  background-color: white !important;
 }
 
 #secondary {
-  padding: 1.25rem;
-  margin-top: 0;
-  margin-bottom: 0;
+  padding: 32px 24px !important;
+  min-width: 250px;
   min-height: 100vh;
-
   background-color: var(--ast-global-color-4);
-}
-
-#content {
-  padding-top: 0rem !important;
-  margin-top: 0 !important;
 }
 
 #bp-nouveau-activity-form {
