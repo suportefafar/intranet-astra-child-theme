@@ -20,45 +20,45 @@ get_header(); ?>
 
 <?php endif ?>
 
-	<div id="primary" <?php astra_primary_class(); ?>>
+<div id="primary" <?php astra_primary_class(); ?>>
 
-		<?php astra_primary_content_top(); ?>
+	<?php astra_primary_content_top(); ?>
 
-        <?php astra_content_page_loop(); ?>
+	<?php astra_content_page_loop(); ?>
 
-<!--
-    *
-    *
-    *
-    * Conteúdo customizado da página
-    * Início
---> 
-        <!-- HEADER BUTTONS -->
+	<!--
+	*
+	*
+	*
+	* Conteúdo customizado da página
+	* Início
+-->
+	<!-- HEADER BUTTONS -->
 
-        <div class="d-flex justify-content-start gap-2 mb-4">
-            <a href="/adicionar-ordem-de-servico" class="btn btn-outline-success text-decoration-none w-button">
-                <i class="bi bi-plus-lg"></i>
-                Adicionar
-            </a>
-        </div>
+	<div class="d-flex justify-content-start gap-2 mb-4">
+		<a href="/adicionar-ordem-de-servico" class="btn btn-outline-success text-decoration-none w-button">
+			<i class="bi bi-plus-lg"></i>
+			Adicionar
+		</a>
+	</div>
 
-        <!-- TABLES -->
+	<!-- TABLES -->
 
-        <div id="table-wrapper"></div>
+	<div id="table-wrapper"></div>
 
-        <!-- MODAL -->
-        
-<!--
-    * Conteúdo customizado da página
-    * Fim
-    *
-    *
-    *
+	<!-- MODAL -->
+
+	<!--
+	* Conteúdo customizado da página
+	* Fim
+	*
+	*
+	*
 -->
 
-		<?php astra_primary_content_bottom(); ?>
+	<?php astra_primary_content_bottom(); ?>
 
-	</div><!-- #primary -->
+</div><!-- #primary -->
 
 <?php if ( astra_page_layout() == 'right-sidebar' ) : ?>
 

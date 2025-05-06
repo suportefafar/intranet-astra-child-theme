@@ -20,44 +20,44 @@ get_header(); ?>
 
 <?php endif ?>
 
-	<div id="primary" <?php astra_primary_class(); ?>>
+<div id="primary" <?php astra_primary_class(); ?>>
 
-		<?php astra_primary_content_top(); ?>
+	<?php astra_primary_content_top(); ?>
 
-        <?php astra_content_page_loop(); ?>
+	<?php astra_content_page_loop(); ?>
 
-<!--
-    *
-    *
-    *
-    * Conteúdo customizado da página
-    * Início
---> 
-    
-        <!-- HEADER BUTTONS -->
+	<!--
+	*
+	*
+	*
+	* Conteúdo customizado da página
+	* Início
+-->
 
-        <div class="d-flex justify-content-start gap-2 mb-4">
-            <a href="/adicionar-acesso-ao-predio" class="btn btn-outline-success text-decoration-none">
-                <i class="bi bi-plus-lg"></i>
-                Solicitar
-            </a>
-        </div>
+	<!-- HEADER BUTTONS -->
 
-        <!-- TABLES -->
+	<div class="d-flex justify-content-start gap-2 mb-4">
+		<a href="/adicionar-acesso-ao-predio" class="btn btn-outline-success text-decoration-none">
+			<i class="bi bi-plus-lg"></i>
+			Solicitar
+		</a>
+	</div>
 
-        <div id="table-wrapper"></div>
-        
-<!--
-    * Conteúdo customizado da página
-    * Fim
-    *
-    *
-    *
--->    
+	<!-- TABLES -->
 
-		<?php astra_primary_content_bottom(); ?>
+	<div id="table-wrapper"></div>
 
-	</div><!-- #primary -->
+	<!--
+	* Conteúdo customizado da página
+	* Fim
+	*
+	*
+	*
+-->
+
+	<?php astra_primary_content_bottom(); ?>
+
+</div><!-- #primary -->
 
 <?php if ( astra_page_layout() == 'right-sidebar' ) : ?>
 

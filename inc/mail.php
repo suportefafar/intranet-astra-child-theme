@@ -1,35 +1,37 @@
 <?php
 // Prevent direct access to the file.
 if ( ! defined( 'ABSPATH' ) ) {
-    exit;
+	exit;
 }
 
 function intranet_fafar_mail_on_create_service_ticket( $form_data ) {
 
-  if( ! isset( $form_data['object_name'] ) ) return $form_data;
+	if ( ! isset( $form_data['object_name'] ) )
+		return $form_data;
 
-  if ( $form_data['object_name'] !== 'service_ticket' ) return $form_data;
+	if ( $form_data['object_name'] !== 'service_ticket' )
+		return $form_data;
 
-  $form_data['data'] = json_decode( $form_data['data'], true );
+	$form_data['data'] = json_decode( $form_data['data'], true );
 
-  $user_info  = get_userdata( $form_data['owner'] );
-  $user_email = $user_info ? $user_info->user_email : '';
+	$user_info = get_userdata( $form_data['owner'] );
+	$user_email = $user_info ? $user_info->user_email : '';
 
-  $departament = $form_data['data']['departament_assigned_to'][0];
-  if ( isset( wp_roles()->roles[ $departament ] ) ) {
-      $departament = wp_roles()->roles[ $departament ]['name'];
-  }
+	$departament = $form_data['data']['departament_assigned_to'][0];
+	if ( isset( wp_roles()->roles[ $departament ] ) ) {
+		$departament = wp_roles()->roles[ $departament ]['name'];
+	}
 
-  $place_desc = '';
-  if ( ! empty( $form_data['data']['place'][0] ) ) {
-    $place = intranet_fafar_api_get_submission_by_id( $form_data['data']['place'][0] );
+	$place_desc = '';
+	if ( ! empty( $form_data['data']['place'][0] ) ) {
+		$place = intranet_fafar_api_get_submission_by_id( $form_data['data']['place'][0] );
 
-    if ( ! empty( $place['data'] ) ) {
-      $place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
-    }
-  }
-  
-  $message = '
+		if ( ! empty( $place['data'] ) ) {
+			$place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
+		}
+	}
+
+	$message = '
     <p>Sua ordem de serviço foi registrado com sucesso! 🎊 Estamos analisando sua solicitação e em breve entraremos em contato com mais informações.</p>
     <p><strong>Detalhes da Ordem de Serviço:</strong></p>
     <ul>
@@ -43,44 +45,46 @@ function intranet_fafar_mail_on_create_service_ticket( $form_data ) {
     <p>Você pode acompanhar o status do sua ordem de serviço a qualquer momento através da nossa intranet. Caso precise de mais alguma informação, não hesite em nos contatar.</p>
   ';
 
-  $subject = '✅ Sua Ordem De Serviço Foi Criado Com Sucesso!';
+	$subject = '✅ Sua Ordem De Serviço Foi Criado Com Sucesso!';
 
-  intranet_fafar_mail_notify( $user_email, $subject, $message );
+	intranet_fafar_mail_notify( $user_email, $subject, $message );
 
-  $form_data['data'] = json_encode( $form_data['data'] );
+	$form_data['data'] = json_encode( $form_data['data'] );
 
-  return $form_data;
+	return $form_data;
 }
 
 function intranet_fafar_mail_on_create_service_ticket_update( $form_data ) {
-  if( ! isset( $form_data['object_name'] ) ) return $form_data;
+	if ( ! isset( $form_data['object_name'] ) )
+		return $form_data;
 
-  if ( $form_data['object_name'] !== 'service_ticket_update' ) return $form_data;
+	if ( $form_data['object_name'] !== 'service_ticket_update' )
+		return $form_data;
 
-  $form_data['data'] = json_decode( $form_data['data'], true );
+	$form_data['data'] = json_decode( $form_data['data'], true );
 
-  $service_ticket = null;
-  if ( ! empty( $form_data['data']['service_ticket'] ) ) {
-    $service_ticket = intranet_fafar_api_get_submission_by_id( $form_data['data']['service_ticket'] );
-  } else {
-    return array( 'error_msg' => 'Nenhum ID de ordem de serviço encontrado!' );
-  }
+	$service_ticket = null;
+	if ( ! empty( $form_data['data']['service_ticket'] ) ) {
+		$service_ticket = intranet_fafar_api_get_submission_by_id( $form_data['data']['service_ticket'] );
+	} else {
+		return array( 'error_msg' => 'Nenhum ID de ordem de serviço encontrado!' );
+	}
 
-  $user_email = ! empty( $service_ticket['owner']['data']->user_email ) ? $service_ticket['owner']['data']->user_email : '';
+	$user_email = ! empty( $service_ticket['owner']['data']->user_email ) ? $service_ticket['owner']['data']->user_email : '';
 
-  $departament = $service_ticket['data']['departament_assigned_to'][0];
-  if ( isset( wp_roles()->roles[ $departament ] ) ) {
-      $departament = wp_roles()->roles[ $departament ]['name'];
-  }
+	$departament = $service_ticket['data']['departament_assigned_to'][0];
+	if ( isset( wp_roles()->roles[ $departament ] ) ) {
+		$departament = wp_roles()->roles[ $departament ]['name'];
+	}
 
-  $place_desc = '';
-  if ( ! empty( $service_ticket['data']['place']['data']['number'] ) ) {
-    $place = $service_ticket['data']['place'];
-    
-    $place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
-  }
-  
-  $message = '
+	$place_desc = '';
+	if ( ! empty( $service_ticket['data']['place']['data']['number'] ) ) {
+		$place = $service_ticket['data']['place'];
+
+		$place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
+	}
+
+	$message = '
     <p>Sua ordem de serviço foi atualizado! 🚀 Aqui estão as últimas informações sobre o andamento da sua solicitação:</p>
     <p><strong>Novo Status:</strong></p>
     <ul>
@@ -100,44 +104,46 @@ function intranet_fafar_mail_on_create_service_ticket_update( $form_data ) {
     <p>Você pode acompanhar o status do sua ordem de serviço a qualquer momento através da nossa intranet. Caso precise de mais alguma informação, não hesite em nos contatar.</p>
   ';
 
-  $subject = '🔄 Atualização na sua OS #' . $service_ticket['data']['number'] . ' - Confira as Novidades!';
+	$subject = '🔄 Atualização na sua OS #' . $service_ticket['data']['number'] . ' - Confira as Novidades!';
 
-  intranet_fafar_mail_notify( $user_email, $subject, $message );
+	intranet_fafar_mail_notify( $user_email, $subject, $message );
 
-  $form_data['data'] = json_encode( $form_data['data'] );
+	$form_data['data'] = json_encode( $form_data['data'] );
 
-  return $form_data;
+	return $form_data;
 }
 
 function intranet_fafar_mail_on_create_equipament( $form_data ) {
-  if( ! isset( $form_data['object_name'] ) ) return $form_data;
+	if ( ! isset( $form_data['object_name'] ) )
+		return $form_data;
 
-  if ( $form_data['object_name'] !== 'equipament' ) return $form_data;
+	if ( $form_data['object_name'] !== 'equipament' )
+		return $form_data;
 
-  $form_data['data'] = json_decode( $form_data['data'], true );
+	$form_data['data'] = json_decode( $form_data['data'], true );
 
-  // Verifica se tem patrimônio
-  if ( empty( $form_data['data']['asset'] ) ) {
-    $form_data['data'] = json_encode( $form_data['data'] );
+	// Verifica se tem patrimônio
+	if ( empty( $form_data['data']['asset'] ) ) {
+		$form_data['data'] = json_encode( $form_data['data'] );
 
-    return $form_data;
-  }
+		return $form_data;
+	}
 
-  // Responsável do equipamento
-  $user_info      = get_userdata( $form_data['data']['applicant'][0] );
-  $applicant_name = $user_info ? $user_info->display_name : '';
+	// Responsável do equipamento
+	$user_info = get_userdata( $form_data['data']['applicant'][0] );
+	$applicant_name = $user_info ? $user_info->display_name : '';
 
-  // Local do equipamento
-  $place_desc = '';
-  if ( ! empty( $form_data['data']['place'][0] ) ) {
-    $place = intranet_fafar_api_get_submission_by_id( $form_data['data']['place'][0] );
+	// Local do equipamento
+	$place_desc = '';
+	if ( ! empty( $form_data['data']['place'][0] ) ) {
+		$place = intranet_fafar_api_get_submission_by_id( $form_data['data']['place'][0] );
 
-    if ( ! empty( $place['data'] ) ) {
-      $place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
-    }
-  }
-  
-  $message = '
+		if ( ! empty( $place['data'] ) ) {
+			$place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
+		}
+	}
+
+	$message = '
     <p>Um novo equipamento com patrimônio foi cadastrado na Intranet FAFAR pelo nosso setor.</p>
     <p><strong>Detalhes do equipamento:</strong></p>
     <ul>
@@ -150,131 +156,137 @@ function intranet_fafar_mail_on_create_equipament( $form_data ) {
     <p>Caso precise de mais alguma informação, não hesite em nos contatar.</p>
   ';
 
-  $subject = 'Novo equipamento com patrimônio';
-  $to      = 'spatri@farmacia.ufmg.br';
+	$subject = 'Novo equipamento com patrimônio';
+	$to = 'spatri@farmacia.ufmg.br';
 
-  intranet_fafar_mail_notify( $to, $subject, $message );
+	intranet_fafar_mail_notify( $to, $subject, $message );
 
-  $form_data['data'] = json_encode( $form_data['data'] );
+	$form_data['data'] = json_encode( $form_data['data'] );
 
-  return $form_data;
+	return $form_data;
 }
 
 function intranet_fafar_mail_on_update_equipament( $form_data, $equipament_id ) {
-  if ( ! isset( $form_data['object_name'] ) ) return $form_data;
+	if ( ! isset( $form_data['object_name'] ) )
+		return $form_data;
 
-  if ( $form_data['object_name'] !== 'equipament' ) return $form_data;
+	if ( $form_data['object_name'] !== 'equipament' )
+		return $form_data;
 
-  // Checa se o ID do equipamento foi passado
-  if ( empty( $equipament_id ) ) return $form_data;
+	// Checa se o ID do equipamento foi passado
+	if ( empty( $equipament_id ) )
+		return $form_data;
 
-  $old_equipament = intranet_fafar_api_get_submission_by_id( $equipament_id, false );
+	$old_equipament = intranet_fafar_api_get_submission_by_id( $equipament_id, false );
 
-  // Checa se o existe o equipamento
-  if ( empty( $old_equipament ) ) return $form_data;
+	// Checa se o existe o equipamento
+	if ( empty( $old_equipament ) )
+		return $form_data;
 
-  $form_data['data'] = json_decode( $form_data['data'], true );
+	$form_data['data'] = json_decode( $form_data['data'], true );
 
-  // Verifica se teve mudança de local
-  $old_place         = ( ! empty( $old_equipament['data']['place'][0] ) ? $old_equipament['data']['place'][0] : '' );
-  $new_place         = ( ! empty( $form_data['data']['place'][0] ) ? $form_data['data']['place'][0] : '' );
-  $HAS_PLACE_CHANGED = ( $old_place !== $new_place );
+	// Verifica se teve mudança de local
+	$old_place = ( ! empty( $old_equipament['data']['place'][0] ) ? $old_equipament['data']['place'][0] : '' );
+	$new_place = ( ! empty( $form_data['data']['place'][0] ) ? $form_data['data']['place'][0] : '' );
+	$HAS_PLACE_CHANGED = ( $old_place !== $new_place );
 
-  // Verifica se teve mudança de responsável
-  $old_applicant         = ( ! empty( $old_equipament['data']['applicant'][0] ) ? $old_equipament['data']['applicant'][0] : '' );
-  $new_applicant         = ( ! empty( $form_data['data']['applicant'][0] ) ? $form_data['data']['applicant'][0] : '' );
-  $HAS_APPLICANT_CHANGED = ( $old_applicant !== $new_applicant );
+	// Verifica se teve mudança de responsável
+	$old_applicant = ( ! empty( $old_equipament['data']['applicant'][0] ) ? $old_equipament['data']['applicant'][0] : '' );
+	$new_applicant = ( ! empty( $form_data['data']['applicant'][0] ) ? $form_data['data']['applicant'][0] : '' );
+	$HAS_APPLICANT_CHANGED = ( $old_applicant !== $new_applicant );
 
-  if ( ! $HAS_PLACE_CHANGED && ! $HAS_APPLICANT_CHANGED ) {
-    $form_data['data'] = json_encode( $form_data['data'] );
-    return $form_data;
-  }
+	if ( ! $HAS_PLACE_CHANGED && ! $HAS_APPLICANT_CHANGED ) {
+		$form_data['data'] = json_encode( $form_data['data'] );
+		return $form_data;
+	}
 
-  // Verifica se tem patrimônio
-  if ( empty( $form_data['data']['asset'] ) ) {
-    $form_data['data'] = json_encode( $form_data['data'] );
+	// Verifica se tem patrimônio
+	if ( empty( $form_data['data']['asset'] ) ) {
+		$form_data['data'] = json_encode( $form_data['data'] );
 
-    return $form_data;
-  }
+		return $form_data;
+	}
 
-  // Configurando o tipo de do equipamento
-  $equipament_type = ( ! empty( $form_data['data']['object_sub_type'][0] ) ? $form_data['data']['object_sub_type'][0] : '--' );
+	// Configurando o tipo de do equipamento
+	$equipament_type = ( ! empty( $form_data['data']['object_sub_type'][0] ) ? $form_data['data']['object_sub_type'][0] : '--' );
 
-  // Antigo e novo resposáveis do equipamento
-  $old_applicant_name = ( get_userdata( $old_applicant ) ? get_userdata( $old_applicant )->display_name : '--' );
-  $new_applicant_name = ( get_userdata( $new_applicant ) ? get_userdata( $new_applicant )->display_name : '--' );
+	// Antigo e novo resposáveis do equipamento
+	$old_applicant_name = ( get_userdata( $old_applicant ) ? get_userdata( $old_applicant )->display_name : '--' );
+	$new_applicant_name = ( get_userdata( $new_applicant ) ? get_userdata( $new_applicant )->display_name : '--' );
 
-  // Local do equipamento
-  $old_place_desc = '--';
-  if ( ! empty( $old_place ) ) {
-    $place = intranet_fafar_api_get_submission_by_id( $old_place );
-    if ( ! empty( $place['data'] ) ) {
-      $old_place_desc = ( ! empty( $place['data']['desc'] ) ? $place['data']['number'] . ' ' . $place['data']['desc'] : $place['data']['number'] );
-    }
-  }
+	// Local do equipamento
+	$old_place_desc = '--';
+	if ( ! empty( $old_place ) ) {
+		$place = intranet_fafar_api_get_submission_by_id( $old_place );
+		if ( ! empty( $place['data'] ) ) {
+			$old_place_desc = ( ! empty( $place['data']['desc'] ) ? $place['data']['number'] . ' ' . $place['data']['desc'] : $place['data']['number'] );
+		}
+	}
 
-  $new_place_desc = '--';
-  if ( ! empty( $new_place ) ) {
-    $place = intranet_fafar_api_get_submission_by_id( $new_place );
-    if ( ! empty( $place['data'] ) ) {
-      $new_place_desc = ( ! empty( $place['data']['desc'] ) ? $place['data']['number'] . ' ' . $place['data']['desc'] : $place['data']['number'] );
-    }
-  }
-  
-  $message = '
+	$new_place_desc = '--';
+	if ( ! empty( $new_place ) ) {
+		$place = intranet_fafar_api_get_submission_by_id( $new_place );
+		if ( ! empty( $place['data'] ) ) {
+			$new_place_desc = ( ! empty( $place['data']['desc'] ) ? $place['data']['number'] . ' ' . $place['data']['desc'] : $place['data']['number'] );
+		}
+	}
+
+	$message = '
     <p>Houve mudança de <strong>responsável</strong> e/ou <strong>local</strong> no equipamento a seguir.</p>
     <p>
       O equipamento, de tipo <strong>' . $equipament_type . '</strong> e patrimônio <strong>' . $form_data['data']['asset'] . '</strong>, sofreu alterações.
     </p>
-    ' . 
-    (
-      $HAS_APPLICANT_CHANGED === true ? 
-      '<p> Responsabilidade: De <strong>' . $old_applicant_name . '</strong> para <strong>' . $new_applicant_name . '</strong>. </p>' : 
-      ''
-    ) 
-    . 
-    (
-      $HAS_PLACE_CHANGED === true ? 
-      '<p> Sala: De <strong>' . $old_place_desc . '</strong> para <strong>' . $new_place_desc . '</strong>. </p>' : 
-      ''
-    ) 
-     . '
+    ' .
+		(
+			$HAS_APPLICANT_CHANGED === true ?
+			'<p> Responsabilidade: De <strong>' . $old_applicant_name . '</strong> para <strong>' . $new_applicant_name . '</strong>. </p>' :
+			''
+		)
+		.
+		(
+			$HAS_PLACE_CHANGED === true ?
+			'<p> Sala: De <strong>' . $old_place_desc . '</strong> para <strong>' . $new_place_desc . '</strong>. </p>' :
+			''
+		)
+		. '
     <p>Caso precise de mais alguma informação, não hesite em nos contatar.</p>
   ';
 
-  $subject = 'Mudança em equipamento';
-  $to      = 'spatri@farmacia.ufmg.br';
+	$subject = 'Mudança em equipamento';
+	$to = 'spatri@farmacia.ufmg.br';
 
-  intranet_fafar_mail_notify( $to, $subject, $message );
+	intranet_fafar_mail_notify( $to, $subject, $message );
 
-  $form_data['data'] = json_encode( $form_data['data'] );
+	$form_data['data'] = json_encode( $form_data['data'] );
 
-  return $form_data;
+	return $form_data;
 }
 
 function intranet_fafar_mail_on_create_access_building_request( $form_data ) {
-  if( ! isset( $form_data['object_name'] ) ) return $form_data;
+	if ( ! isset( $form_data['object_name'] ) )
+		return $form_data;
 
-  if ( $form_data['object_name'] !== 'access_building_request' ) return $form_data;
+	if ( $form_data['object_name'] !== 'access_building_request' )
+		return $form_data;
 
-  $form_data['data'] = json_decode( $form_data['data'], true );
+	$form_data['data'] = json_decode( $form_data['data'], true );
 
-  // Responsável do pedido de acesso
-  $user_info   = get_userdata( $form_data['owner'] );
-  $owner_name  = $user_info ? $user_info->display_name : '';
-  $owner_email = $user_info ? $user_info->user_email : '';
+	// Responsável do pedido de acesso
+	$user_info = get_userdata( $form_data['owner'] );
+	$owner_name = $user_info ? $user_info->display_name : '';
+	$owner_email = $user_info ? $user_info->user_email : '';
 
-  // Local do pedido de acesso
-  $place_desc = '';
-  if ( ! empty( $form_data['data']['place'][0] ) ) {
-    $place = intranet_fafar_api_get_submission_by_id( $form_data['data']['place'][0] );
+	// Local do pedido de acesso
+	$place_desc = '';
+	if ( ! empty( $form_data['data']['place'][0] ) ) {
+		$place = intranet_fafar_api_get_submission_by_id( $form_data['data']['place'][0] );
 
-    if ( ! empty( $place['data'] ) ) {
-      $place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
-    }
-  }
-  
-  $message = '
+		if ( ! empty( $place['data'] ) ) {
+			$place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
+		}
+	}
+
+	$message = '
     <p>Sua solicitação de acesso ao prédio foi aprovada!</p>
     <p><strong>Detalhes do pedido:</strong></p>
     <ul>
@@ -287,19 +299,20 @@ function intranet_fafar_mail_on_create_access_building_request( $form_data ) {
     <p>Caso precise de mais alguma informação, não hesite em nos contatar.</p>
   ';
 
-  $subject = '🎉 Seu Acesso ao Prédio Foi Aprovado';
+	$subject = '🎉 Seu Acesso ao Prédio Foi Aprovado';
 
-  intranet_fafar_mail_notify( $owner_email, $subject, $message );
+	intranet_fafar_mail_notify( $owner_email, $subject, $message );
 
-  $form_data['data'] = json_encode( $form_data['data'] );
+	$form_data['data'] = json_encode( $form_data['data'] );
 
-  return $form_data;
+	return $form_data;
 }
 
 function intranet_fafar_mail_on_change_auditorium_reservation_status( $reservation ) {
-  if ( empty( $reservation ) ) return false;
-  
-  $message = '
+	if ( empty( $reservation ) )
+		return false;
+
+	$message = '
     <p>Informamos que o status da sua reserva do dia ' . intranet_fafar_utils_format_date( $reservation['data']['event_date'] ) . ', no auditório Aluísio Pimenta, foi atualizado.</p>
     <p><strong>Detalhes da Reserva:</strong></p>
     <ul>
@@ -310,24 +323,26 @@ function intranet_fafar_mail_on_change_auditorium_reservation_status( $reservati
     </ul>
   ';
 
-  $subject = 'Atualização no Status da Sua Reserva de Auditório 🔄';
-  $to      = $reservation['data']['applicant_email'];
+	$subject = 'Atualização no Status da Sua Reserva de Auditório 🔄';
+	$to = $reservation['data']['applicant_email'];
 
-  intranet_fafar_mail_notify( $to, $subject, $message );
+	intranet_fafar_mail_notify( $to, $subject, $message );
 
-  return true;
+	return true;
 }
 
 function intranet_fafar_mail_on_set_auditorium_reservation_technical( $reservation ) {
-  if ( empty( $reservation ) ) return false;
+	if ( empty( $reservation ) )
+		return false;
 
-  if ( empty( $reservation['data']['technical'] ) ) return false;
+	if ( empty( $reservation['data']['technical'] ) )
+		return false;
 
-  // Responsável do equipamento
-  $user_info      = get_userdata( $reservation['data']['technical'] );
-  $technical_name = $user_info ? $user_info->display_name : '';
-  
-  $message = '
+	// Responsável do equipamento
+	$user_info = get_userdata( $reservation['data']['technical'] );
+	$technical_name = $user_info ? $user_info->display_name : '';
+
+	$message = '
     <p>😊 Informamos que o técnico ' . $technical_name . ' foi designado para acompanhar o seu evento e garantir que tudo funcione perfeitamente.</p>
     <p><strong>Detalhes da Reserva:</strong></p>
     <ul>
@@ -341,42 +356,45 @@ function intranet_fafar_mail_on_set_auditorium_reservation_technical( $reservati
     <p>Caso precise de mais alguma informação, não hesite em nos contatar.</p>
   ';
 
-  $subject = 'Técnico Designado para Sua Reserva de Auditório 🛠️';
-  $to      = $reservation['data']['applicant_email'];
+	$subject = 'Técnico Designado para Sua Reserva de Auditório 🛠️';
+	$to = $reservation['data']['applicant_email'];
 
-  intranet_fafar_mail_notify( $to, $subject, $message );
+	intranet_fafar_mail_notify( $to, $subject, $message );
 
-  return true;
+	return true;
 }
 
 function intranet_fafar_mail_on_update_laboratory_team( $laboratory_team, $action, $collaborator_id ) {
-  if ( empty( $laboratory_team ) || empty( $action ) ) return false;
+	if ( empty( $laboratory_team ) || empty( $action ) )
+		return false;
 
-  // Professor responsável
-  $professor = get_userdata( (int) $laboratory_team['owner'] );
-  if ( ! $professor ) return false;
-  
-  $message = '<p>Você foi adicionado(a) como colaborador do Prof(a) ' . $professor->display_name . '.</p>';
+	// Professor responsável
+	$professor = get_userdata( (int) $laboratory_team['owner'] );
+	if ( ! $professor )
+		return false;
 
-  if ( $action === 'remove' ) {
-    $message = '<p>Informamos que você foi removido(a) como colaborador do Prof(a) ' . $professor->display_name . '.</p>';
-  }
+	$message = '<p>Você foi adicionado(a) como colaborador do Prof(a) ' . $professor->display_name . '.</p>';
 
-  // Colaborador alvo
-  $collaborator = get_userdata( (int) $collaborator_id );
-  if ( ! $collaborator ) return false;
+	if ( $action === 'remove' ) {
+		$message = '<p>Informamos que você foi removido(a) como colaborador do Prof(a) ' . $professor->display_name . '.</p>';
+	}
 
-  $subject = 'Atualização Em Equipe De Laboratório 🛠️';
-  $to      = $collaborator->user_email;
+	// Colaborador alvo
+	$collaborator = get_userdata( (int) $collaborator_id );
+	if ( ! $collaborator )
+		return false;
 
-  intranet_fafar_mail_notify( $to, $subject, $message );
+	$subject = 'Atualização Em Equipe De Laboratório 🛠️';
+	$to = $collaborator->user_email;
 
-  return true;
+	intranet_fafar_mail_notify( $to, $subject, $message );
+
+	return true;
 }
 
 function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $attachments = null ) {
 
-  $html_mail_body_template = '
+	$html_mail_body_template = '
     <!DOCTYPE html>
     <html lang="pt-BR">
       <head>
@@ -536,7 +554,7 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
                             >
                           </p>
                           <p style="margin: 0">
-                            ' . date('Y') . ' Faculdade de Farmácia da UFMG
+                            ' . date( 'Y' ) . ' Faculdade de Farmácia da UFMG
                           </p>
                         </td>
                       </tr>
@@ -550,52 +568,52 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
       </body>
     </html>';
 
-    if ( ! is_email( $to ) ) {
-      intranet_fafar_logs_register_log(
-          'ERROR',
-          'intranet_fafar_mail_notify',
-          json_encode(
-              array(
-                  'func' => 'intranet_fafar_mail_notify',
-                  'msg'  => 'Error to send email: Not a valid address',
-                  'obj'  => $to ?? '--',
-              ),
-          ),
-      );
+	if ( ! is_email( $to ) ) {
+		intranet_fafar_logs_register_log(
+			'ERROR',
+			'intranet_fafar_mail_notify',
+			json_encode(
+				array(
+					'func' => 'intranet_fafar_mail_notify',
+					'msg' => 'Error to send email: Not a valid address',
+					'obj' => $to ?? '--',
+				),
+			),
+		);
 
-      return false;
-    }
+		return false;
+	}
 
-    if ( empty( $headers ) ) {
-      $headers[] = 'Content-Type: text/html; charset=UTF-8';
-    }
+	if ( empty( $headers ) ) {
+		$headers[] = 'Content-Type: text/html; charset=UTF-8';
+	}
 
-    if ( defined( 'WP_DEV_ENV' ) && WP_DEV_ENV === true ) {
-      $to      = 'suporte@farmacia.ufmg.br';
-      $subject = '[FAFAR DEV ENV] ' . $subject;
-    }
-      
-    $result = wp_mail( $to, $subject, $html_mail_body_template, $headers, $attachments );
+	if ( defined( 'WP_DEV_ENV' ) && WP_DEV_ENV === true ) {
+		$to = 'suporte@farmacia.ufmg.br';
+		$subject = '[FAFAR DEV ENV] ' . $subject;
+	}
 
-    if ( ! $result ) {
-      intranet_fafar_logs_register_log(
-        'ERROR',
-        'intranet_fafar_mail_notify',
-        json_encode(
-            array(
-                'func' => 'intranet_fafar_mail_notify',
-                'msg'  => 'Error to send email',
-                'obj'  => array(
-                  'to'          => $to,
-                  'subject'     => $subject,
-                  'message'     => $message,
-                  'headers'     => $headers,
-                  'attachments' => $attachments,
-                ),
-            ),
-        ),
-      );
-    }
+	$result = wp_mail( $to, $subject, $html_mail_body_template, $headers, $attachments );
 
-    return true;
+	if ( ! $result ) {
+		intranet_fafar_logs_register_log(
+			'ERROR',
+			'intranet_fafar_mail_notify',
+			json_encode(
+				array(
+					'func' => 'intranet_fafar_mail_notify',
+					'msg' => 'Error to send email',
+					'obj' => array(
+						'to' => $to,
+						'subject' => $subject,
+						'message' => $message,
+						'headers' => $headers,
+						'attachments' => $attachments,
+					),
+				),
+			),
+		);
+	}
+
+	return true;
 }
