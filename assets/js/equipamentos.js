@@ -136,7 +136,7 @@ const grid = new gridjs.Grid({
     summary: true, // Show pagination summary
   },
   server: {
-    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/equipaments",
+    url: "/wp-json/intranet/v1/submissions/equipaments",
     then: renderDataOnTable,
     total: (data) => data.count,
   },

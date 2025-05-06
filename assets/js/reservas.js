@@ -200,9 +200,7 @@ async function getEventsByPlaceID(place_id) {
   let response;
   try {
     response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" +
-        place_id +
-        "/reservations"
+      "/wp-json/intranet/v1/submissions/" + place_id + "/reservations"
     );
 
     // console.log({ response });
@@ -341,7 +339,7 @@ async function deleteSubmission(id) {
 
   try {
     const response = await axios.delete(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
+      "/wp-json/intranet/v1/submissions/" + id
     );
 
     // console.log(response);
@@ -367,8 +365,7 @@ async function getEventByID(id) {
   let response;
   try {
     response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/reservations/" +
-        id
+      "/wp-json/intranet/v1/submissions/reservations/" + id
     );
     // console.log({ response });
   } catch (error) {

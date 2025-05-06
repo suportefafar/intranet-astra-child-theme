@@ -61,7 +61,7 @@ async function loadHistoryModalComponents(dataset) {
 async function getIpCheckResults(id) {
   try {
     const response = await axios.get(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/ips/${id}/check-result?limit=50`
+      `/wp-json/intranet/v1/submissions/ips/${id}/check-result?limit=50`
     );
 
     console.log(response.data);
@@ -147,9 +147,7 @@ async function fetchDataHandler() {
   let response;
 
   try {
-    response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/ips"
-    );
+    response = await axios.get("/wp-json/intranet/v1/submissions/ips");
   } catch (error) {
     return [];
   }
@@ -289,7 +287,7 @@ async function deleteSubmission(id) {
 
   try {
     const response = await axios.delete(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
+      "/wp-json/intranet/v1/submissions/" + id
     );
 
     showAlert("Excluído com sucesso!", "success", true, 3000);

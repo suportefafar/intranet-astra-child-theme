@@ -94,7 +94,7 @@ const grid = new gridjs.Grid({
     summary: true,
   },
   server: {
-    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/service_tickets/by_user",
+    url: "/wp-json/intranet/v1/submissions/service_tickets/by_user",
     then: renderDataOnTable,
     total: (data) => data.count,
   },
@@ -331,7 +331,7 @@ async function deleteSubmission(id) {
 
   try {
     const response = await axios.delete(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
+      "/wp-json/intranet/v1/submissions/" + id
     );
 
     //console.log(response);

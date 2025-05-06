@@ -69,7 +69,7 @@ async function getLaboratoryTeam() {
 
   try {
     const response = await axios.get(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/laboratory-team/${teamOwnerId}`
+      `/wp-json/intranet/v1/submissions/laboratory-team/${teamOwnerId}`
     );
 
     hideAlert();
@@ -146,7 +146,7 @@ async function getPossibleCollaborators() {
 
   try {
     const response = await axios.get(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/laboratory-team/new_collaborators/${teamId}`
+      `/wp-json/intranet/v1/submissions/laboratory-team/new_collaborators/${teamId}`
     );
 
     hideAlert();
@@ -182,7 +182,7 @@ document.addEventListener("click", (event) => {
  * Atualizar time do laboratório
  */
 const API_CONFIG = {
-  baseUrl: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions",
+  baseUrl: "/wp-json/intranet/v1/submissions",
   endpoints: {
     add: "laboratory-team/{teamId}/add",
     remove: "laboratory-team/{teamId}/remove",

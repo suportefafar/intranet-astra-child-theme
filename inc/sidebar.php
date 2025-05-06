@@ -21,13 +21,13 @@ function intranet_fafar_sidebar_profile() {
 
     echo '
         <div class="d-flex gap-4 mb-5">
-            <a href="https://intranet.farmacia.ufmg.br/membros/' . $user->get( 'user_login' ) . '/profile/change-avatar/">
+            <a href="/membros/' . $user->get( 'user_login' ) . '/profile/change-avatar/">
                 <img src="' . $avatar_url . '" width="80" alt="User profile avatar" />
             </a>
 
             <div class="d-flex flex-column justify-content-center gap-1">
                 <h6 class="p-0 m-0">
-                    <a href="https://intranet.farmacia.ufmg.br/membros/' . $user->get( 'user_login' ) . '/" class="text-decoration-none">' . 
+                    <a href="/membros/' . $user->get( 'user_login' ) . '/" class="text-decoration-none">' . 
                     $user->get( 'display_name' ) . 
                     '</a>
                 </h6>

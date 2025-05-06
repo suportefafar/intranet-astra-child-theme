@@ -201,7 +201,7 @@ const grid = new gridjs.Grid({
     summary: true, // Show pagination summary
   },
   server: {
-    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request",
+    url: "/wp-json/intranet/v1/submissions/access_building_request",
     then: renderDataOnTable,
     total: (data) => data.count,
   },
@@ -431,7 +431,7 @@ async function registerEntryOrExit(id, type) {
   hideConfirmModal();
   showAlert("Por favor, aguarde...", "warning", false, 0, true);
 
-  const endpoint = `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/access_building_request/${id}/register/`;
+  const endpoint = `/wp-json/intranet/v1/submissions/access_building_request/${id}/register/`;
 
   try {
     const response = await axios.put(endpoint, { type });
@@ -459,9 +459,7 @@ async function getAccessBuildingRequestByID(id) {
   showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   try {
-    const response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
-    );
+    const response = await axios.get("/wp-json/intranet/v1/submissions/" + id);
 
     // console.log(response);
 

@@ -69,7 +69,7 @@ function fafar_intranet_actions_redirect_all_users() {
         
         // If user is not ID 23, redirect them
         if ( ! in_array( $current_user_id, [1, 2078, 2041] ) ) {
-            wp_redirect('https://intranet.farmacia.ufmg.br/wp-login.php?redirect_to=https%3A%2F%2Fintranet.farmacia.ufmg.br%2F'); // Change to your desired redirect URL
+            wp_redirect(wp_login_url(home_url())); // Using WordPress functions for login URL
             exit;
         }
     }

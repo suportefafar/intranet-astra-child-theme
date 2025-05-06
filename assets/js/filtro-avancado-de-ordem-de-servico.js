@@ -70,9 +70,7 @@ document.getElementById("search-form").addEventListener("submit", function (e) {
         summary: true,
       },
       server: {
-        url:
-          "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/service_tickets/?" +
-          queryString,
+        url: "/wp-json/intranet/v1/submissions/service_tickets/?" + queryString,
         then: renderDataOnTable,
         total: (data) => data.count,
       },

@@ -72,7 +72,7 @@ const grid = new gridjs.Grid({
     summary: true, // Show pagination summary
   },
   server: {
-    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/log",
+    url: "/wp-json/intranet/v1/submissions/object/log",
     then: renderDataOnTable,
     total: (data) => data.count,
   },
@@ -165,9 +165,7 @@ async function deleteSubmission(id) {
   showAlert("Por favor, aguarde....", "warning", false, 0, true);
 
   try {
-    await axios.delete(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/${id}`
-    );
+    await axios.delete(`/wp-json/intranet/v1/submissions/${id}`);
     showAlert("Excluído com sucesso!", "success", true, 3000);
     renderGridJS();
   } catch (error) {

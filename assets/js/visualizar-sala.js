@@ -33,7 +33,7 @@ async function deleteSubmission(id) {
 
   try {
     const response = await axios.delete(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
+      "/wp-json/intranet/v1/submissions/" + id
     );
 
     console.log(response);

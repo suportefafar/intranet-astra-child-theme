@@ -121,7 +121,7 @@ async function getEventsByReservationStatus(
 
   try {
     const response = await axios.get(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/auditorium/reservations?status=${status_param}&${
+      `/wp-json/intranet/v1/submissions/auditorium/reservations?status=${status_param}&${
         order_by ? "order=" + order_by + "-" + order_how : ""
       }`
     );
@@ -418,9 +418,7 @@ function getStatusStyle(status) {
 
 async function getEventByID(id) {
   try {
-    const response = await axios.get(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/${id}`
-    );
+    const response = await axios.get(`/wp-json/intranet/v1/submissions/${id}`);
 
     return response.data;
   } catch (error) {
@@ -437,7 +435,7 @@ async function getTechnicalUsers(
 ) {
   try {
     const response = await axios.get(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/users/by_sector/${sector}`
+      `/wp-json/intranet/v1/users/by_sector/${sector}`
     );
 
     return response.data;
@@ -453,7 +451,7 @@ async function getTechnicalUsers(
 async function setTechnical(reservation_id, technical_id) {
   try {
     const response = await axios.put(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/reservations/${reservation_id}/set_technical`,
+      `/wp-json/intranet/v1/submissions/reservations/${reservation_id}/set_technical`,
       { technical_id },
       {
         headers: {
@@ -475,7 +473,7 @@ async function setTechnical(reservation_id, technical_id) {
 async function updateReservation(id, reservation) {
   try {
     const response = await axios.put(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/${id}`,
+      `/wp-json/intranet/v1/submissions/${id}`,
       reservation,
       {
         headers: {

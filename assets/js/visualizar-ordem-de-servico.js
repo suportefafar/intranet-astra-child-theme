@@ -52,8 +52,7 @@ async function setAssignedToUserProp(user_assigned_to_id) {
     const service_ticket_id = getURLParam("id");
 
     const service_ticket_response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" +
-        service_ticket_id
+      "/wp-json/intranet/v1/submissions/" + service_ticket_id
     );
 
     console.log(service_ticket_response.data);
@@ -67,8 +66,7 @@ async function setAssignedToUserProp(user_assigned_to_id) {
       service_ticket.data.place = [service_ticket.data.place.id];
 
     const response = await axios.put(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" +
-        service_ticket_id,
+      "/wp-json/intranet/v1/submissions/" + service_ticket_id,
       service_ticket,
       {
         headers: {
@@ -109,7 +107,7 @@ async function deleteSubmission(id) {
 
   try {
     const response = await axios.delete(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/" + id
+      "/wp-json/intranet/v1/submissions/" + id
     );
 
     console.log(response);
@@ -160,6 +158,5 @@ function copyToClipboard() {
 }
 
 function goToReservationList() {
-  window.location =
-    "https://intranet.farmacia.ufmg.br/ordens-de-servico-recebidas/";
+  window.location = "/ordens-de-servico-recebidas/";
 }

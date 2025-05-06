@@ -72,7 +72,7 @@ const grid = new gridjs.Grid({
     summary: true, // Show pagination summary
   },
   server: {
-    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/object/place",
+    url: "/wp-json/intranet/v1/submissions/object/place",
     then: renderDataOnTable,
     total: (data) => data.count,
   },
@@ -217,14 +217,9 @@ async function deleteSubmission(id) {
 
   try {
     await axios.delete(
-      `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/${id}`
+      `/wp-json/intranet/v1/submissions/${id}`
     );
     showAlert("Excluído com sucesso!", "success", true, 3000);
     renderGridJS();
   } catch (error) {
     const error_msg =
-      error.response?.data?.message || "[1010] Erro desconhecido";
-    console.error("Erro ao excluir:", error_msg);
-    showAlert(error_msg, "danger");
-  }
-}

@@ -73,7 +73,7 @@ const grid = new gridjs.Grid({
     summary: true,
   },
   server: {
-    url: "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/users",
+    url: "/wp-json/intranet/v1/users",
     then: renderDataOnTable,
     total: (data) => data.count,
   },
@@ -277,9 +277,7 @@ function actionColFormatter(current) {
 // Obter usuários para exportar e para copiar emails
 async function getUsers() {
   const filters = getCurrentFilters(); // Get current filter values
-  const url = `https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/users?${new URLSearchParams(
-    filters
-  )}`;
+  const url = `/wp-json/intranet/v1/users?${new URLSearchParams(filters)}`;
 
   try {
     const response = await axios.get(url);

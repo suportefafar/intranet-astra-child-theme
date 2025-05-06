@@ -69,7 +69,7 @@ async function onSubmitHandler(e) {
   let response = {};
   try {
     response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions/place/available-for-reservation",
+      "/wp-json/intranet/v1/submissions/place/available-for-reservation",
       { params: data }
     );
     console.log(response);

@@ -101,7 +101,7 @@ const grid = new gridjs.Grid({
   },
   server: {
     url:
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions" +
+      "/wp-json/intranet/v1/submissions" +
       "/service_tickets/by_departament?assigned_to=-1&status=Nova,Aguardando,Em andamento",
     then: renderDataOnTable,
     total: (data) => data.count,
@@ -179,9 +179,7 @@ async function updateURLFetchBase() {
   const tab_data = getActiveTabData();
   if (!tab_data) return;
 
-  const url =
-    "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions" +
-    tab_data.url;
+  const url = "/wp-json/intranet/v1/submissions" + tab_data.url;
 
   // console.log({ url });
   grid
@@ -199,9 +197,7 @@ async function getServiceTickets(url) {
   let response;
 
   try {
-    response = await axios.get(
-      "https://intranet.farmacia.ufmg.br/wp-json/intranet/v1/submissions" + url
-    );
+    response = await axios.get("/wp-json/intranet/v1/submissions" + url);
 
     //console.log(response.data);
   } catch (error) {

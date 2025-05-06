@@ -442,7 +442,7 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
                       <tr>
                         <td align="center" style="padding-bottom: 20px">
                           <img
-                            src="https://intranet.farmacia.ufmg.br/wp-content/uploads/2025/03/logo-fafar-white-gray.png"
+                            src="/wp-content/uploads/2025/03/logo-fafar-white-gray.png"
                             alt="Faculdade de Farmácia da UFMG"
                             width="80"
                             style="display: block"
