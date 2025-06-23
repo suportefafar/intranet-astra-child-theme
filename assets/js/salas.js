@@ -213,13 +213,29 @@ function confirmDelete(id) {
 
 async function deleteSubmission(id) {
   hideConfirmModal();
-  showAlert("Por favor, aguarde....", "warning", false, 0, true);
+
+  showAlert("Por favor, aguarde....", "warning");
 
   try {
-    await axios.delete(
-      `/wp-json/intranet/v1/submissions/${id}`
+    const response = await axios.delete(
+      "/wp-json/intranet/v1/submissions/" + id
     );
+
+    console.log(response);
+
     showAlert("Excluído com sucesso!", "success", true, 3000);
+
     renderGridJS();
   } catch (error) {
-    const error_msg =
+    let error_msg = "[1010]Unknow error on try catch";
+
+    if (error.response?.data?.message) {
+      console.log(error.response.data);
+      error_msg = error.response.data.message;
+    } else {
+      console.log(error);
+    }
+
+    showAlert(error_msg, "danger");
+  }
+}
