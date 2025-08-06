@@ -14,7 +14,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $reservation_log = array();
 
-function generate_reservations( $class_subjects ) {
+function generate_reservations( $class_subjects = [] ) {
+
+	$a = get_class_subjects();
+	$class_subjects = $a['data'];
 
 	global $reservation_log;
 
@@ -199,14 +202,14 @@ function get_pre_reservations_data( $class_subjects ) {
 		foreach ( $schedules as $schedule ) {
 
 			// Início do semestre
-			$date = '10/03/2025';
+			$date = '11/08/2025';
 			if (
 				isset( $subject['data']['desired_start_date'] ) && $subject['data']['desired_start_date']
 			)
 				$date = $subject['data']['desired_start_date'];
 
 			// Fim do semestre
-			$end_date = '12/07/2025';
+			$end_date = '13/12/2025';
 			if (
 				isset( $subject['data']['desired_end_date'] ) && $subject['data']['desired_end_date']
 			)
@@ -372,12 +375,362 @@ function standardDeviation( $numbers ) {
 	return sqrt( $sumSquaredDifferences / $n );
 }
 
-// // Example usage
-// $values = [10, 12, 23, 23, 16, 23, 21, 16];
-// echo standardDeviation($values); // Output: Standard deviation
+// --------------------------------------------------------------------------
 
+function get_class_subjects() {
+	return intranet_fafar_api_get_submissions_by_object_name(
+		'class_subject', 
+		[], 
+		[ 'check_permissions' => false ],
+		false
+	);
+}
 
-$class_subjects = intranet_fafar_api_get_submissions_by_object_name( 'class_subject' );
+function get_reservations() {
+	return intranet_fafar_api_get_submissions_by_object_name(
+		'reservation', 
+		[], 
+		[ 'check_permissions' => false ],
+		false
+	);
+}
+
+function generate_checkpoint() {
+
+	$class_subjects = intranet_fafar_api_get_submissions_by_object_name(
+		'class_subject', 
+		[], 
+		[ 'check_permissions' => false ],
+		false
+	);
+
+	$reservations = intranet_fafar_api_get_submissions_by_object_name(
+		'reservation', 
+		[], 
+		[ 'check_permissions' => false ],
+		false
+	);
+
+	if ( empty( $class_subjects ) || empty( $reservations ) ) {
+		echo 'Sem reservas e/ou disciplinas para salvar!';
+		return false;
+	}
+
+	$checkpoint = [
+		'class_subjects' => json_encode( $class_subjects['data'] ), 
+		'reservations'  => json_encode( $reservations['data'] ), 
+	];
+
+    $upload_dir_info = wp_upload_dir();
+    $upload_dir_path = $upload_dir_info['basedir'];
+
+    $filename = 'last-checkpoint.json';
+    $file_path = trailingslashit( $upload_dir_path ) . $filename;
+
+    $file_content = json_encode( $checkpoint );
+
+    global $wp_filesystem;
+    if ( empty( $wp_filesystem ) ) {
+        require_once( ABSPATH . '/wp-admin/includes/file.php' );
+        WP_Filesystem();
+    }
+
+    if ( $wp_filesystem ) {
+
+        $success = $wp_filesystem->put_contents( $file_path, $file_content, FS_CHMOD_FILE );
+
+        if ( $success ) {
+            echo "<br />Disciplinas: " . count( $class_subjects['data'] );
+            echo "<br />Reservas: " . count( $reservations['data'] );
+            echo "<br />Salvo novo checkpoint em: " . esc_html($file_path);
+        } else {
+            echo "Failed to write to the file.";
+        }
+    } else {
+        echo "WP_Filesystem could not be initialized.";
+    }
+
+}
+
+function delete_all_class_subjects() {
+
+	$class_subjects = intranet_fafar_api_get_submissions_by_object_name(
+		'class_subject', 
+		[], 
+		[ 'check_permissions' => false ],
+		false
+	);
+
+	if ( empty( $class_subjects ) ) return false;
+	
+	foreach ( $class_subjects['data'] as $class_subject ) {
+
+		intranet_fafar_api_delete(
+			$class_subject, 
+			false, 
+			false
+		);
+
+	}
+
+	return true;
+
+}
+
+function delete_all_reservations() {
+
+	$reservations = intranet_fafar_api_get_submissions_by_object_name(
+		'reservation', 
+		[], 
+		[ 'check_permissions' => false ],
+		false
+	);
+
+	if ( empty( $reservations ) ) return false;
+	
+	foreach ( $reservations['data'] as $reservation ) {
+
+		intranet_fafar_api_delete(
+			$reservation, 
+			false, 
+			false
+		);
+
+	}
+
+	return true;
+
+}
+
+function create_submissions( $submissions ) {
+
+	foreach ( $submissions as $submission ) {
+		intranet_fafar_api_create( $submission, false );
+	}
+
+}
+
+function use_last_checkpoint() {
+    $upload_dir_info = wp_upload_dir();
+    $upload_dir_path = $upload_dir_info['basedir'];
+
+    $filename = 'last-checkpoint.json';
+    $file_path = trailingslashit( $upload_dir_path ) . $filename;
+
+    global $wp_filesystem;
+    if ( empty( $wp_filesystem ) ) {
+        require_once( ABSPATH . '/wp-admin/includes/file.php' );
+        WP_Filesystem();
+    }
+
+    if ( $wp_filesystem && $wp_filesystem->exists( $file_path ) ) {
+
+        $file_content = $wp_filesystem->get_contents( $file_path );
+
+        if ( $file_content !== false ) {
+    
+			$a = delete_all_class_subjects();
+			$b = delete_all_reservations();
+			
+			if ( ! $a || ! $b ) {
+				echo 'Sem reservas e/ou disciplinas para restaurar!';
+				return false;
+			}
+
+			echo "Feito!";
+
+			$checkpoint = json_decode( $file_content, true );
+
+			if ( empty( $checkpoint['class_subjects'] ) || empty( $checkpoint['reservations'] ) ) {
+				echo 'Sem reservas e/ou disciplinas para restaurar!';
+				return false;
+			}
+
+			create_submissions( $checkpoint['class_subjects'] );
+			create_submissions( $checkpoint['reservations'] );
+            
+        } else {
+            echo "Failed to read the contents of the file.";
+        }
+    } else {
+        echo "The file " . esc_html($file_path) . " does not exist or WP_Filesystem could not be initialized.";
+    }
+}
+
+function import_subjects() {
+
+	// Check if the form was submitted.
+    if ( ! empty( $_FILES['subjects_file'] ) ) {
+        
+        // Define an array of overrides for wp_handle_upload().
+        $upload_overrides = array( 'test_form' => false );
+        
+        // Use wp_handle_upload() to securely handle the upload.
+        $uploaded_file = wp_handle_upload( $_FILES['subjects_file'], $upload_overrides );
+
+        // Check if the file was uploaded successfully.
+        if ( isset( $uploaded_file['file'] ) ) {
+            $file_path = $uploaded_file['file'];
+            $csv_data_array = array();
+
+            // Open the uploaded CSV file for reading.
+            if ( ( $handle = fopen( $file_path, "r" ) ) !== false ) {
+                while ( ( $data = fgetcsv( $handle, 1000, ";" ) ) !== false ) {
+                    // Push each row into our array.
+                    $csv_data_array[] = $data;
+                }
+                fclose( $handle );
+            }
+
+			// It's good practice to unlink (delete) the temporary file.
+            unlink( $file_path );
+            
+            // At this point, $csv_data_array contains the data from the CSV file.
+            // You can now use this array to process the data as needed.
+            
+            // Example: print the array for verification.
+            // echo '<pre>';
+            // print_r( $csv_data_array );
+            // echo '</pre>';
+
+			$class_subjects_added   = [];
+			$class_subjects_updated = [];
+			foreach ( $csv_data_array as $class_subject ) {
+				if ( $class_subject[0] === 'Semestre' ) continue; // Pula o header
+
+				$submission = [
+					'object_name' => 'class_subject',
+					'permissions' => '777',
+					'data' => [
+						'code' => $class_subject[2],
+						'name_of_subject' => $class_subject[2],
+						'group' => $class_subject[7],
+						'course_load' => $class_subject[4],
+						'credits_of_subject' => intval( $class_subject[4] ) / 15,
+						'nature_of_subject' => 'Obrigatória',
+						'course' => $class_subject[2],
+						'level' => '',
+						'departament' => $class_subject[6],
+						'type' => '',
+						'adjustment' => '',
+						'number_vacancies_offered' => $class_subject[9],
+						'version_of_curriculum_matrix' => '',
+						'professors' => $class_subject[14],
+						'desired_time' => $class_subject[12],
+						'use_on_auto_reservation' => 'true',
+
+					]
+				];
+
+				intranet_fafar_api_create( $submission, false );
+
+				$class_subjects_added[] = $submission;
+
+			}
+
+        } else {
+            // Handle upload error.
+            echo 'File upload failed: ' . $uploaded_file['error'];
+        }
+    }
+
+	render_imported_subjects_table( $class_subjects_added, $class_subjects_updated );
+
+	return true;
+
+}
+
+function render_imported_subjects_table( $class_subjects_added, $class_subjects_updated ) {
+
+	echo '<div>';
+	echo '<span><strong>Disciplinas Adicionadas</strong> (' . count( $class_subjects_added ) . ' disciplinas)</span>';
+	$class_subjects_added_table_html = '
+					<table class="table">
+						<thead>
+							<tr>
+								<th scope="col">#</th>
+								<th scope="col">Código</th>
+								<th scope="col">Nome</th>
+								<th scope="col">Turma</th>
+								<th scope="col">CH</th>
+								<th scope="col">Vagas</th>
+								<th scope="col">Horário</th>
+							</tr>
+						</thead>
+						
+						</tbody>';
+
+	$count = 1;
+	foreach ( $class_subjects_added as $added ) {
+		$class_subjects_added_table_html .= '
+						<tr>
+							<th scope="row">' . $count++ . '</th>
+							<td>' . $added['data']['code'] . '</td>
+							<td>' . $added['data']['name_of_subject'] . '</td>
+							<td>' . $added['data']['group'] . '</td>
+							<td>' . $added['data']['course_load'] . '</td>
+							<td>' . $added['data']['number_vacancies_offered'] . '</td>
+							<td>' . $added['data']['desired_time'] . '</td>
+						</tr>';
+	}
+
+	$class_subjects_added_table_html .= '</table>';
+
+	echo $class_subjects_added_table_html;
+	
+	echo '</div>';
+
+	echo '<div>';
+	echo '<span><strong>Disciplinas Atualizadas</strong> (' . count( $class_subjects_updated ) . ' disciplinas)</span>';
+	$class_subjects_updated_table_html = '
+					<table class="table">
+						<thead>
+							<tr>
+								<th scope="col">#</th>
+								<th scope="col">Código</th>
+								<th scope="col">Nome</th>
+								<th scope="col">Turma</th>
+								<th scope="col">CH</th>
+								<th scope="col">Vagas</th>
+								<th scope="col">Horário</th>
+							</tr>
+						</thead>
+						
+						</tbody>';
+
+	$count = 1;
+	foreach ( $class_subjects_updated as $updated ) {
+		$class_subjects_updated_table_html .= '
+						<tr>
+							<th scope="row">' . $count++ . '</th>
+							<td>' . $updated['data']['code'] . '</td>
+							<td>' . $updated['data']['name_of_subject'] . '</td>
+							<td>' . $updated['data']['group'] . '</td>
+							<td>' . $updated['data']['course_load'] . '</td>
+							<td>' . $updated['data']['number_vacancies_offered'] . '</td>
+							<td>' . $updated['data']['desired_time'] . '</td>
+						</tr>';
+	}
+
+	$class_subjects_updated_table_html .= '</table>';
+
+	echo $class_subjects_updated_table_html;
+	
+	echo '</div>';
+
+}
+
+$class_subjects = get_class_subjects();
+$count_class_subjects = 0;
+if ( ! empty( $class_subjects['data'] ) ) {
+	$count_class_subjects = count( $class_subjects['data'] );
+}
+
+$reservations = get_reservations();
+$count_reservations = 0;
+if ( ! empty( $reservations['data'] ) ) {
+	$count_reservations = count( $reservations['data'] );
+}
 
 get_header(); ?>
 
@@ -393,78 +746,93 @@ get_header(); ?>
 
 	<?php astra_content_page_loop(); ?>
 
-	<!--
-	*
-	*
-	*
-	* Conteúdo customizado da página
-	* Início
--->
+	<div class="d-flex flex-column gap-3">
+		<h6>Disciplinas cadastradas: <?= $count_class_subjects; ?></h6>
+		<h6>Reservas realizadas: <?= $count_reservations; ?></h6>
 
-	<h5><?= count( $class_subjects ) ?> disciplinas encontradas </h5>
+		<div class="btn-group" role="group" aria-label="Basic mixed styles example">
+			<a href="#" 
+				class="btn btn-danger text-decoration-none" 
+				title="Excluir todas as disciplinas" 
+				onclick="confirmAlert('Tem certeza que deseja EXCLUIR todas as DISCIPLINAS?', 'gerar-reservas?action=delete-class-subjects')">
+				<i class="bi bi-trash3"></i>
+				Excluir Disciplinas
+			</a>
+			<a href="#" 
+				class="btn btn-danger text-decoration-none" 
+				title="Excluir todas as reservas" 
+				onclick="confirmAlert('Tem certeza que deseja EXCLUIR todas as RESERVAS?', 'gerar-reservas?action=delete-reservations')">
+				<i class="bi bi-trash3"></i>
+				Excluir Reservas
+			</a>
+			<a href="/gerar-reservas?action=generate-checkpoint" 
+				class="btn btn-primary text-decoration-none" 
+				title="Salvar todas as DISCIPLINAS e RESERVAS em banco de dados separado">
+				<i class="bi bi-node-plus"></i>
+				Gerar Novo Checkpoint
+			</a>
+			<a href="#" 
+				class="btn btn-primary text-decoration-none" 
+				title="Restaura o último checkpoint criado. APAGA todas as DISCIPLINAS e RESERVAS atuais." 
+				onclick="confirmAlert('Tem certeza que deseja continuar? Isso APAGA todas as DISCIPLINAS e RESERVAS atuais', 'gerar-reservas?action=use-last-checkpoint')">
+				<i class="bi bi-clock-history"></i>
+				Usar Último Checkpoint
+			</a>
+			<a href="/gerar-reservas?action=import-subjects-form" 
+				class="btn btn-primary text-decoration-none" 
+				title="Importar disciplinas por .csv">
+				<i class="bi bi-cloud-upload"></i>
+				Importar Disciplinas
+			</a>
+			<a href="#" 
+				class="btn btn-primary text-decoration-none" 
+				title="Gerar reservas"
+				onclick="confirmAlert('Tem certeza que deseja continuar? Pode fazer uma baguncinha. Que tal um checkpoint antes?', 'gerar-reservas?action=generate-reservation')">
+				<i class="bi bi-gear-wide-connected"></i>
+				Gerar Reservas
+			</a>
+		</div>
 
-	<?php if ( isset( $_GET['generate'] ) ) : ?>
+		<hr />
 
-		<h5>Gerando reservas....</h5>
-
-		<br />
-
-		<?= generate_reservations( $class_subjects ); ?>
-
-	<?php else : ?>
-
-		<br />
-
-		<a href="/gerar-reservas?generate=true" class="btn btn-primary text-decoration-none" title="Gerar reservas">
-			Gerar
-		</a>
-
-	<?php endif; ?>
-
-	<br />
-
-	<h5><?= ( isset( $reservation_log[0] ) ? count( $reservation_log ) : '0' ) ?> reservas</h5>
-
-	<table class="table">
-		<thead>
-			<tr>
-				<th scope="col">Código Disciplina</th>
-				<th scope="col">Vagas</th>
-				<th scope="col">Pontos</th>
-				<th scope="col">Natureza</th>
-				<th scope="col">Horários</th>
-				<th scope="col">Status</th>
-				<th scope="col">Desc</th>
-			</tr>
-		</thead>
-		<tbody>
-			<?php
-			if ( isset( $reservation_log ) && is_array( $reservation_log ) && count( $reservation_log ) > 0 ) {
-				foreach ( $reservation_log as $row ) {
-					echo '<tr>';
-					echo '<td><a href="/visualizar-objeto?id=' . $row['sub_id'] . '" target="blank">' . $row['sub_code'] . '</td>';
-					echo '<td>' . $row['vacancies'] . '</td>';
-					echo '<td>' . $row['points'] . '</td>';
-					echo '<td>' . print_r( $row['nature'], true ) . '</td>';
-					echo '<td>' . $row['scheduale'] . '</td>';
-					echo '<td>' . $row['status'] . '</td>';
-					echo '<td>' . $row['desc'] . '</td>';
-					echo '</tr>';
-				}
+		<div>
+		<?php
+			if ( isset( $_GET['action'] ) && $_GET['action'] === 'generate-checkpoint' ) {
+				generate_checkpoint();
+			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'use-last-checkpoint' ) {
+				use_last_checkpoint();
+			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'import-subjects-form' ) {
+				?>
+					<form action="/gerar-reservas?action=import-subjects" method="post" enctype="multipart/form-data">
+						<div class="mb-3">
+							<label for="formFile" class="form-label">Disciplinas</label>
+							<input class="form-control" type="file" name="subjects_file">
+						</div>
+						<button type="submit" class="btn btn-primary">Importar</button>
+					</form>
+				<?php
+			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'import-subjects' ) {
+				import_subjects();
+			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'generate-reservation' ) {
+				generate_reservations();
+			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'delete-class-subjects' ) {
+				delete_all_class_subjects();
+				echo "Excluído todas as disciplinas!";
+			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'delete-reservation' ) {
+				delete_all_reservations();
+				echo "Excluído todas as reservas!";
 			}
-			?>
-		</tbody>
-	</table>
+		?>
+		</div>
+	</div>
 
-
-
-	<!--
-	* Conteúdo customizado da página
-	* Fim
-	*
-	*
-	*
--->
+	<script>
+		function confirmAlert(msg, href) {
+			if (window.confirm(msg)) {
+				window.location.href = "/" + href;
+			}
+		}
+	</script>
 
 	<?php astra_primary_content_bottom(); ?>
 
