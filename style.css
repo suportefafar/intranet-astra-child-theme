@@ -1,0 +1,308 @@
+/*
+ * Theme Name: Intranet Astra Child Theme
+ * Author: Suporte FAFAR UFMG
+ * Author URI: https://github.com/suportefafar
+ * Description: Tema filho para a Intranet da Faculdade de Farmácia UFMG 
+ * Version: 1.0.0
+ * License: GNU General Public License v2 or later
+ * License URI: http://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: intranet-astra-child-theme
+ * Template: astra
+ * GitHub Theme URI: https://github.com/suportefafar/intranet-astra-child-theme
+*/
+
+/*
+ * Classes genéricas
+ */
+.fafar-cursor-pointer {
+  cursor: pointer;
+}
+
+/*
+ * Styles for buttons on top of CRUD pages like 'Adicionar' or 'Imprimir'
+ */
+.w-button {
+  width: 8rem !important;
+}
+
+.w-lg-button {
+  width: 10rem !important;
+}
+
+.w-xl-button {
+  width: 12rem !important;
+}
+
+/*
+ * Layout is devided by two: sidebar and main content.
+ * Primary: main content container
+ * Secondary: sidebar container
+ * Content: content inside the main content container
+ * START
+ */
+
+.site-content {
+  padding: 0 !important;
+}
+
+.ast-container,
+#primary,
+#secondary,
+#content {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.ast-above-header-bar {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+#primary {
+  padding: 48px 32px !important;
+  background-color: white !important;
+}
+
+#secondary {
+  padding: 32px 24px !important;
+  min-width: 250px;
+  min-height: 100vh;
+  background-color: var(--ast-global-color-4);
+}
+
+#bp-nouveau-activity-form {
+  padding-top: 0rem !important;
+  margin-top: 0 !important;
+}
+
+/*
+ * Simple class for cursor pointer
+ */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/*
+ * Bootstrap alert additional style 
+ * START
+ */
+.alert {
+  position: fixed !important;
+  width: max-content;
+  left: 0;
+  right: 0;
+  bottom: 2rem;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2000;
+}
+
+.alert-old {
+  position: fixed !important;
+  width: max-content;
+  left: 0;
+  right: 0;
+  bottom: 2rem;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2000;
+
+  visibility: hidden;
+  transform: translateY(1.85rem);
+  opacity: 0;
+
+  display: flex;
+  gap: 0.5rem;
+}
+
+.alert-show {
+  animation: fade-in 3s linear;
+}
+
+.alert-show-long {
+  animation: fade-in 7s linear;
+}
+
+@keyframes fade-in {
+  5% {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  95% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * Inputs of a plugin for Grid.JS Tables
+ */
+.intranet-plugin-grid-js-container {
+  display: flex;
+  gap: 2rem;
+  padding-left: 2rem;
+}
+
+.intranet-plugin-grid-js-container select {
+  width: 15rem;
+  font-size: 0.875rem;
+}
+
+/*
+ * Estilos para a página imprimir-mapa-de-sala
+ */
+.map-printer-container {
+  margin: 1rem;
+}
+
+#calendar,
+.footer-container {
+  width: 1080px !important;
+}
+
+.fc-timegrid-slots tbody tr {
+  height: 0.5rem !important;
+}
+
+.fc-timegrid-cols tbody tr {
+  height: 0.5rem !important;
+}
+
+.footer-container {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.numero-sala {
+  display: none;
+}
+
+.logo-fafar {
+  display: block;
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  opacity: 0;
+}
+
+table.fc-col-header {
+  margin: 0;
+}
+
+@page {
+  size: auto; /* auto is the initial value */
+  margin: 0; /* this affects the margin in the printer settings */
+}
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important; /* Chrome, Safari 6 – 15.3, Edge */
+    color-adjust: exact !important; /* Firefox 48 – 96 */
+    print-color-adjust: exact !important; /* Firefox 97+, Safari 15.4+ */
+  }
+
+  #secondary,
+  .fc-header-toolbar,
+  .fc-toolbar,
+  .fc-toolbar-ltr,
+  .fc-toolbar-chunk,
+  header {
+    display: none !important;
+  }
+
+  #calendar {
+    height: 762px !important;
+  }
+
+  .fc-scroller,
+  .fc-scroller-liquid-absolute {
+    overflow: hidden !important;
+  }
+
+  #primary,
+  #secondary {
+    margin: 0;
+    padding: 0;
+  }
+
+  div#content > div.ast-container {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Custom CSS to remove the current day highlight */
+  .fc-day-today {
+    background-color: transparent !important;
+    color: inherit !important;
+  }
+
+  .fc-event-main-frame .fc-event-title-container .fc-event-title {
+    font-weight: bolder !important;
+  }
+
+  .numero-sala {
+    display: block;
+    position: absolute;
+    top: 25%;
+    left: 0;
+
+    width: 100%;
+
+    text-align: center;
+
+    font-size: 24rem;
+    color: #ccc !important;
+  }
+
+  .logo-fafar {
+    display: block !important;
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    opacity: 0.75 !important;
+  }
+
+  .content {
+    overflow: hidden; /* Prevent overflowing content */
+    max-height: 100vh; /* Limit content to one page */
+  }
+
+  .fc-col-header-cell-cushion {
+    text-decoration: none;
+    color: #000000;
+  }
+
+  .map-printer-container {
+    margin: 0 auto;
+  }
+
+  #btn_printer {
+    display: none;
+  }
+
+  #btn_go_back {
+    display: none;
+  }
+
+  .logo-fafar {
+    opacity: 0.75 !important;
+  }
+}
+
+/**
+ * Estilos para o filtro avançado de OS
+ */
+.advanced-filter-row {
+  display: flex !important;
+  gap: 1rem;
+  width: 100% !important;
+}
+
+.advanced-filter-row p {
+  flex-grow: 1 !important;
+  margin: 0;
+  padding: 0;
+}
