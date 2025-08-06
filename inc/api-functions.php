@@ -4014,7 +4014,7 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
 		$submission['data'] = json_decode( $submission['data'], true );
 
 		// Checks for read permission
-		if ( $check_permissions &&
+		if ( $args['$check_permissions'] &&
 			! intranet_fafar_api_check_read_permission( $submission ) )
 			continue;
 
@@ -4022,7 +4022,7 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
 		 * Checks for read permission.
 		 * If doesn't, set a 'prevent_write' prop to true
 		 */
-		if ( $check_permissions &&
+		if ( $args['$check_permissions'] &&
 			! intranet_fafar_api_check_write_permission( $submission ) )
 			$submission['data']['prevent_write'] = true;
 
@@ -4030,7 +4030,7 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
 		 * Checks for read permission.
 		 * If doesn't, set a 'prevent_exec' prop to true
 		 */
-		if ( $check_permissions &&
+		if ( $args['$check_permissions'] &&
 			! intranet_fafar_api_check_exec_permission( $submission ) )
 			$submission['data']['prevent_exec'] = true;
 
