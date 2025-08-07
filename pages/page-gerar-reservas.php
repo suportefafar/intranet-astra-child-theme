@@ -102,19 +102,6 @@ function generate_reservations( $class_subjects = [] ) {
 		}
 
 		$filtered_class_subjects[] = $class_subject;
-
-		// return (
-		// 	( (int) $subject['data']['number_vacancies_offered'] ) > 0 &&
-		// 	( (int) $subject['data']['number_vacancies_offered'] ) < 80 &&
-		// 	isset( $subject['data']['desired_time'] ) &&
-		// 	is_string( $subject['data']['desired_time'] ) &&
-		// 	count( parse_schedule( $subject['data']['desired_time'] ) ) > 0 &&
-		// 	! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'estagio' ) &&
-		// 	! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'monografia' ) &&
-		// 	! str_contains( strtoupper( $subject['data']['group'] ), 'P' ) &&
-		// 	isset( $subject['data']['use_on_auto_reservation'][0] ) &&
-		// 	strtoupper( $subject['data']['use_on_auto_reservation'][0] ) === 'SIM'
-		// );
 	}
 
 	$pre_reservations_data = get_pre_reservations_data( $filtered_class_subjects );
