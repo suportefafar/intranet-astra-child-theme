@@ -61,10 +61,10 @@ function intranet_fafar_sidebar_menu() {
 		'fallback_cb' => '__return_false',
 	) );
 
-	if ( wp_get_environment_type() === 'development' ) {
+	if ( wp_get_environment_type() !== 'production' ) {
 		echo '
             <div class="badge text-bg-primary">
-                Development Environment
+                Environment ' . wp_get_environment_type() . '
             </div>
         ';
 	}
