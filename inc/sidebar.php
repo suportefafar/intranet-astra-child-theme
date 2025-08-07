@@ -61,7 +61,7 @@ function intranet_fafar_sidebar_menu() {
 		'fallback_cb' => '__return_false',
 	) );
 
-	if ( defined( 'WP_DEV_ENV' ) && WP_DEV_ENV === true ) {
+	if ( wp_get_environment_type() === 'development' ) {
 		echo '
             <div class="badge text-bg-primary">
                 Development Environment

@@ -588,7 +588,7 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
 		$headers[] = 'Content-Type: text/html; charset=UTF-8';
 	}
 
-	if ( defined( 'WP_DEV_ENV' ) && WP_DEV_ENV === true ) {
+	if ( wp_get_environment_type() === 'development' ) {
 		$to = 'suporte@farmacia.ufmg.br';
 		$subject = '[FAFAR DEV ENV] ' . $subject;
 	}
