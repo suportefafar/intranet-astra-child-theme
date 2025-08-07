@@ -12,40 +12,110 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-$reservation_log = array();
+function generate_reservation_log( $reservation_data, $status = 'success', $msg = '' ) {
+
+	$start_time = ( ! empty( $reservation_data['start_time'] ) ? $reservation_data['start_time'] : '' );
+	$end_time   = ( ! empty( $reservation_data['end_time'] ) ? $reservation_data['end_time'] : '' );
+	$weekdays   = ( ! empty( $reservation_data['weekdays'] ) ? $reservation_data['weekdays'] : [] );
+	$nature     = ( ! empty( $reservation_data['class_subject_nature_of_subject'] ) ? $reservation_data['class_subject_nature_of_subject'] : [] );
+	
+
+	return array(
+					'sub_id'    => ( ! empty( $reservation_data['class_subject_id'] ) ? $reservation_data['class_subject_id'] : '' ),
+					'sub_code'  => ( ! empty( $reservation_data['class_subject_code'] ) ? $reservation_data['class_subject_code'] : '' ),
+					'vacancies' => ( ! empty( $reservation_data['class_subject_number_vacancies_offered'] ) ? $reservation_data['class_subject_number_vacancies_offered'] : '' ),
+					'scheduale' => implode( ' ', array( $start_time, $end_time, implode( ' ', $weekdays ) ) ),
+					'status'    => $status,
+					'desc'      => $msg,
+					'points'    => ( ! empty( $reservation_data['score'] ) ? $reservation_data['score'] : '' ),
+					'nature'    => implode( ' ', $nature ),
+				);
+}
 
 function generate_reservations( $class_subjects = [] ) {
 
-	$a = get_class_subjects();
-	$class_subjects = $a['data'];
 
-	global $reservation_log;
+	$class_subjects_raw = get_class_subjects();
 
-	if ( isset( $class_subjects['error_msg'] ) ) {
-		return 'Nenhuma reserva encontrada!';
+	if ( empty( $class_subjects_raw ) ) {
+		echo 'Nenhuma reserva encontrada!';
+		return false;
 	}
 
-	// Filtra disciplinas com mais de 80 vagas, disciplinas práticas, etc.
-	$filtered_class_subjects = array_filter( $class_subjects, function ($subject) {
-		return (
-			( (int) $subject['data']['number_vacancies_offered'] ) > 0 &&
-			( (int) $subject['data']['number_vacancies_offered'] ) < 80 &&
-			isset( $subject['data']['desired_time'] ) &&
-			is_string( $subject['data']['desired_time'] ) &&
-			count( parse_schedule( $subject['data']['desired_time'] ) ) > 0 &&
-			! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'estagio' ) &&
-			! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'monografia' ) &&
-			! str_contains( strtoupper( $subject['data']['group'] ), 'P' ) &&
-			isset( $subject['data']['use_on_auto_reservation'][0] ) &&
-			strtoupper( $subject['data']['use_on_auto_reservation'][0] ) === 'SIM'
-		);
-	} );
+	$class_subjects = $class_subjects_raw['data'];
 
 	if ( empty( $class_subjects ) ) {
-		return 'Não há disciplinas cadastradas para reservas.';
+		echo 'Não há disciplinas cadastradas para reservas.';
+		return false;
 	}
 
-	echo '<br />' . count( $class_subjects ) . ' disciplinas para reservas.<br />';
+	$reservation_logs        = [];
+	$filtered_class_subjects = [];
+	// Filtra disciplinas com mais de 80 vagas, disciplinas práticas, etc.
+	foreach ( $class_subjects as $class_subject ) {
+
+		$sd = $class_subject['data'];
+
+		$log_subject = [
+			'sub_id'    => $sd['id'],
+			'sub_code'  => $sd['code'],
+			'vacancies' => $sd['number_vacancies_offered'],
+			'scheduale' => $sd['desired_time'],
+			'points'    => 0,
+			'nature'    => $sd['nature_of_subject'],
+		];
+
+		if ( intval( $sd['number_vacancies_offered'] ) <= 0 ) {
+			$reservation_logs[] = generate_reservation_log( $log_subject, 'Falha', 'Número de mínimo de vagas não ofertada.' );
+			continue;
+		}
+		if ( intval( $sd['number_vacancies_offered'] ) >= 80 ) {
+			$reservation_logs[] = generate_reservation_log( $log_subject, 'Falha', 'Número de máximo de vagas excedido.' );
+			continue;
+		}
+		if ( empty( $sd['desired_time'] ) ) {
+			$reservation_logs[] = generate_reservation_log( $log_subject, 'Falha', 'Não informado horário.' );
+			continue;
+		}
+		if ( count( parse_schedule( $sd['desired_time'] ) ) <= 0 ) {
+			$reservation_logs[] = generate_reservation_log( $log_subject, 'Falha', 'Formato de horário não aceito.' );
+			continue;
+		}
+		if ( str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $sd['name_of_subject'] ), 'estagio' ) ) {
+			$reservation_logs[] = generate_reservation_log( $log_subject, 'Falha', 'Ignorado: disciplina de estágio.' );
+			continue;
+		}
+		if ( str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $sd['name_of_subject'] ), 'monografia' ) ) {
+			$reservation_logs[] = generate_reservation_log( $log_subject, 'Falha', 'Ignorado: disciplina de monografia.' );
+			continue;
+		}
+		if ( str_contains( strtoupper( $sd['group'] ), 'P' ) ) {
+			$reservation_logs[] = generate_reservation_log( $log_subject, 'Falha', 'Ignorado: disciplina prática.' );
+			continue;
+		}
+		if ( 
+			! empty( $sd['use_on_auto_reservation'][0] ) && 
+			strtoupper( $sd['use_on_auto_reservation'][0] ) !== 'SIM'
+		 ) {
+			$reservation_logs[] = generate_reservation_log( $log_subject, 'Falha', 'Uso para geração de reservas desabilitado.' );
+			continue;
+		}
+
+		$filtered_class_subjects[] = $class_subject;
+
+		// return (
+		// 	( (int) $subject['data']['number_vacancies_offered'] ) > 0 &&
+		// 	( (int) $subject['data']['number_vacancies_offered'] ) < 80 &&
+		// 	isset( $subject['data']['desired_time'] ) &&
+		// 	is_string( $subject['data']['desired_time'] ) &&
+		// 	count( parse_schedule( $subject['data']['desired_time'] ) ) > 0 &&
+		// 	! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'estagio' ) &&
+		// 	! str_contains( intranet_fafar_utils_escape_and_clean_to_compare( $subject['data']['name_of_subject'] ), 'monografia' ) &&
+		// 	! str_contains( strtoupper( $subject['data']['group'] ), 'P' ) &&
+		// 	isset( $subject['data']['use_on_auto_reservation'][0] ) &&
+		// 	strtoupper( $subject['data']['use_on_auto_reservation'][0] ) === 'SIM'
+		// );
+	}
 
 	$pre_reservations_data = get_pre_reservations_data( $filtered_class_subjects );
 
@@ -101,10 +171,6 @@ function generate_reservations( $class_subjects = [] ) {
 				] ),
 			];
 
-			// echo '<br />';
-			// print_r($new_pre_reservation);
-			// echo '<br />';
-
 			$new_reservation_formatted = intranet_fafar_api_create_or_update_reservation( $new_pre_reservation );
 
 			if ( ! isset( $new_reservation_formatted['error_msg'] ) ) {
@@ -112,51 +178,69 @@ function generate_reservations( $class_subjects = [] ) {
 				$new_reservation = intranet_fafar_api_create( $new_reservation_formatted );
 
 				if ( ! isset( $new_reservation['error_msg'] ) ) {
-
 					$successes_counter++;
 
-					$reservation_log[] = array(
-						'sub_id' => $data['class_subject_id'],
-						'sub_code' => $data['class_subject_code'],
-						'vacancies' => $data['class_subject_number_vacancies_offered'],
-						'scheduale' => implode( ' ', array( $data['start_time'], $data['end_time'], implode( ' ', $data['weekdays'] ) ) ),
-						'status' => 'success',
-						'desc' => '',
-						'points' => $data['score'],
-						'nature' => $data['class_subject_nature_of_subject'],
-					);
+					$reservation_logs[] = generate_reservation_log( $data, 'Sucesso' );
 
 					$made_reservation = true;
 
 					break;
-
 				}
 
 			}
 		}
 
 		if ( ! $made_reservation ) {
-
 			$fails_counter++;
-
-			$reservation_log[] = array(
-				'sub_id' => $data['class_subject_id'],
-				'sub_code' => $data['class_subject_code'],
-				'vacancies' => $data['class_subject_number_vacancies_offered'],
-				'scheduale' => implode( ' ', array( $data['start_time'], $data['end_time'], implode( ' ', $data['weekdays'] ) ) ),
-				'status' => 'fail',
-				'desc' => 'Sem sala disponível',
-				'points' => $data['score'],
-				'nature' => $data['class_subject_nature_of_subject'],
-			);
-
+			$reservation_logs[] = generate_reservation_log( $data, 'Falha', 'Sem sala disponível.' );
 		}
-
 
 	}
 
+	echo '<br />Sucessos: ' . $successes_counter ;
+	echo '<br />Disciplina/Turma: ' . $attempts_counter ;
+	echo '<br />Erros: ' . ( $fails_counter + count( array_filter( $reservation_logs, fn( $r ) => $r['status'] === 'Falha' ) ) );
 
-	echo "<br />" . $attempts_counter . " disciplina/turma<br />" . $successes_counter . " com succeso<br />" . $fails_counter . " falhas<br />";
+	echo '<div>';
+	echo '<span><strong>Log de Reservas</strong> (' . count( $reservation_logs ) . ' logs)</span>';
+	$reservation_logs_table_html = '
+					<table class="table">
+						<thead>
+							<tr>
+								<th scope="col">#</th>
+								<th scope="col">Código</th>
+								<th scope="col">Vagas</th>
+								<th scope="col">Horário</th>
+								<th scope="col">Natureza</th>
+								<th scope="col">Pontos</th>
+								<th scope="col">Status</th>
+								<th scope="col">Desc</th>
+							</tr>
+						</thead>
+						
+						</tbody>';
+
+	$count = 1;
+	foreach ( $reservation_logs as $log ) {
+		$reservation_logs_table_html .= '
+						<tr>
+							<th scope="row">' . $count++ . '</th>
+							<td><a href="/visualizar-objeto/?id=' . $log['sub_id'] . '" blank="_target">' . $log['sub_code'] . '</a></td>
+							<td>' . $log['vacancies'] . '</td>
+							<td>' . $log['scheduale'] . '</td>
+							<td>' . $log['nature'] . '</td>
+							<td>' . $log['points'] . '</td>
+							<td>' . $log['status'] . '</td>
+							<td>' . $log['desc'] . '</td>
+						</tr>';
+	}
+
+	$reservation_logs_table_html .= '</table>';
+
+	echo $reservation_logs_table_html;
+	
+	echo '</div>';
+
 
 	return '';
 }
@@ -336,6 +420,41 @@ function parse_schedule( $input ) {
 	return $result;
 }
 
+function parse_schedule_new( $input ) {
+
+	$result = [];
+
+	// The new regex pattern to match the day, start time, end time, and ignore the dates.
+	// It captures the day abbreviation (\w{3}), the start time (\d{2}:\d{2}), and the end time (\d{2}:\d{2}).
+	preg_match_all( '/(\w{3})\s+(\d{2}:\d{2})\s+-\s+(\d{2}:\d{2})/', $input, $matches, PREG_SET_ORDER );
+
+	// Mapeamento dos dias da semana para números (Seg = 1, Ter = 2, ..., Dom = 7)
+	$days_map = [
+		'Seg' => 1, 'Ter' => 2, 'Qua' => 3,
+		'Qui' => 4, 'Sex' => 5, 'Sab' => 6, 'Dom' => 7
+	];
+
+	foreach ( $matches as $match ) {
+		// The captured groups are now at different indices.
+		$weekday_abbr = $match[1];
+		$start = $match[2];
+		$end = $match[3];
+
+		// Use the mapping to get the weekday number.
+		$weekday = $days_map[ $weekday_abbr ] ?? null;
+
+		if ( $weekday ) {
+			$result[] = [
+				'start' => $start,
+				'end' => $end,
+				'weekday' => [ (int) $weekday ]
+			];
+		}
+	}
+
+	return $result;
+}
+
 
 function convert_date( $date ) {
 	$dt = DateTime::createFromFormat( 'd/m/Y', $date );
@@ -397,23 +516,21 @@ function get_reservations() {
 
 function generate_checkpoint() {
 
-	$class_subjects = intranet_fafar_api_get_submissions_by_object_name(
-		'class_subject', 
-		[], 
-		[ 'check_permissions' => false ],
-		false
-	);
+	$class_subjects = get_class_subjects();
 
-	$reservations = intranet_fafar_api_get_submissions_by_object_name(
-		'reservation', 
-		[], 
-		[ 'check_permissions' => false ],
-		false
-	);
+	$reservations = get_reservations();
 
-	if ( empty( $class_subjects ) || empty( $reservations ) ) {
-		echo 'Sem reservas e/ou disciplinas para salvar!';
+	if ( empty( $class_subjects ) && empty( $reservations ) ) {
+		echo 'Sem reservas e disciplinas para salvar!';
 		return false;
+	}
+
+	if ( empty( $class_subjects ) ) {
+		$class_subjects = [];
+	}
+
+	if ( empty( $reservations ) ) {
+		$reservations = [];
 	}
 
 	$checkpoint = [
@@ -440,11 +557,15 @@ function generate_checkpoint() {
         $success = $wp_filesystem->put_contents( $file_path, $file_content, FS_CHMOD_FILE );
 
         if ( $success ) {
-            echo "<br />Disciplinas: " . count( $class_subjects['data'] );
-            echo "<br />Reservas: " . count( $reservations['data'] );
+			if ( ! empty( $class_subjects['data'] ) ) {
+				echo "<br />Disciplinas: " . count( $class_subjects['data'] );
+			}
+			if ( ! empty( $reservations['data'] ) ) {
+				echo "<br />Reservas: " . count( $reservations['data'] );
+			}
             echo "<br />Salvo novo checkpoint em: " . esc_html($file_path);
         } else {
-            echo "Failed to write to the file.";
+            echo "Falha ao escrever no arquivo.";
         }
     } else {
         echo "WP_Filesystem could not be initialized.";
@@ -454,12 +575,7 @@ function generate_checkpoint() {
 
 function delete_all_class_subjects() {
 
-	$class_subjects = intranet_fafar_api_get_submissions_by_object_name(
-		'class_subject', 
-		[], 
-		[ 'check_permissions' => false ],
-		false
-	);
+	$class_subjects = get_class_subjects();
 
 	if ( empty( $class_subjects ) ) return false;
 	
@@ -479,12 +595,7 @@ function delete_all_class_subjects() {
 
 function delete_all_reservations() {
 
-	$reservations = intranet_fafar_api_get_submissions_by_object_name(
-		'reservation', 
-		[], 
-		[ 'check_permissions' => false ],
-		false
-	);
+	$reservations = get_reservations();
 
 	if ( empty( $reservations ) ) return false;
 	
@@ -529,25 +640,28 @@ function use_last_checkpoint() {
 
         if ( $file_content !== false ) {
     
-			$a = delete_all_class_subjects();
-			$b = delete_all_reservations();
-			
-			if ( ! $a || ! $b ) {
-				echo 'Sem reservas e/ou disciplinas para restaurar!';
-				return false;
-			}
-
-			echo "Feito!";
+			delete_all_class_subjects();
+			delete_all_reservations();
 
 			$checkpoint = json_decode( $file_content, true );
 
-			if ( empty( $checkpoint['class_subjects'] ) || empty( $checkpoint['reservations'] ) ) {
-				echo 'Sem reservas e/ou disciplinas para restaurar!';
+			if ( empty( $checkpoint['class_subjects'] ) && empty( $checkpoint['reservations'] ) ) {
+				echo 'Sem reservas e disciplinas para restaurar!';
 				return false;
 			}
 
-			create_submissions( $checkpoint['class_subjects'] );
-			create_submissions( $checkpoint['reservations'] );
+			if ( ! empty( $checkpoint['class_subjects'] ) ) {
+				$class_subjects = json_decode( $checkpoint['class_subjects'], true );
+				create_submissions( $class_subjects );
+				echo '<br />Disciplinas restauradas: ' . count( $class_subjects ); 
+			}
+
+			if ( ! empty( $checkpoint['reservations'] ) ) {
+				$reservations = json_decode( $checkpoint['reservations'], true );
+				create_submissions( $reservations );
+				echo '<br />Reservas restauradas: ' . count( $reservations ); 
+			}
+
             
         } else {
             echo "Failed to read the contents of the file.";
@@ -557,87 +671,150 @@ function use_last_checkpoint() {
     }
 }
 
-function import_subjects() {
+function reformat_schedule( $input ) {
+	// A regex busca o dia, a hora de início e a hora de fim em cada linha.
+	// O padrão: `(\w{3})` captura 3 letras (o dia).
+	// `(\d{2}:\d{2})\s+-\s+(\d{2}:\d{2})` captura o intervalo de tempo.
+	$pattern = '/^(\w{3})\s+(\d{2}:\d{2})\s+-\s+(\d{2}:\d{2}).*$/m';
 
-	// Check if the form was submitted.
-    if ( ! empty( $_FILES['subjects_file'] ) ) {
-        
-        // Define an array of overrides for wp_handle_upload().
-        $upload_overrides = array( 'test_form' => false );
-        
-        // Use wp_handle_upload() to securely handle the upload.
-        $uploaded_file = wp_handle_upload( $_FILES['subjects_file'], $upload_overrides );
+	// O `preg_replace` substitui a string encontrada pelo novo formato.
+	// `$1` é o primeiro grupo capturado (o dia).
+	// `$2` e `$3` são o segundo e terceiro grupos (as horas).
+	// A flag `m` (multiline) permite que o ^ e $ funcionem em cada linha da string.
+	$output = preg_replace( $pattern, '$2 $3 ($1)', $input );
+	
+	// Retorna a string reformatada.
+	return $output;
+}
 
-        // Check if the file was uploaded successfully.
-        if ( isset( $uploaded_file['file'] ) ) {
-            $file_path = $uploaded_file['file'];
-            $csv_data_array = array();
+function import_class_subjects( $data, $group_owner = '' ) {
+    $error_count         = 0;
+	$duplicates_count    = 0;
+	$not_a_fafar_subject = 0;
+	$success_count       = 0;
+    $total_count         = count( $data );
 
-            // Open the uploaded CSV file for reading.
-            if ( ( $handle = fopen( $file_path, "r" ) ) !== false ) {
-                while ( ( $data = fgetcsv( $handle, 1000, ";" ) ) !== false ) {
-                    // Push each row into our array.
-                    $csv_data_array[] = $data;
-                }
-                fclose( $handle );
-            }
-
-			// It's good practice to unlink (delete) the temporary file.
-            unlink( $file_path );
-            
-            // At this point, $csv_data_array contains the data from the CSV file.
-            // You can now use this array to process the data as needed.
-            
-            // Example: print the array for verification.
-            // echo '<pre>';
-            // print_r( $csv_data_array );
-            // echo '</pre>';
-
-			$class_subjects_added   = [];
-			$class_subjects_updated = [];
-			foreach ( $csv_data_array as $class_subject ) {
-				if ( $class_subject[0] === 'Semestre' ) continue; // Pula o header
-
-				$submission = [
-					'object_name' => 'class_subject',
-					'permissions' => '777',
-					'data' => [
-						'code' => $class_subject[2],
-						'name_of_subject' => $class_subject[2],
-						'group' => $class_subject[7],
-						'course_load' => $class_subject[4],
-						'credits_of_subject' => intval( $class_subject[4] ) / 15,
-						'nature_of_subject' => 'Obrigatória',
-						'course' => $class_subject[2],
-						'level' => '',
-						'departament' => $class_subject[6],
-						'type' => '',
-						'adjustment' => '',
-						'number_vacancies_offered' => $class_subject[9],
-						'version_of_curriculum_matrix' => '',
-						'professors' => $class_subject[14],
-						'desired_time' => $class_subject[12],
-						'use_on_auto_reservation' => 'true',
-
-					]
-				];
-
-				intranet_fafar_api_create( $submission, false );
-
-				$class_subjects_added[] = $submission;
-
-			}
-
-        } else {
-            // Handle upload error.
-            echo 'File upload failed: ' . $uploaded_file['error'];
+    foreach( $data as $item ) {
+        /* 
+         * Aplica o filtro de código de disciplina se o 
+         * curso informado não for da Pós.
+         * Filtro: 
+         * Verifica se tem código e se ele tem 
+         * 'ACT', 'ALM', 'FAF', 'FAS', 'PFA' ou 'NUT' 
+         */
+        if( 
+            ! str_contains( $item['curso'], 'PPG' ) && 
+            preg_match( '/ACT|ALM|FAF|FAS|PFA|NUT/', $item['codigo'] ) !== 1
+          ) {
+            $not_a_fafar_subject++;
+            continue;
         }
+
+        // Decidimos que é melhor errar com uma optativa que com uma obrigatória
+        $nature_of_subject = 'Obrigatória';
+        if( 
+            isset( $item['natureza'] ) && 
+            intranet_fafar_utils_escape_and_clean_to_compare( $item['natureza'] ) === 'optativa'
+          ) $nature_of_subject = 'Optativa';
+        
+        /*
+         * Essa condição maluca se dá pelo fato do relatório 
+         * do SIGA - conseguido pelo colegiado -, trazer essa informação
+         * como 'Téo.' ou 'Prá.'. E para não forçar a todos que usem essa 
+         * abreviação, então se faz necessário abracar todas as possibidades 
+         */
+        $type = ( isset( $item['tipo'] ) ? $item['tipo'] : '' );
+        if( 
+            str_contains( 
+                intranet_fafar_utils_escape_and_clean_to_compare( $type ), 
+                'teo' 
+            ) 
+        ) $type = 'Teórica';
+        else if(
+            str_contains( 
+                intranet_fafar_utils_escape_and_clean_to_compare( $type ), 
+                'pra' 
+            )
+        ) $type = 'Prática';
+        else if(
+            str_contains( 
+                intranet_fafar_utils_escape_and_clean_to_compare( $type ), 
+                'amb' 
+            )
+        ) $type = 'Ambas';
+
+        // Verificar todos as colunas, exceto 'Código', 'Curso', 'Turma', 'Horario', 'Vagas'
+        $inicio                = ( isset( $item['inicio'] ) ? $item['inicio'] : '' );
+        $fim                   = ( isset( $item['fim'] ) ? $item['fim'] : '' );
+        $carga_horaria         = ( isset( $item['carga horaria'] ) ? $item['carga horaria'] : 0 );
+        $credits               = ( ( (float) $carga_horaria ) / 15 );
+        $curso                 = ( isset( $item['curso'] ) ? $item['curso'] : '' );
+        $nivel                 = ( isset( $item['nivel'] ) ? $item['nivel'] : '' );
+        $departamento          = ( isset( $item['departamento'] ) ? $item['departamento'] : '' );
+        $ajuste                = ( isset( $item['ajuste'] ) ? $item['ajuste'] : 0 );
+        $professores           = ( isset( $item['professores'] ) ? $item['professores'] : '' );
+        $matrizes_curriculares = ( isset( $item['matrizes curriculares'] ) ? $item['matrizes curriculares'] : '' );
+
+        $new_class_subject = array(
+            'code'                         => intranet_fafar_utils_escape_and_clean( $item['codigo'] ),
+            'name_of_subject'              => intranet_fafar_utils_escape_and_clean( $item['nome'] ),
+            'group'                        => intranet_fafar_utils_escape_and_clean( $item['turma'] ),
+            'nature_of_subject'            => array( $nature_of_subject ),
+            'number_vacancies_offered'     => intranet_fafar_utils_escape_and_clean( $item['vagas'] ),
+            'desired_time'                 => intranet_fafar_utils_escape_and_clean( $item['horario'] ),
+            'desired_start_date'           => intranet_fafar_utils_escape_and_clean( $inicio ),
+            'desired_end_date'             => intranet_fafar_utils_escape_and_clean( $fim ),
+            'course_load'                  => intranet_fafar_utils_escape_and_clean( $carga_horaria ),
+            'credits_of_subject'           => $credits,
+            'course'                       => array( intranet_fafar_utils_escape_and_clean( $curso ) ),
+            'level'                        => array( intranet_fafar_utils_escape_and_clean( $nivel, 'capitalized' ) ),
+            'departament'                  => array( intranet_fafar_utils_escape_and_clean( $departamento ) ),
+            'type'                         => array( intranet_fafar_utils_escape_and_clean( $type, 'capitalized' ) ),
+            'adjustment'                   => intranet_fafar_utils_escape_and_clean( $ajuste ),
+            'professors'                   => intranet_fafar_utils_escape_and_clean( $professores ),
+            'version_of_curriculum_matrix' => intranet_fafar_utils_escape_and_clean( $matrizes_curriculares ),
+			'use_on_auto_reservation'      => [ 'Sim' ],
+        );
+
+		if ( $_POST['convert_schedule_format'] ) {
+			$new_class_subject['desired_time'] = reformat_schedule( $new_class_subject['desired_time'] );
+		}
+
+        $has_class_subject = false;
+
+        foreach( $class_subjects as $class_subject ) {
+
+            if( is_the_same( $class_subject['data'], $new_class_subject ) ) $has_class_subject = true;
+
+        }
+
+        if( $has_class_subject ) {
+            $duplicates_count++;
+            continue;
+        }
+
+        $result = intranet_fafar_api_create( array( 
+            'object_name' => 'class_subject',
+            'owner'       => '',
+            'group_owner' => $group_owner,
+            'permissions' => '777',
+            'data'        => $new_class_subject, 
+         ) );
+
+         if( isset( $result['error_msg'] ) ) {
+            print_r( $result['error_msg'] );
+            $error_count++;
+         }
+
     }
 
-	render_imported_subjects_table( $class_subjects_added, $class_subjects_updated );
+    $success_count = $total_count - $duplicates_count - $error_count - $not_a_fafar_subject;
 
-	return true;
-
+	echo '<br /><span>Total: ' . $total_count . '</span>';
+	echo '<br /><span>Sucesso: ' . $success_count . '</span>';
+	echo '<br /><span>Duplicadas: ' . $duplicates_count . '</span>';
+	echo '<br /><span>Erros: ' . $error_count . '</span>';
+	echo '<br /><span>Disciplinas Não FAFAR: ' . $not_a_fafar_subject . '</span>';
 }
 
 function render_imported_subjects_table( $class_subjects_added, $class_subjects_updated ) {
@@ -717,6 +894,101 @@ function render_imported_subjects_table( $class_subjects_added, $class_subjects_
 	echo $class_subjects_updated_table_html;
 	
 	echo '</div>';
+
+}
+
+function read_csv_class_subjects() {
+
+	if ( empty( $_FILES['class_subjects_csv'] ) ) {
+		echo 'Nenhum arquivo importado.';
+		return false;
+	}
+
+	$upload_overrides = [ 'test_form' => false ];
+	$uploaded_file = wp_handle_upload( $_FILES['class_subjects_csv'], $upload_overrides );
+
+	if ( ! isset( $uploaded_file['file'] ) ) {
+		echo 'Falha ao importar o arquivo.';
+		return false;
+	}
+
+	$file_path = $uploaded_file['file'];
+	$csv_data_array = [];
+
+	if ( ( $handle = fopen( $file_path, 'r' ) ) === false ) {
+		echo 'Falha ao abrir o arquivo.';
+		return false;
+	}
+
+	$encoding = 'Windows-1252';
+
+	rewind( $handle );
+
+	$header_raw = fgetcsv( $handle, 500, ';', '"', '\\' );
+	// Limpando e tratando cada celula do header
+	$header     = array_map(
+		function ( $col ) use ( $encoding ) {
+			$col = mb_convert_encoding( $col, 'UTF-8', $encoding );
+			$col = intranet_fafar_utils_remove_accents( $col );
+			$col = strtolower( $col );
+			return trim( $col );
+		}, 
+		$header_raw
+	);
+
+	if (
+		! in_array( 'codigo', $header ) || 
+		! in_array( 'curso', $header ) || 
+		! in_array( 'turma', $header ) || 
+		! in_array( 'horario', $header ) || 
+		! in_array( 'vagas', $header )
+	) {
+		echo 'Faltando uma das colunas obrigatórias(Código, Curso, Horário, Turma e/ou Vagas).';
+        return false;
+	}
+
+	while ( ( $row_raw = fgetcsv( $handle, 500, ';', '"', '\\' ) ) !== false ) {
+		// Limpando e tratando cada celula de cada linha
+		$row = array_map(
+			function ( $col ) use ( $encoding ) {
+				$col = mb_convert_encoding( $col, 'UTF-8', $encoding );
+				$col = intranet_fafar_utils_remove_accents( $col );
+				$col = strtoupper( $col );
+				return trim( $col );
+			},
+			$row_raw
+		);
+
+		// Se a linha a ser analisada tem o mesmo tamanho que o header
+		if( count( $header ) === count( $row ) )
+			$data[] = array_combine( $header, $row );
+	}
+
+	fclose( $handle );
+
+	return $data;
+
+}
+
+function get_group_owner() {
+
+	if ( isset( $_POST['group_owner'] ) && is_string( $_POST['group_owner'] ) ) {
+		return sanitize_text_field( wp_unslash( $_POST['group_owner'] ) );
+	}
+
+	return wp_get_current_user()->roles[0];
+
+}
+
+function import_class_subjects_routine() {
+	
+	$data = read_csv_class_subjects();
+
+	if ( ! $data ) return false;
+
+	$group_owner = get_group_owner();
+
+	import_class_subjects( $data, $group_owner );
 
 }
 
@@ -806,19 +1078,30 @@ get_header(); ?>
 					<form action="/gerar-reservas?action=import-subjects" method="post" enctype="multipart/form-data">
 						<div class="mb-3">
 							<label for="formFile" class="form-label">Disciplinas</label>
-							<input class="form-control" type="file" name="subjects_file">
+							<input class="form-control" type="file" name="class_subjects_csv">
+						</div>
+						<div class="mb-3">
+							<label for="group_owner" class="form-label">Grupo Dono</label>
+							<input class="form-control" type="text" id="group_owner" name="group_owner" />
+							<div id="group_owner" class="form-text">Se você for o dono das disciplinas, não preencha</div>
+						</div>
+						<div class="mb-3 form-check">
+							<input class="form-check-input" type="checkbox" value="true" id="checkChecked" name="convert_schedule_format" checked>
+							<label class="form-check-label" for="checkChecked">
+								Converter formato do Horário
+							</label>
 						</div>
 						<button type="submit" class="btn btn-primary">Importar</button>
 					</form>
 				<?php
 			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'import-subjects' ) {
-				import_subjects();
+				import_class_subjects_routine();
 			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'generate-reservation' ) {
 				generate_reservations();
 			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'delete-class-subjects' ) {
 				delete_all_class_subjects();
 				echo "Excluído todas as disciplinas!";
-			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'delete-reservation' ) {
+			} else if ( isset( $_GET['action'] ) && $_GET['action'] === 'delete-reservations' ) {
 				delete_all_reservations();
 				echo "Excluído todas as reservas!";
 			}
