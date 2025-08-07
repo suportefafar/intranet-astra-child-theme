@@ -4185,6 +4185,10 @@ function intranet_fafar_api_update( $id, $submission, $check_permissions = true 
 	if ( isset( $submission['created_at'] ) )
 		unset( $submission['created_at'] );
 
+	if ( ! is_string( $submission['owner'] ) ) {
+		unset( $submission['owner'] );
+	}
+
 	$wpdb->update( $table_name, $submission, array( 'id' => $id ) );
 
 	do_action( 'intranet_fafar_api_after_update', $id, $submission );
