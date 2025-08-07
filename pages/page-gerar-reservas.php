@@ -160,6 +160,8 @@ function generate_reservations( $class_subjects = [] ) {
 
 			$new_reservation_formatted = intranet_fafar_api_create_or_update_reservation( $new_pre_reservation );
 
+			
+
 			if ( ! isset( $new_reservation_formatted['error_msg'] ) ) {
 
 				$new_reservation = intranet_fafar_api_create( $new_reservation_formatted );
@@ -674,12 +676,59 @@ function reformat_schedule( $input ) {
 	return $output;
 }
 
+function is_the_same( $class_subject_a, $class_subject_b ) {
+
+    /*
+     * Se já não existe por CÓDIGO, NOME e TURMA 
+     * Obs.: No caso do NOME, aplicar low case, retirar acentos e espaços
+     */
+    if( 
+        ! isset( $class_subject_a['code'] ) || 
+        ! isset( $class_subject_a['name_of_subject'] ) || 
+        ! isset( $class_subject_a['group'] )
+      ) return false;
+
+    if( 
+        ! isset( $class_subject_a['code'] ) || 
+        ! isset( $class_subject_a['name_of_subject'] ) || 
+        ! isset( $class_subject_a['group'] )
+      ) return false;
+
+    // Códigos
+    $code_a = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_a['code'] );
+    $code_b = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_b['code'] );
+
+    // Nomes
+    // $name_a = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_a['name_of_subject'] );
+    // $name_b = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_b['name_of_subject'] );
+
+    // Turmas
+    $group_a = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_a['group'] );
+    $group_b = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_b['group'] );
+
+    if( 
+        intranet_fafar_utils_escape_and_clean_to_compare( $code_a ) === intranet_fafar_utils_escape_and_clean_to_compare( $code_b ) && 
+        intranet_fafar_utils_escape_and_clean_to_compare( $name_a ) === intranet_fafar_utils_escape_and_clean_to_compare( $name_b ) && 
+        intranet_fafar_utils_escape_and_clean_to_compare( $group_a ) === intranet_fafar_utils_escape_and_clean_to_compare( $group_b )  
+      ) return true;
+
+    return false;
+
+}
+
 function import_class_subjects( $data, $group_owner = '' ) {
     $error_count         = 0;
-	$duplicates_count    = 0;
+	$uptaded_count       = 0;
+	$added_count       = 0;
 	$not_a_fafar_subject = 0;
 	$success_count       = 0;
     $total_count         = count( $data );
+
+	$class_subjects_raw = get_class_subjects();
+	$class_subjects     = $class_subjects_raw['data'];
+	
+	$class_subjects_added   = [];
+	$class_subjects_updated = [];
 
     foreach( $data as $item ) {
         /* 
@@ -768,40 +817,71 @@ function import_class_subjects( $data, $group_owner = '' ) {
 		}
 
         $has_class_subject = false;
-
+		$class_subject_to_be_updated = [];
         foreach( $class_subjects as $class_subject ) {
 
-            if( is_the_same( $class_subject['data'], $new_class_subject ) ) $has_class_subject = true;
+            if( is_the_same( $class_subject['data'], $new_class_subject ) ) {
+				$has_class_subject = true;
+				$class_subject_to_be_updated = $class_subject;
+				break;
+			}
 
         }
 
+		// Cria ou Atualiza
         if( $has_class_subject ) {
-            $duplicates_count++;
-            continue;
-        }
+			
+			$class_subject_to_be_updated['data'] = $new_class_subject;
+            
+			$result = intranet_fafar_api_update(
+				$class_subject_to_be_updated['id'],
+				$class_subject_to_be_updated,
+				false
+			);
+			
+			if( isset( $result['error_msg'] ) ) {
+				print_r( $result['error_msg'] );
+				$error_count++;
+			}
+			
+			$uptaded_count++;
+			$class_subjects_updated[] = $class_subject_to_be_updated;
+			
+        } else {
+			
+			$new_class_subject_full = array( 
+				'object_name' => 'class_subject',
+				'owner'       => '',
+				'group_owner' => $group_owner,
+				'permissions' => '777',
+				'data'        => $new_class_subject, 
+			);
+			
+			$result = intranet_fafar_api_create( $new_class_subject_full );
+			
+			if( isset( $result['error_msg'] ) ) {
+				print_r( $result['error_msg'] );
+				$error_count++;
+			}
+			
+			$added_count++;
+			
+			$class_subjects_added[] = $new_class_subject_full;
 
-        $result = intranet_fafar_api_create( array( 
-            'object_name' => 'class_subject',
-            'owner'       => '',
-            'group_owner' => $group_owner,
-            'permissions' => '777',
-            'data'        => $new_class_subject, 
-         ) );
-
-         if( isset( $result['error_msg'] ) ) {
-            print_r( $result['error_msg'] );
-            $error_count++;
-         }
+		}
 
     }
 
-    $success_count = $total_count - $duplicates_count - $error_count - $not_a_fafar_subject;
+    $success_count = $total_count - $error_count - $not_a_fafar_subject;
 
 	echo '<br /><span>Total: ' . $total_count . '</span>';
 	echo '<br /><span>Sucesso: ' . $success_count . '</span>';
-	echo '<br /><span>Duplicadas: ' . $duplicates_count . '</span>';
+	echo '<br /><span>Adicionadas: ' . $added_count . '</span>';
+	echo '<br /><span>Atualizadas: ' . $uptaded_count . '</span>';
 	echo '<br /><span>Erros: ' . $error_count . '</span>';
 	echo '<br /><span>Disciplinas Não FAFAR: ' . $not_a_fafar_subject . '</span>';
+
+	render_imported_subjects_table( $class_subjects_added, $class_subjects_updated );
 }
 
 function render_imported_subjects_table( $class_subjects_added, $class_subjects_updated ) {
