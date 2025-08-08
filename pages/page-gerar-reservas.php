@@ -42,7 +42,6 @@ function generate_reservation_log( $reservation_data, $status = 'success', $msg 
 
 function generate_reservations( $class_subjects = [] ) {
 
-
 	$class_subjects_raw = get_class_subjects();
 
 	if ( empty( $class_subjects_raw ) ) {
@@ -112,9 +111,10 @@ function generate_reservations( $class_subjects = [] ) {
 		$filtered_class_subjects[] = $class_subject;
 	}
 
+	// Cria o array de objetos de RESERVAS, com as disciplinas
 	$pre_reservations_data = get_pre_reservations_data( $filtered_class_subjects );
 
-	// Adicionar pontuação nas disciplinas
+	// Adicionar pontuação nas DISCIPLINAS, já dentro das RESERVAS 
 	$pre_reservations_pointed = set_points_to_subjects( $pre_reservations_data );
 
 	// Ordenar pela pontuação recebida
@@ -138,7 +138,7 @@ function generate_reservations( $class_subjects = [] ) {
 
 		$possible_rooms = array_filter(
 			$classrooms,
-			fn( $room ) => $room['data']['capacity'] >= $pre_reservation_pointed['class_subject_number_vacancies_offered']
+			fn( $room ) => intval( $room['data']['capacity'] ) >= $pre_reservation_pointed['class_subject_number_vacancies_offered']
 		);
 
 		$made_reservation = false;
@@ -268,7 +268,7 @@ function set_points_to_subjects( $pre_reservations ) {
 			$w_n = 1;
 		}
 
-		$pre_reservation['score'] = ( ( (int) $pre_reservation['class_subject_number_vacancies_offered'] * $w_v ) + ( $scheduales_qtd * $w_t ) ) * $w_n;
+		$pre_reservation['score'] = ( ( intval( $pre_reservation['class_subject_number_vacancies_offered'] ) * $w_v ) + ( $scheduales_qtd * $w_t ) ) * $w_n;
 	}
 
 	return $pre_reservations;
@@ -276,6 +276,13 @@ function set_points_to_subjects( $pre_reservations ) {
 }
 
 function get_pre_reservations_data( $class_subjects ) {
+
+	/* 
+	 * Início do semestre
+	 * Seria 11/08, mas para tem um evento na 3061 nesse dia, o que faz o resto de quase todas as outras segundas ficerem livres
+	 */ 
+	$START_OF_SEMESTER = '18/08/2025';
+	$END_OF_SEMESTER   = '13/12/2025';
 
 	$pre_reservations_data = array();
 
@@ -285,41 +292,41 @@ function get_pre_reservations_data( $class_subjects ) {
 
 		foreach ( $schedules as $schedule ) {
 
-			/* 
-			 * Início do semestre
-			 * Seria 11/08, mas para tem um evento na 3061 nesse dia, o que faz o resto de quase todas as outras segundas ficerem livres
-			 */ 
-			$date = '18/08/2025'; 
+			$date = $START_OF_SEMESTER; 
 			if (
 				isset( $subject['data']['desired_start_date'] ) && $subject['data']['desired_start_date']
-			)
+			) {
 				$date = $subject['data']['desired_start_date'];
+			}
 
-			// Fim do semestre
-			$end_date = '13/12/2025';
+			$end_date = $END_OF_SEMESTER;
 			if (
 				isset( $subject['data']['desired_end_date'] ) && $subject['data']['desired_end_date']
-			)
+			) {
 				$end_date = $subject['data']['desired_end_date'];
+			}
 
 			$new_pre_reservation_data = array(
-				'class_subject_id' => $subject['id'],
-				'class_subject_group' => [ $subject['data']['group'] ],
-				'class_subject_code' => $subject['data']['code'],
+				'class_subject_id'                       => $subject['id'],
+				'class_subject_group'                    => [ $subject['data']['group'] ],
+				'class_subject_code'                     => $subject['data']['code'],
 				'class_subject_number_vacancies_offered' => $subject['data']['number_vacancies_offered'],
-				'class_subject_nature_of_subject' => $subject['data']['nature_of_subject'],
-				'start_time' => $schedule['start'],
-				'end_time' => $schedule['end'],
-				'weekdays' => $schedule['weekday'],
-				'date' => $date,
-				'end_date' => $end_date,
-				'desired_time' => $subject['data']['desired_time'],
-				'class_subject_group_owner' => $subject['group_owner'],
+				'class_subject_nature_of_subject'        => $subject['data']['nature_of_subject'],
+				'start_time'                             => $schedule['start'],
+				'end_time'                               => $schedule['end'],
+				'weekdays'                               => $schedule['weekday'],
+				'date'                                   => $date,
+				'end_date'                               => $end_date,
+				'desired_time'                           => $subject['data']['desired_time'],
+				'class_subject_group_owner'              => $subject['group_owner'],
 			);
 
 			$index = index_of_reservation( $new_pre_reservation_data, $pre_reservations_data );
 			if ( $index > -1 ) {
-				$pre_reservations_data[ $index ]['class_subject_number_vacancies_offered'] += (int) $new_pre_reservation_data['class_subject_number_vacancies_offered'];
+				$vacacies_a = intval( $pre_reservations_data[ $index ]['class_subject_number_vacancies_offered'] );
+				$vacacies_b = intval( $new_pre_reservation_data[ $index ]['class_subject_number_vacancies_offered'] );
+
+				$pre_reservations_data[ $index ]['class_subject_number_vacancies_offered'] = (int) $vacacies_a + $vacacies_b;
 				$pre_reservations_data[ $index ]['class_subject_group'][] = $new_pre_reservation_data['class_subject_group'][0];
 			} else {
 				$pre_reservations_data[] = $new_pre_reservation_data;
