@@ -517,6 +517,20 @@ function get_reservations() {
 	);
 }
 
+function create_folder_if_not_exists( $folder_name ) {
+    
+    $upload_dir = wp_upload_dir();
+    $target_dir = $upload_dir['basedir'] . '/' . $folder_name;
+    if ( ! file_exists( $target_dir ) ) {
+        if ( ! wp_mkdir_p( $target_dir ) ) {
+			echo "Erro ao criar a pasta";
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function generate_checkpoint() {
 
 	$class_subjects = get_class_subjects();
@@ -544,7 +558,7 @@ function generate_checkpoint() {
     $upload_dir_info = wp_upload_dir();
     $upload_dir_path = $upload_dir_info['basedir'];
 
-    $filename = 'last-checkpoint.json';
+    $filename = 'last-checkpoint-' . time() . '.json';
     $file_path = trailingslashit( $upload_dir_path ) . $filename;
 
     $file_content = json_encode( $checkpoint );
@@ -567,6 +581,8 @@ function generate_checkpoint() {
 				echo "<br />Reservas: " . count( $reservations['data'] );
 			}
             echo "<br />Salvo novo checkpoint em: " . esc_html($file_path);
+
+			update_option( 'intranet-fafar-last-checkpoint-filename', $filename );
         } else {
             echo "Falha ao escrever no arquivo.";
         }
@@ -628,7 +644,7 @@ function use_last_checkpoint() {
     $upload_dir_info = wp_upload_dir();
     $upload_dir_path = $upload_dir_info['basedir'];
 
-    $filename = 'last-checkpoint.json';
+    $filename  = get_option( 'intranet-fafar-last-checkpoint-filename' );
     $file_path = trailingslashit( $upload_dir_path ) . $filename;
 
     global $wp_filesystem;
@@ -655,22 +671,28 @@ function use_last_checkpoint() {
 
 			if ( ! empty( $checkpoint['class_subjects'] ) ) {
 				$class_subjects = json_decode( $checkpoint['class_subjects'], true );
-				create_submissions( $class_subjects );
-				echo '<br />Disciplinas restauradas: ' . count( $class_subjects ); 
+
+				if ( $class_subjects ) {
+					create_submissions( $class_subjects );
+					echo '<br />Disciplinas restauradas: ' . count( $class_subjects ); 
+				}
 			}
 
 			if ( ! empty( $checkpoint['reservations'] ) ) {
 				$reservations = json_decode( $checkpoint['reservations'], true );
-				create_submissions( $reservations );
-				echo '<br />Reservas restauradas: ' . count( $reservations ); 
+
+				if ( is_array( $reservations ) ) {
+					create_submissions( $reservations );
+					echo '<br />Reservas restauradas: ' . count( $reservations ); 
+				} 
 			}
 
             
         } else {
-            echo "Failed to read the contents of the file.";
+            echo "Falha ao ler o conteúdo do arquivo.";
         }
     } else {
-        echo "The file " . esc_html($file_path) . " does not exist or WP_Filesystem could not be initialized.";
+        echo "O arquivo " . esc_html($file_path) . " não existe ou WP_Filesystem pode não ter sido inicializado.";
     }
 }
 
