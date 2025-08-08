@@ -99,7 +99,35 @@ get_header(); ?>
 
 	<!-- CALENDER -->
 
-	<div id="calendar"></div>
+	<div class="d-flex gap-3">
+		<div id="calendar"></div>
+		<div>
+			<table class="table border-end">
+				<thead>
+					<tr>
+						<th class="text-center" scope="col">Sala</th>
+						<th class="text-center" scope="col">Bloco</th>
+						<th class="text-center" scope="col">Andar</th>
+						<th class="text-center" scope="col">Capacidade</th>
+					</tr>
+				</thead>
+				<tbody>
+				<?php
+					foreach ( $classrooms as $classroom ) {
+						echo '
+							<tr>
+								<th class="text-center" scope="row">' . $classroom['data']['number'] . '</th>
+								<td class="text-center">' . $classroom['data']['block'] . '</td>
+								<td class="text-center">' . $classroom['data']['floor'] . 'º' . '</td>
+								<td class="text-center">' . $classroom['data']['capacity'] . '</td>
+							</tr>
+						';
+					}	
+				?>
+				</tbody>
+			</table>
+		</div>
+	</div>
 
 
 	<!-- MODAL -->
