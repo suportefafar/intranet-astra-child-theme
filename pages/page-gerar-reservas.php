@@ -14,17 +14,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function generate_reservation_log( $reservation_data, $status = 'success', $msg = '' ) {
 
-	$start_time = ( ! empty( $reservation_data['start_time'] ) ? $reservation_data['start_time'] : '' );
-	$end_time   = ( ! empty( $reservation_data['end_time'] ) ? $reservation_data['end_time'] : '' );
-	$weekdays   = ( ! empty( $reservation_data['weekdays'] ) ? $reservation_data['weekdays'] : [] );
-	$nature     = ( ! empty( $reservation_data['class_subject_nature_of_subject'] ) ? $reservation_data['class_subject_nature_of_subject'] : [] );
+	$schedule = '';
+	if ( empty( $reservation_data['scheduale'] ) ) {
+		$start_time = ( ! empty( $reservation_data['start_time'] ) ? $reservation_data['start_time'] : '' );
+		$end_time   = ( ! empty( $reservation_data['end_time'] ) ? $reservation_data['end_time'] : '' );
+		$weekdays   = ( ! empty( $reservation_data['weekdays'] ) ? $reservation_data['weekdays'] : [] );
+
+		$schedule = implode( ' ', array( $start_time, $end_time, implode( ' ', $weekdays ) ) );
+	} else {
+		$schedule = $reservation_data['scheduale'];
+	}
+
+	$nature = ( ! empty( $reservation_data['class_subject_nature_of_subject'] ) ? $reservation_data['class_subject_nature_of_subject'] : [] );
 	
 
 	return array(
 					'sub_id'    => ( ! empty( $reservation_data['class_subject_id'] ) ? $reservation_data['class_subject_id'] : '' ),
 					'sub_code'  => ( ! empty( $reservation_data['class_subject_code'] ) ? $reservation_data['class_subject_code'] : '' ),
 					'vacancies' => ( ! empty( $reservation_data['class_subject_number_vacancies_offered'] ) ? $reservation_data['class_subject_number_vacancies_offered'] : '' ),
-					'scheduale' => implode( ' ', array( $start_time, $end_time, implode( ' ', $weekdays ) ) ),
+					'scheduale' => $schedule,
 					'status'    => $status,
 					'desc'      => $msg,
 					'points'    => ( ! empty( $reservation_data['score'] ) ? $reservation_data['score'] : '' ),
@@ -57,12 +65,12 @@ function generate_reservations( $class_subjects = [] ) {
 		$sd = $class_subject['data'];
 
 		$log_subject = [
-			'sub_id'    => $sd['id'],
-			'sub_code'  => $sd['code'],
-			'vacancies' => $sd['number_vacancies_offered'],
-			'scheduale' => $sd['desired_time'],
-			'points'    => 0,
-			'nature'    => $sd['nature_of_subject'],
+			'class_subject_id'                       => $class_subject['id'],
+			'class_subject_code'                     => $sd['code'],
+			'class_subject_number_vacancies_offered' => $sd['number_vacancies_offered'],
+			'scheduale'                              => $sd['desired_time'],
+			'score'                                  => 0,
+			'class_subject_nature_of_subject'        => $sd['nature_of_subject'],
 		];
 
 		if ( intval( $sd['number_vacancies_offered'] ) <= 0 ) {
@@ -159,8 +167,6 @@ function generate_reservations( $class_subjects = [] ) {
 			];
 
 			$new_reservation_formatted = intranet_fafar_api_create_or_update_reservation( $new_pre_reservation );
-
-			
 
 			if ( ! isset( $new_reservation_formatted['error_msg'] ) ) {
 
@@ -274,8 +280,11 @@ function get_pre_reservations_data( $class_subjects ) {
 
 		foreach ( $schedules as $schedule ) {
 
-			// Início do semestre
-			$date = '11/08/2025';
+			/* 
+			 * Início do semestre
+			 * Seria 11/08, mas para tem um evento na 3061 nesse dia, o que faz o resto de quase todas as outras segundas ficerem livres
+			 */ 
+			$date = '18/08/2025'; 
 			if (
 				isset( $subject['data']['desired_start_date'] ) && $subject['data']['desired_start_date']
 			)
@@ -395,7 +404,7 @@ function parse_schedule( $input ) {
 	foreach ( $matches as $match ) {
 		$start = $match[1];
 		$end = $match[2];
-		$weekday = $days_map[ $match[3] ] ?? null;
+		$weekday = $days_map[ strtoupper( $match[3] ) ] ?? null;
 
 		if ( $weekday ) {
 			$result[] = [ 
@@ -661,15 +670,9 @@ function use_last_checkpoint() {
 }
 
 function reformat_schedule( $input ) {
-	// A regex busca o dia, a hora de início e a hora de fim em cada linha.
-	// O padrão: `(\w{3})` captura 3 letras (o dia).
-	// `(\d{2}:\d{2})\s+-\s+(\d{2}:\d{2})` captura o intervalo de tempo.
+
 	$pattern = '/^(\w{3})\s+(\d{2}:\d{2})\s+-\s+(\d{2}:\d{2}).*$/m';
 
-	// O `preg_replace` substitui a string encontrada pelo novo formato.
-	// `$1` é o primeiro grupo capturado (o dia).
-	// `$2` e `$3` são o segundo e terceiro grupos (as horas).
-	// A flag `m` (multiline) permite que o ^ e $ funcionem em cada linha da string.
 	$output = preg_replace( $pattern, '$2 $3 ($1)', $input );
 	
 	// Retorna a string reformatada.
@@ -698,7 +701,7 @@ function is_the_same( $class_subject_a, $class_subject_b ) {
     $code_a = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_a['code'] );
     $code_b = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_b['code'] );
 
-    // Nomes
+    // Nomes - Prof Diego confimou que só acontecerá uma ACT123 Tópicos TF1 no semestre
     // $name_a = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_a['name_of_subject'] );
     // $name_b = intranet_fafar_utils_escape_and_clean_to_compare( $class_subject_b['name_of_subject'] );
 
@@ -708,7 +711,7 @@ function is_the_same( $class_subject_a, $class_subject_b ) {
 
     if( 
         intranet_fafar_utils_escape_and_clean_to_compare( $code_a ) === intranet_fafar_utils_escape_and_clean_to_compare( $code_b ) && 
-        intranet_fafar_utils_escape_and_clean_to_compare( $name_a ) === intranet_fafar_utils_escape_and_clean_to_compare( $name_b ) && 
+        // intranet_fafar_utils_escape_and_clean_to_compare( $name_a ) === intranet_fafar_utils_escape_and_clean_to_compare( $name_b ) && 
         intranet_fafar_utils_escape_and_clean_to_compare( $group_a ) === intranet_fafar_utils_escape_and_clean_to_compare( $group_b )  
       ) return true;
 
@@ -757,7 +760,7 @@ function import_class_subjects( $data, $group_owner = '' ) {
          * Essa condição maluca se dá pelo fato do relatório 
          * do SIGA - conseguido pelo colegiado -, trazer essa informação
          * como 'Téo.' ou 'Prá.'. E para não forçar a todos que usem essa 
-         * abreviação, então se faz necessário abracar todas as possibidades 
+         * abreviação, então se faz necessário abracar todas as possibidades
          */
         $type = ( isset( $item['tipo'] ) ? $item['tipo'] : '' );
         if( 
@@ -791,6 +794,10 @@ function import_class_subjects( $data, $group_owner = '' ) {
         $professores           = ( isset( $item['professores'] ) ? $item['professores'] : '' );
         $matrizes_curriculares = ( isset( $item['matrizes curriculares'] ) ? $item['matrizes curriculares'] : '' );
 
+		if ( $_POST['convert_schedule_format'] ) {
+			$item['horario'] = reformat_schedule( $item['horario'] );
+		}
+
         $new_class_subject = array(
             'code'                         => intranet_fafar_utils_escape_and_clean( $item['codigo'] ),
             'name_of_subject'              => intranet_fafar_utils_escape_and_clean( $item['nome'] ),
@@ -811,10 +818,6 @@ function import_class_subjects( $data, $group_owner = '' ) {
             'version_of_curriculum_matrix' => intranet_fafar_utils_escape_and_clean( $matrizes_curriculares ),
 			'use_on_auto_reservation'      => [ 'Sim' ],
         );
-
-		if ( $_POST['convert_schedule_format'] ) {
-			$new_class_subject['desired_time'] = reformat_schedule( $new_class_subject['desired_time'] );
-		}
 
         $has_class_subject = false;
 		$class_subject_to_be_updated = [];
