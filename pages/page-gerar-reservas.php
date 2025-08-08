@@ -74,7 +74,7 @@ function generate_reservations( $class_subjects = [] ) {
 		];
 
 		if ( intval( $sd['number_vacancies_offered'] ) <= 0 ) {
-			$reservation_logs[] = generate_reservation_log( $log_subject, 'Falha', 'Número de mínimo de vagas não ofertada.' );
+			$reservation_logs[] = generate_reservation_log( $log_subject, 'Falha', 'Nenhuma vaga ofertada.' );
 			continue;
 		}
 		if ( intval( $sd['number_vacancies_offered'] ) >= 80 ) {
@@ -195,6 +195,11 @@ function generate_reservations( $class_subjects = [] ) {
 	echo '<br />Sucessos: ' . $successes_counter ;
 	echo '<br />Disciplina/Turma: ' . $attempts_counter ;
 	echo '<br />Erros: ' . ( $fails_counter + count( array_filter( $reservation_logs, fn( $r ) => $r['status'] === 'Falha' ) ) );
+	echo '<br /> - Sem Sala: ' . count( array_filter( $reservation_logs, fn( $r ) => $r['desc'] === 'Sem sala disponível.' ) );
+	echo '<br /> - Não informado horário: ' . count( array_filter( $reservation_logs, fn( $r ) => $r['desc'] === 'Não informado horário' ) );
+	echo '<br /> - Formato de horário não aceito: ' . count( array_filter( $reservation_logs, fn( $r ) => $r['desc'] === 'Formato de horário não aceito.' ) );
+	echo '<br /> - Número de máximo de vagas excedido: ' . count( array_filter( $reservation_logs, fn( $r ) => $r['desc'] === 'Número de máximo de vagas excedido.' ) );
+	echo '<br /> - Nenhuma vaga ofertada: ' . count( array_filter( $reservation_logs, fn( $r ) => $r['desc'] === 'Nenhuma vaga ofertada.' ) );
 
 	echo '<div>';
 	echo '<span><strong>Log de Reservas</strong> (' . count( $reservation_logs ) . ' logs)</span>';
@@ -213,7 +218,7 @@ function generate_reservations( $class_subjects = [] ) {
 							</tr>
 						</thead>
 						
-						</tbody>';
+						<tbody>';
 
 	$count = 1;
 	foreach ( $reservation_logs as $log ) {
@@ -230,7 +235,7 @@ function generate_reservations( $class_subjects = [] ) {
 						</tr>';
 	}
 
-	$reservation_logs_table_html .= '</table>';
+	$reservation_logs_table_html .= '</tbody></table>';
 
 	echo $reservation_logs_table_html;
 	
@@ -905,7 +910,7 @@ function render_imported_subjects_table( $class_subjects_added, $class_subjects_
 							</tr>
 						</thead>
 						
-						</tbody>';
+						<tbody>';
 
 	$count = 1;
 	foreach ( $class_subjects_added as $added ) {
@@ -921,7 +926,7 @@ function render_imported_subjects_table( $class_subjects_added, $class_subjects_
 						</tr>';
 	}
 
-	$class_subjects_added_table_html .= '</table>';
+	$class_subjects_added_table_html .= '</tbody></table>';
 
 	echo $class_subjects_added_table_html;
 	
@@ -943,7 +948,7 @@ function render_imported_subjects_table( $class_subjects_added, $class_subjects_
 							</tr>
 						</thead>
 						
-						</tbody>';
+						<tbody>';
 
 	$count = 1;
 	foreach ( $class_subjects_updated as $updated ) {
@@ -959,7 +964,7 @@ function render_imported_subjects_table( $class_subjects_added, $class_subjects_
 						</tr>';
 	}
 
-	$class_subjects_updated_table_html .= '</table>';
+	$class_subjects_updated_table_html .= '</tbody></table>';
 
 	echo $class_subjects_updated_table_html;
 	
