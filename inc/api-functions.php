@@ -861,7 +861,7 @@ function intranet_fafar_api_get_service_tickets_handler( $request ) {
 		$query_params['keyword'] = $service_report;
 	}
 
-	error_log( print_r( $query_params, true ) );
+	// error_log( print_r( $query_params, true ) );
 
 	$submissions = intranet_fafar_api_read( args: $query_params );
 
@@ -1211,7 +1211,7 @@ function intranet_fafar_api_get_service_ticket_by_id( $id ) {
 function intranet_fafar_api_send_email( $request ) {
 	$request_data = $request->get_json_params();
 
-	error_log( print_r( $request_data, true ) );
+	// error_log( print_r( $request_data, true ) );
 
 	if ( ! $request_data ) {
 		return new WP_Error(
@@ -2864,15 +2864,19 @@ function intranet_fafar_api_get_submissions_by_object_name(
 	// Merge user-provided arguments with defaults
 	$args = wp_parse_args( $args, $defaults );
 
+	$filters = [];
+	if ( ! empty( $args['filters'] ) && is_array( $args['filters'] ) ) {
+		$filters = $args['filters'];
+	}
+	$filters[] = [
+		'column' => 'object_name',
+		'value' => $object_name,
+		'operator' => '=',
+	];
+
 	$submissions = intranet_fafar_api_read(
 		args: array(
-			'filters' => array(
-				array(
-					'column' => 'object_name',
-					'value' => $object_name,
-					'operator' => '=',
-				),
-			),
+			'filters' => $filters,
 			'order_by' => $order_by,
 			'check_permissions' => $args['check_permissions'],
 			'check_is_active' => $args['check_is_active'],
@@ -3958,7 +3962,7 @@ function intranet_fafar_api_read( $query = '', $check_permissions = true, $check
 		$full_query .= " LIMIT {$args['per_page']} OFFSET $offset";
 	}
 
-	error_log( $full_query );
+	// error_log( $full_query );
 
 	// Criar as tabelas temporárias e indexá-las, se necessário
 	if ( ! empty( $temporary_tables ) && ! empty( $index_temporary_tables ) ) {
