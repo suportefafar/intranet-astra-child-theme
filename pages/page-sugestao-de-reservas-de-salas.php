@@ -386,6 +386,10 @@ function sugestion_routine( $reservation ) {
 	}
 
 	$max_sub_levels = 10;
+	if ( ! empty( $_POST['max_sub_levels'] ) && is_numeric( $_POST['max_sub_levels'] ) ) {
+		$max_sub_levels = $_POST['max_sub_levels'];
+	}
+
 	if ( ( $ANTI_LOOP++ ) === $max_sub_levels ) {
 		$HINTS[] = [ 'Sub-Níveis máximo(' . $max_sub_levels . ') de procura alcançado' ];
 		$ANTI_LOOP = 0;
@@ -561,7 +565,7 @@ get_header(); ?>
 		</div>
 		<div class="form-group mb-3">
 			<label for="capacity">* Sub-níveis </label>
-			<input type="number" class="form-control" id="capacity" name="max_sub_levels" placeholder="10" value="-1"
+			<input type="number" class="form-control" id="capacity" name="max_sub_levels" min="1" max="200" placeholder="10" value="10"
 				aria-required="true" required />
 		</div>
 		<button type="submit" class="btn btn-primary">Buscar Salas</button>
