@@ -99,7 +99,7 @@ get_header(); ?>
 
 	<!-- CALENDER -->
 
-	<div class="d-flex gap-3">
+	<div class="container-reservas">
 		<div id="calendar"></div>
 		<div>
 			<table class="table border-end">
