@@ -83,6 +83,8 @@ get_header(); ?>
 	<?php else : ?>
 		<h5>1/2 - Informações básicas</h5>
 		<br />
+		<a href="/sugestao-de-reservas-de-salas" class="btn btn-secondary">Sugestões</a>
+		<br />
 		<form id="form-buscar-salas" class="mb-5">
 			<div class="form-group mb-3">
 				<label for="event_date">* Dia do Evento </label>
