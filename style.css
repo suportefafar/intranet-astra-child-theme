@@ -306,3 +306,19 @@ table.fc-col-header {
   margin: 0;
   padding: 0;
 }
+
+/*
+ * Página de Reservas
+ * 
+ */
+.container-reservas {
+  display: flex;
+  gap: 2rem;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .container-reservas {
+    flex-direction: row;
+  }
+}
