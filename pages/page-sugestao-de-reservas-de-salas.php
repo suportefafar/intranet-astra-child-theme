@@ -15,7 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 $CURRENT_CLASSROOM          = null;
 $POSSIBLES_CLASSROOMS       = [];
 $POSSIBLES_CLASSROOMS_INDEX = 0;
-$HINTS                      = [];
+$PATHS                      = [];
+$ANTI_LOOP                  = 0;
+$PATHS_COUNTER              = [ 'LEVEL' => 0, 'SUB_LEVEL' => 0 ];
 
 function fafar_intranet_format_date_local( $dt ) {
 	return DateTime::createFromFormat( 'Y-m-d', $dt )->format( 'd/m/Y' );
@@ -373,32 +375,28 @@ function is_class_subject_multi_day( $class_subject ) {
 	
 }
 
-$ANTI_LOOP = 0;
-$ANTI_LONG_DURATION_LOAD = 0;
+function throw_on_path( $arr ) {
+	global $PATHS, $PATHS_COUNTER;
 
-function sugestion_routine( $reservation ) {
-	global $ANTI_LOOP, $HINTS, $ANTI_LONG_DURATION_LOAD;
+	$level     = ( $PATHS_COUNTER['LEVEL']++ );
+	//$sub_level = ( $PATHS_COUNTER['SUB_LEVEL']++ );
 
-	if ( ( $ANTI_LONG_DURATION_LOAD++ ) === -1 ) {
-		$HINTS[] = [ 'END LONG FORCED' ];
-		$ANTI_LOOP = 2;
-		return false;
-	}
+	//$PATHS[$level][$sub_level] = $arr;
+	$PATHS[$level] = $arr;
+}
 
-	$max_sub_levels = 10;
+function suggestion_routine( $reservation ) {
+	global $ANTI_LOOP;
+
+	$max_sub_levels = 3;
 	if ( ! empty( $_POST['max_sub_levels'] ) && is_numeric( $_POST['max_sub_levels'] ) ) {
 		$max_sub_levels = $_POST['max_sub_levels'];
 	}
 
 	if ( ( $ANTI_LOOP++ ) === $max_sub_levels ) {
-		$HINTS[] = [ 'Sub-Níveis máximo(' . $max_sub_levels . ') de procura alcançado' ];
+		throw_on_path( [ 'Sub-Níveis máximo(' . $max_sub_levels . ') de procura alcançado' ] );
 		$ANTI_LOOP = 0;
 		return false;
-	}
-
-	if ( wp_get_environment_type() !== 'production' ) {
-		error_log( print_r( "NOOOOVA!", true ) );
-		error_log( print_r( $reservation, true ) );
 	}
 
 	$capacity = 0;
@@ -418,7 +416,7 @@ function sugestion_routine( $reservation ) {
 		
 		if( count( $overlaps ) === 0 ) {
 			// Deu bom!!
-			$HINTS[] = $reservation;
+			throw_on_path( $reservation ); 
 			return true;
 		}
 
@@ -430,6 +428,13 @@ function sugestion_routine( $reservation ) {
 
 		// Não achou? Não existe?
 		if ( ! $class_subject ) continue;
+
+		if (
+			! empty( $reservation['class_subject']['id'] ) && 
+			$reservation['class_subject']['id'] === $class_subject['id'] 
+		) {
+			continue;
+		}
 
 		// Transforma o campo 'Horário' da disciplina
 		$schedules = parse_schedule( $class_subject['data']['desired_time'] );
@@ -449,12 +454,11 @@ function sugestion_routine( $reservation ) {
 		];
 
 		// Tenta achar alguma sala vaga para essa disciplina que tá no caminho da anterior
-		if ( ! sugestion_routine( $silly_reservation ) ) {
+		if ( ! suggestion_routine( $silly_reservation ) ) {
 			continue;
 		} else {
 			// Deu bom!!
-			$HINTS[] = $silly_reservation;
-			$HINTS[] = $reservation;
+			throw_on_path( $reservation ); 
 			return true;
 		}
 		
@@ -465,16 +469,16 @@ function sugestion_routine( $reservation ) {
 }
 
 function lets_get_it_started() {
-	global $HINTS;	
+	global $PATHS;	
 
 	$raw_reservation = [
-		'date'       => '2025-08-18',//$_POST['date'] ,
-		'end_date'   => '2025-12-13',//$_POST['end_date'] ,
-		'start_time' => '08:20',//'09:00',//$_POST['start_time'] ,
-		'end_time'   => '10:00',//'11:30',//$_POST['end_time'] ,
+		'date'       => '2025-08-18', //$_POST['date'] ,
+		'end_date'   => '2025-12-13', //$_POST['end_date'] ,
+		'start_time' => '13:30', //'09:00',//$_POST['start_time'] ,
+		'end_time'   => '17:30', //'11:30',//$_POST['end_time'] ,
 		'frequency'  => [ 'weekly' ],
-		'weekdays'   => [ '2' ],//[ '1' ],//$_POST['weekdays'],
-		'capacity'   => '74',//'50',//$_POST['capacity'],
+		'weekdays'   => [ '1' ], //[ '1' ],//$_POST['weekdays'],
+		'capacity'   => '18', //'50',//$_POST['capacity'],
 	];
 
 	if ( wp_get_environment_type() === 'production' ) {
@@ -489,11 +493,39 @@ function lets_get_it_started() {
 		];
 	}
 
-	sugestion_routine( $raw_reservation );
+	suggestion_routine( $raw_reservation );
 
-	print_r( '<pre>' );
-	print_r( $HINTS );
-	print_r( '</pre>' );
+	// print_r( '<pre>' );
+	// print_r( $PATHS );
+	// print_r( '</pre>' );
+
+	$suggestions = array_filter( $PATHS, fn( $item ) => ( empty( $item[0] ) ) );
+
+	echo '<h5>' . count( $suggestions ) . ' passos encontrados.</h5>';
+
+	echo '<ol class="list-group list-group-numbered">';
+	foreach ( $suggestions as $suggestion_item ) {
+		if ( ! empty( $suggestion_item[0] ) && is_string( $suggestion_item[0] ) ) continue;
+		if ( empty( $suggestion_item['class_subject'] ) && empty( $suggestion_item['place'] )  ) continue;
+
+		$place = intranet_fafar_api_get_submission_by_id( $suggestion_item['place'][0], false );
+
+		$place_desc = '----';
+		if ( ! empty( $place['data']['number'] ) ) { 
+			$place_desc = $place['data']['number'];
+		}
+
+		$subject_desc = 'SUA RESERVA';
+		if ( ! empty( $suggestion_item['class_subject'] ) ) {
+			$code  = $suggestion_item['class_subject']['data']['code'];
+			$group = $suggestion_item['class_subject']['data']['group'];
+
+			$subject_desc = $code . '/' . $group;
+		}
+ 
+		echo '<li class="list-group-item">Inserir <b>' . $subject_desc . '</b> na <b>' . $place_desc . '</b></li>';
+	}
+	echo '</ol>';
 
 }
 
@@ -521,17 +553,17 @@ get_header(); ?>
 -->
 
 	<br />
-	<h5>Sugestão</h5>
+	<h5>Sugestão (Beta)</h5>
 	<br />
 	<form action="/sugestao-de-reservas-de-salas?action=search" method="post" enctype="multipart/form-data" class="mb-5">
 		<div class="form-group mb-3">
 			<label for="event_date">* Data início </label>
-			<input type="date" class="form-control" id="event_date" name="date" min="2024-09-10"
+			<input type="date" class="form-control" id="date" name="date" min="2024-09-10"
 				aria-required="true" required />
 		</div>
 		<div class="form-group mb-3">
 			<label for="event_date">* Data fim </label>
-			<input type="date" class="form-control" id="event_date" name="end_date" min="2024-09-10"
+			<input type="date" class="form-control" id="end_date" name="end_date" min="2024-09-10"
 				aria-required="true" required />
 		</div>
 		<div class="form-group mb-3">
@@ -542,7 +574,7 @@ get_header(); ?>
 			<label for="end_time">* Hora Fim </label>
 			<input type="time" class="form-control" id="end_time" name="end_time" aria-required="true" required />
 		</div>
-		<div class="btn-group" role="group" aria-label="Basic checkbox toggle button group">
+		<div class="form-group mb-3 btn-group" role="group" aria-label="Basic checkbox toggle button group">
 			<input type="checkbox" class="btn-check" id="btncheck1" autocomplete="off" value="1" name="weekdays[]">
 			<label class="btn btn-outline-primary" for="btncheck1">Segunda</label>
 
@@ -565,7 +597,7 @@ get_header(); ?>
 		</div>
 		<div class="form-group mb-3">
 			<label for="capacity">* Sub-níveis </label>
-			<input type="number" class="form-control" id="capacity" name="max_sub_levels" min="1" max="200" placeholder="10" value="10"
+			<input type="number" class="form-control" id="capacity" name="max_sub_levels" min="1" max="200" placeholder="10" value="2"
 				aria-required="true" required />
 		</div>
 		<button type="submit" class="btn btn-primary">Buscar Salas</button>
@@ -574,9 +606,11 @@ get_header(); ?>
 		isset( $_GET['action'] ) &&
 		$_GET['action'] === 'search' 
 	) : ?>
-		<h5>Search</h5>
 		<br />
 		<?php lets_get_it_started(); ?>
+		<br />
+		<br />
+		<br />
 	<?php else : ?>
 
 		<!-- TABLES -->
