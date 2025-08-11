@@ -2257,14 +2257,6 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 
 	}
 
-
-	$skip_check_overlap = false;
-	if ( ! empty( $new_form_data['data']['rrule'] ) && $new_form_data['data']['rrule'] == $new_rrule ) {
-
-		$skip_check_overlap = true;
-
-	}
-
 	// É, pois é.... Medo....
 	$new_form_data['data']['rrule'] = $new_rrule;
 
@@ -2276,54 +2268,48 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 	 * Vou mudar re-escrever isso aqui quando o sistema de reservas já estiver bem testado.
 	 * Na verdade, essa função toda....
 	 */
-	if ( ! $skip_check_overlap ) {
 
-		$existing_reservations = intranet_fafar_api_get_reservations_by_place( $new_form_data['data']['place'][0] );
+	$existing_reservations = intranet_fafar_api_get_reservations_by_place( $new_form_data['data']['place'][0] );
 
-		/* 
-		 * Gerar as datas dos reservas existentes
-		 * Array ( [0] => 2024-02-05 00:00:00 [1] => 2024-02-02 00:00:00 [2] => ...
-		 */
-		$new_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $new_form_data['data']['rrule'] );
+	/* 
+	 * Gerar as datas dos reservas existentes
+	 * Array ( [0] => 2024-02-05 00:00:00 [1] => 2024-02-02 00:00:00 [2] => ...
+	 */
+	$new_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $new_form_data['data']['rrule'] );
 
-		if ( empty( $new_reservation_timestamps ) ) {
-			return array( 'error_msg' => 'RRULE inválido ou sem ocorrências. Confira os dados enviados.' );
-		}
+	if ( empty( $new_reservation_timestamps ) ) {
+		return array( 'error_msg' => 'RRULE inválido ou sem ocorrências. Confira os dados enviados.' );
+	}
 
 		// Aqui temos timestamps das reservas à ser registradas
-		foreach ( $new_reservation_timestamps as $new_reservation_timestamp ) {
+	foreach ( $new_reservation_timestamps as $new_reservation_timestamp ) {
+		foreach ( $existing_reservations as $existing_reservation ) {
 
-			foreach ( $existing_reservations as $existing_reservation ) {
+			/*
+			 * Essa comparação é para quando estamos fazendo atualização de uma reserva.
+			 * Nesse caso, nenhum 'timestamp' possível dessa reserva deve ser levado em consideração, 
+			 * pois ela será atualizada: suas antigas timestamps não contam mais 
+			 */
+			if ( $submission_id && $existing_reservation['id'] === $submission_id )
+				continue;
 
-				/*
-				 * Essa comparação é para quando estamos fazendo atualização de uma reserva.
-				 * Nesse caso, nenhum 'timestamp' possível dessa reserva deve ser levado em consideração, 
-				 * pois ela será atualizada: suas antigas timestamps não contam mais 
-				 */
-				if ( $submission_id && $existing_reservation['id'] === $submission_id )
-					continue;
+			// Aqui estamos gerando as timestamps de cada evento registrado
+			$existing_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $existing_reservation['data']['rrule'] );
 
-				// Aqui estamos gerando as timestamps de cada evento registrado
-				$existing_reservation_timestamps = intranet_fafar_rrule_get_all_occurrences( $existing_reservation['data']['rrule'] );
-
-				if ( empty( $existing_reservation_timestamps ) ) {
-					continue; // Pula RRULEs inválidas
-				}
-
-				foreach ( $existing_reservation_timestamps as $existing_reservation_timestamp ) {
-
-					$existing = intranet_fafar_api_get_event_start_and_end( $existing_reservation_timestamp, $existing_reservation['data']['duration'] );
-					$new = intranet_fafar_api_get_event_start_and_end( $new_reservation_timestamp, $new_form_data['data']['duration'] );
-
-					if ( intranet_fafar_api_does_reservations_overlaps( $existing, $new ) )
-						return array( 'error_msg' => 'Sala indisponível nesse horário!' );
-
-				}
-
+			if ( empty( $existing_reservation_timestamps ) ) {
+				continue; // Pula RRULEs inválidas
 			}
 
-		}
+			foreach ( $existing_reservation_timestamps as $existing_reservation_timestamp ) {
+				$existing = intranet_fafar_api_get_event_start_and_end( $existing_reservation_timestamp, $existing_reservation['data']['duration'] );
+				$new = intranet_fafar_api_get_event_start_and_end( $new_reservation_timestamp, $new_form_data['data']['duration'] );
+
+				if ( intranet_fafar_api_does_reservations_overlaps( $existing, $new ) )
+					return array( 'error_msg' => 'Sala indisponível nesse horário!' );
+				}
+			}
 	}
+	
 
 
 	// Se tudo deu certo, então devolve o objeto para ser inserido pelo plugin 'fafar-cf7crud'
