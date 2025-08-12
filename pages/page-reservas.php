@@ -109,17 +109,37 @@ get_header(); ?>
 						<th class="text-center" scope="col">Bloco</th>
 						<th class="text-center" scope="col">Andar</th>
 						<th class="text-center" scope="col">Capacidade</th>
+						<th class="text-center" scope="col">Equipamentos</th>
 					</tr>
 				</thead>
 				<tbody>
 				<?php
 					foreach ( $classrooms as $classroom ) {
+
+						$equipamets_icons = [];
+						if ( ! empty( $classroom['data']['equipaments'] ) ) {
+
+							if ( in_array( 'Computador', $classroom['data']['equipaments'] ) ) {
+								$equipamets_icons[] = '<i class="bi bi-pc-display-horizontal"></i>';
+							}
+
+							if ( in_array( 'Projetor', $classroom['data']['equipaments'] ) ) {
+								$equipamets_icons[] = '<i class="bi bi-projector"></i>';
+							}
+
+							if ( in_array( 'Som', $classroom['data']['equipaments'] ) ) {
+								$equipamets_icons[] = '<i class="bi bi-speaker"></i>';
+							}
+
+						}
+
 						echo '
 							<tr>
 								<th class="text-center" scope="row">' . $classroom['data']['number'] . '</th>
 								<td class="text-center">' . $classroom['data']['block'] . '</td>
 								<td class="text-center">' . $classroom['data']['floor'] . 'º' . '</td>
 								<td class="text-center">' . $classroom['data']['capacity'] . '</td>
+								<td class="text-center">' . implode( ' ', $equipamets_icons ) . '</td>
 							</tr>
 						';
 					}	
