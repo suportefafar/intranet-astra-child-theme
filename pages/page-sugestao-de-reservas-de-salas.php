@@ -597,7 +597,7 @@ get_header(); ?>
 		</div>
 		<div class="form-group mb-3">
 			<label for="capacity">* Sub-níveis </label>
-			<input type="number" class="form-control" id="capacity" name="max_sub_levels" min="1" max="200" placeholder="10" value="2"
+			<input type="number" class="form-control" id="max_sub_levelsmax_sub_levels" name="max_sub_levels" min="1" max="200" placeholder="10" value="2"
 				aria-required="true" required />
 		</div>
 		<button type="submit" class="btn btn-primary">Buscar Salas</button>
