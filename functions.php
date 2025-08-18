@@ -114,11 +114,6 @@ add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_mail_on_create_servic
 add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_mail_on_create_service_ticket_update', 11, 1 );
 
 /*
- * Adicionando handler para envio de email na criação de equipamentos com patrimônio para o setor de patrimônio
- */
-add_filter( 'fafar_cf7crud_before_create', 'intranet_fafar_mail_on_create_equipament', 11, 1 );
-
-/*
  * Adicionando handler para envio de email na atualização de equipamentos com patrimônio para o setor de patrimônio
  */
 add_filter( 'fafar_cf7crud_before_update', 'intranet_fafar_mail_on_update_equipament', 11, 2 );

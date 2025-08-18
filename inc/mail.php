@@ -113,59 +113,6 @@ function intranet_fafar_mail_on_create_service_ticket_update( $form_data ) {
 	return $form_data;
 }
 
-function intranet_fafar_mail_on_create_equipament( $form_data ) {
-	if ( ! isset( $form_data['object_name'] ) )
-		return $form_data;
-
-	if ( $form_data['object_name'] !== 'equipament' )
-		return $form_data;
-
-	$form_data['data'] = json_decode( $form_data['data'], true );
-
-	// Verifica se tem patrimônio
-	if ( empty( $form_data['data']['asset'] ) ) {
-		$form_data['data'] = json_encode( $form_data['data'] );
-
-		return $form_data;
-	}
-
-	// Responsável do equipamento
-	$user_info = get_userdata( $form_data['data']['applicant'][0] );
-	$applicant_name = $user_info ? $user_info->display_name : '';
-
-	// Local do equipamento
-	$place_desc = '';
-	if ( ! empty( $form_data['data']['place'][0] ) ) {
-		$place = intranet_fafar_api_get_submission_by_id( $form_data['data']['place'][0] );
-
-		if ( ! empty( $place['data'] ) ) {
-			$place_desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
-		}
-	}
-
-	$message = '
-    <p>Um novo equipamento com patrimônio foi cadastrado na Intranet FAFAR pelo nosso setor.</p>
-    <p><strong>Detalhes do equipamento:</strong></p>
-    <ul>
-      <li><strong>Patrimônio:</strong> ' . $form_data['data']['asset'] . '</li>
-      <li><strong>Responsável:</strong> ' . $applicant_name . '</li>
-      <li><strong>Local:</strong> ' . $place_desc . '</li>
-      <li><strong>Tipo:</strong> ' . $form_data['data']['object_sub_type'][0] . '</li>
-      <li><strong>Descrição:</strong> ' . $form_data['data']['desc'] . '</li>
-    </ul>
-    <p>Caso precise de mais alguma informação, não hesite em nos contatar.</p>
-  ';
-
-	$subject = 'Novo equipamento com patrimônio';
-	$to = 'spatri@farmacia.ufmg.br';
-
-	intranet_fafar_mail_notify( $to, $subject, $message );
-
-	$form_data['data'] = json_encode( $form_data['data'] );
-
-	return $form_data;
-}
-
 function intranet_fafar_mail_on_update_equipament( $form_data, $equipament_id ) {
 	if ( ! isset( $form_data['object_name'] ) )
 		return $form_data;
