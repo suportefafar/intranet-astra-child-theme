@@ -311,7 +311,7 @@ function intranet_fafar_api_delete_submission_by_id_handler( $request ) {
 
 function intranet_fafar_api_delete_submission_by_id( $id ) {
 
-	if ( ! isset( $id ) || ! $id ) {
+	if ( ! isset( $id ) || ! $id && wp_get_environment_type() === 'production' ) {
 
 		intranet_fafar_logs_register_log(
 			'ERROR',
@@ -685,7 +685,7 @@ function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
 }
 
 function intranet_fafar_api_get_loans_by_equipament( $id ) {
-	if ( ! isset( $id ) || ! $id ) {
+	if ( ! isset( $id ) || ! $id && wp_get_environment_type() === 'production' ) {
 
 		intranet_fafar_logs_register_log(
 			'ERROR',
@@ -1247,116 +1247,178 @@ function intranet_fafar_api_send_email( $request ) {
 }
 
 /**
+ * Handles a POST request to update a service ticket and create a new update entry.
+ *
+ * This function validates the incoming JSON data, retrieves the existing service ticket,
+ * checks its current status, and then updates it with a new status. It also creates a
+ * new service ticket update entry. It returns appropriate HTTP status codes and custom
+ * messages for different scenarios.
+ * 
  * Essa função, diferente das outras, trata dados recebidos por um bot.
  * Tais dados não virão de outra fonte.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error A response object on success, or a WP_Error on failure.
  */
-function intranet_fafar_api_create_service_ticket_update_handler( $request ) {
-	$request_data = $request->get_json_params();
+function intranet_fafar_api_create_service_ticket_update_handler( WP_REST_Request $request ) {
 
-	if ( ! $request_data ) {
-		return new WP_Error(
-			'rest_api_sad',
-			esc_html__( 'No data', 'intranet-fafar-api' ),
-			400,
-		);
-	}
+    // Wrap the entire function in a try-catch block for robust error handling.
+    try {
+        $request_data = $request->get_json_params();
 
-	$service_ticket = intranet_fafar_api_read(
-		args: array(
-			'filters' => array(
-				array(
-					'column' => 'object_name',
-					'value' => 'service_ticket',
-					'operator' => '=',
-				),
-				array(
-					'column' => 'data->number',
-					'value' => str_pad( $request_data['intranet_service_ticket_number'], 6, "0", STR_PAD_LEFT ),
-					'operator' => '=',
-				),
-			),
-			'single' => true,
-		)
-	);
+        // 1. Validate incoming data. Use 400 Bad Request for malformed requests.
+        if ( empty( $request_data ) ) {
+            return new WP_Error(
+                'rest_api_no_data',
+                esc_html__( 'Dados da requisição ausentes ou mal formatados.', 'intranet-fafar-api' ),
+                array( 'status' => 400 )
+            );
+        }
 
-	if ( ! $service_ticket ) {
-		return new WP_Error(
-			'rest_api_sad',
-			esc_html__( 'Nenhuma OS encontrado', 'intranet-fafar-api' ),
-			400,
-		);
-	}
+		$ticket_update = [];
 
-	if ( $service_ticket['data']['status'] === 'Finalizada' ) {
-		return rest_ensure_response( array( 'status' => 'Finalizada', 'msg' => 'OS conta como Finalizada' ) );
-	}
+        // 2. Normalize the input ticket number.
+        $ticket_update['intranet_ticket_number'] = isset( $request_data['intranet_ticket_number'] )
+            ? str_pad( $request_data['intranet_ticket_number'], 6, "0", STR_PAD_LEFT )
+            : '';
 
-	if ( $service_ticket['data']['status'] === 'Cancelada' ) {
-		return rest_ensure_response( array( 'status' => 'Cancelada', 'msg' => 'OS conta como Cancelada' ) );
-	}
+        if ( empty( $ticket_update['intranet_ticket_number'] ) ) {
+            return new WP_Error(
+                'rest_api_invalid_ticket_number',
+                esc_html__( 'Número da OS não fornecido ou inválido.', 'intranet-fafar-api' ),
+                array( 'status' => 400 )
+            );
+        }
 
-	if (
-		in_array(
-			strtolower( $request_data['last_status'] ),
-			array(
-				'encerrada',
-				'cancelada',
-			)
-		)
-	)
-		$request_data['last_status'] = 'Finalizada';
+        // 3. Fetch the service ticket.
+        $service_ticket = intranet_fafar_api_read(
+            args: array(
+                'filters' => array(
+                    array(
+                        'column'   => 'object_name',
+                        'value'    => 'service_ticket',
+                        'operator' => '=',
+                    ),
+                    array(
+                        'column'   => 'data->number',
+                        'value'    => $ticket_update['intranet_ticket_number'],
+                        'operator' => '=',
+                    ),
+                ),
+                'single' => true,
+            )
+        );
+		error_log(print_r(strtolower( $request_data['status'] ?? '' ),true));
 
-	if ( strtolower( $request_data['last_status'] ) === 'aberta' )
-		$request_data['last_status'] = 'Em andamento';
+        // Use 404 Not Found if the resource does not exist.
+        if ( ! $service_ticket ) {
+            return new WP_Error(
+                'rest_api_ticket_not_found',
+                esc_html__( 'Nenhuma Ordem de Serviço encontrada com o número fornecido: ' . $ticket_update['intranet_ticket_number'], 'intranet-fafar-api' ),
+                array( 'status' => 404 )
+            );
+        }
 
-	$new_service_ticket_update = array(
-		'object_name' => 'service_ticket_update',
-		'permissions' => '774',
-		'owner' => '1745', // ID da Marilda Coura
-		'group_owner' => 'apoio_logistico_e_operacional',
-		'data' => array(
-			'service_ticket' => $service_ticket['id'],
-			'status' => array( $request_data['last_status'] ),
-			'service_report' => $request_data['last_full_report'],
-		),
-	);
 
-	// Atualizando a propriedade 'status' da ordem de serviço
-	if ( ! isset( $new_service_ticket_update['data']['status'][0] ) ) {
-		return new WP_Error(
-			'rest_api_sad',
-			esc_html__( 'Status não informado', 'intranet-fafar-api' ),
-			400,
-		);
-	}
+        // 4. Check the current status of the service ticket.
+        // Use 200 OK if the resource is already in the correct state
+        $current_status = $service_ticket['data']['status'] ?? '';
+        if ( in_array( strtolower( $current_status ), array( 'finalizada', 'cancelada' ) ) ) {
+			return rest_ensure_response( array(
+				'success' => true,
+				'message' => sprintf(
+                    esc_html__( 'A OS já está com o status "%s".', 'intranet-fafar-api' ),
+                    $current_status
+                ),
+				'data'    => $request_data,
+        	) );
+        }
 
-	$service_ticket['data']['status'] = $new_service_ticket_update['data']['status'][0];
+        // 5. Normalize the new status based on business logic.
+        $request_data_status = strtolower( $request_data['status'] ?? '' );
+        switch ( $request_data_status ) {
+            case 'encerrada':
+                $request_data_status = 'Finalizada';
+                break;
+            case 'cancelada':
+                $request_data_status = 'Cancelada';
+                break;
+            case 'aberta':
+                $request_data_status = 'Em andamento';
+                break;
+            default:
+                // Use the provided status if it's not one of the special cases.
+                $request_data_status = $request_data['status'] ?? '';
+                break;
+        }
 
-	$result = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
+        if ( empty( $request_data_status ) ) {
+            return new WP_Error(
+                'rest_api_status_not_provided',
+                esc_html__( 'O status da OS não foi fornecido.', 'intranet-fafar-api' ),
+                array( 'status' => 400 )
+            );
+        }
 
-	if ( empty( $result ) && isset( $result['error_msg'] ) ) {
-		return new WP_Error(
-			'rest_api_sad',
-			esc_html__( 'Erro no prepararo do objeto', 'intranet-fafar-api' ),
-			400,
-		);
-	}
+        // 6. Update the service ticket's status.
+        $service_ticket['data']['status'] = $request_data_status;
+        $update_result = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
 
-	$result = intranet_fafar_api_create( $new_service_ticket_update );
+        // Use 500 Internal Server Error for unexpected failures on the server side.
+        if ( is_wp_error( $update_result ) || empty( $update_result ) ) {
+            return new WP_Error(
+                'rest_api_update_failed',
+                esc_html__( 'Falha ao atualizar a OS no banco de dados.', 'intranet-fafar-api' ),
+                array( 'status' => 500 )
+            );
+        }
 
-	if ( isset( $result['error_msg'] ) ) {
-		return new WP_Error(
-			'rest_api_sad',
-			esc_html__( 'Erro ao criar', 'intranet-fafar-api' ),
-			400,
-		);
-	}
+        // 7. Prepare and create the new service ticket update entry.
+        $new_service_ticket_update = array(
+            'object_name' => 'service_ticket_update',
+            'permissions' => '774',
+            'owner'       => '1745', // ID da Marilda Coura
+            'group_owner' => 'apoio_logistico_e_operacional',
+            'data'        => array(
+                'service_ticket' => $service_ticket['id'],
+                'status'         => [ $request_data_status ],
+                'service_report' => $request_data['full_report'] ?? '',
+            ),
+        );
 
-	$new_service_ticket_update['data'] = json_encode( $new_service_ticket_update['data'] );
+        $create_result = intranet_fafar_api_create( $new_service_ticket_update );
 
-	intranet_fafar_mail_on_create_service_ticket_update( $new_service_ticket_update );
+        // Use 500 Internal Server Error if the creation fails.
+        if ( is_wp_error( $create_result ) || isset( $create_result['error_msg'] ) ) {
+            return new WP_Error(
+                'rest_api_create_failed',
+                esc_html__( 'Falha ao criar o registro de atualização da OS.', 'intranet-fafar-api' ),
+                array( 'status' => 500 )
+            );
+        }
 
-	return rest_ensure_response( $result );
+        // 8. Trigger the email notification.
+        // It's a good practice to handle this as a background process to not delay the API response.
+        // For simplicity, we'll keep it here as in the original code.
+        intranet_fafar_mail_on_create_service_ticket_update( $new_service_ticket_update );
+
+        // 9. Return a successful response.
+        // A 200 OK status indicates the request was successful and the resource was updated.
+        return rest_ensure_response( array(
+            'success' => true,
+            'message' => esc_html__( 'OS atualizada e registro de atualização criado com sucesso.', 'intranet-fafar-api' ),
+            'data'    => $create_result,
+        ) );
+
+    } catch ( Exception $e ) {
+        // This catch-all handles any unexpected runtime exceptions.
+        error_log( 'API Exception: ' . $e->getMessage() );
+        return new WP_Error(
+            'rest_api_internal_error',
+            esc_html__( 'Ocorreu um erro inesperado no servidor. Por favor, tente novamente mais tarde.', 'intranet-fafar-api' ),
+            array( 'status' => 500 )
+        );
+    }
 }
 
 function intranet_fafar_api_get_service_ticket_updates_by_service_ticket_handler( $request ) {
@@ -3287,7 +3349,7 @@ function intranet_fafar_api_get_equipament_by_id( $id ) {
 
 function intranet_fafar_api_get_reservation_by_id( $id ) {
 
-	if ( ! isset( $id ) || ! $id ) {
+	if ( ! isset( $id ) || ! $id && wp_get_environment_type() === 'production' ) {
 
 		intranet_fafar_logs_register_log(
 			'ERROR',
@@ -3311,7 +3373,7 @@ function intranet_fafar_api_get_reservation_by_id( $id ) {
 
 	$reservation = intranet_fafar_api_read( $query );
 
-	if ( ! $reservation || count( $reservation ) == 0 ) {
+	if ( ! $reservation || count( $reservation ) == 0 && wp_get_environment_type() === 'production' ) {
 
 		intranet_fafar_logs_register_log(
 			'ERROR',
