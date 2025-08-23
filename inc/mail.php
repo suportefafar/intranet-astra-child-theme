@@ -61,7 +61,9 @@ function intranet_fafar_mail_on_create_service_ticket_update( $form_data ) {
 	if ( $form_data['object_name'] !== 'service_ticket_update' )
 		return $form_data;
 
-	$form_data['data'] = json_decode( $form_data['data'], true );
+  if ( ! is_array( $form_data['data'] ) ) {
+    $form_data['data'] = json_decode( $form_data['data'], true );
+  }
 
 	$service_ticket = null;
 	if ( ! empty( $form_data['data']['service_ticket'] ) ) {
@@ -515,7 +517,7 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
       </body>
     </html>';
 
-	if ( ! is_email( $to ) ) {
+	if ( ! is_email( $to ) && wp_get_environment_type() === 'production' ) {
 		intranet_fafar_logs_register_log(
 			'ERROR',
 			'intranet_fafar_mail_notify',
@@ -536,13 +538,13 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
 	}
 
 	if ( wp_get_environment_type() !== 'production' ) {
-		$to = 'suporte@farmacia.ufmg.br';
+		$to = 'geovani537@gmail.com';
 		$subject = '[' . wp_get_environment_type() . ' ENV] ' . $subject;
 	}
 
 	$result = wp_mail( $to, $subject, $html_mail_body_template, $headers, $attachments );
 
-	if ( ! $result ) {
+	if ( ! $result && wp_get_environment_type() === 'production' ) {
 		intranet_fafar_logs_register_log(
 			'ERROR',
 			'intranet_fafar_mail_notify',
