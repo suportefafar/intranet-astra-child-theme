@@ -414,7 +414,7 @@ wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico', 'USER_REPORT',
 									<tr>
 									<tr>
 										<td>Relatório</td>
-										<td class="fw-medium"><?php echo $update['data']['service_report']; ?></td>
+										<td class="fw-medium"><?php echo str_replace( ';', '<br /> *', str_replace( '<<<>>>', '<br />', $update['data']['service_report'] ) ); ?></td>
 									<tr>
 									<tr>
 										<td>Status</td>
