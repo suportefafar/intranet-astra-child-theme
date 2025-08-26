@@ -209,7 +209,7 @@ get_header(); ?>
 							<td class="fw-medium">
 								<?php
 								echo (
-									( isset( $equipament['data']['place'] ) ) ?
+									( ! empty( $equipament['data']['place'] ) ) ?
 									'<a 
                                                         href="./visualizar-objeto?id=' . $equipament['data']['place']['id'] . '" 
                                                         target="blank" 
