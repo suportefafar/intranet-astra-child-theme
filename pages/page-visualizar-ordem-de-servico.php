@@ -377,7 +377,8 @@ wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico', 'USER_REPORT',
 				</table>
 			</div>
 		</div>
-
+		
+		<?php if( ! $prevent_insert_update ): ?>
 		<div class="row">
 			<div class="col-12">
 				<div class="d-flex justify-content-between px-2 py-2 border-bottom border-dark mb-2">
@@ -388,6 +389,7 @@ wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico', 'USER_REPORT',
 				</div>
 			</div>
 		</div>
+		<?php endif; ?>
 
 		<div class="row">
 			<div class="col-12">
