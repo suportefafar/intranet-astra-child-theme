@@ -1235,7 +1235,7 @@ function intranet_fafar_api_get_service_ticket_by_id( $id ) {
 function intranet_fafar_api_send_email( $request ) {
 	$request_data = $request->get_json_params();
 
-	// error_log( print_r( $request_data, true ) );
+	error_log( print_r( $request_data, true ) );
 
 	if ( ! $request_data ) {
 		return new WP_Error(
