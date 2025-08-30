@@ -149,8 +149,6 @@ function intranet_fafar_logs_register_log( $category, $source, $desc, $user = nu
 		),
 	);
 
-	error_log( print_r( $submission, true ) );
-
 	intranet_fafar_api_create( $submission, true, false );
 
 }
