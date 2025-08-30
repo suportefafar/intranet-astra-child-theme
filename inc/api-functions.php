@@ -577,6 +577,29 @@ function get_incremental_service_ticker_number() {
 
 }
 
+function intranet_fafar_api_update_service_ticket( $form_data ) {
+
+	// Verificações iniciais
+	if ( ! isset( $form_data['object_name'] ) )
+		return $form_data;
+
+	if ( $form_data['object_name'] !== 'service_ticket' )
+		return $form_data;
+
+	$form_data['data'] = json_decode( $form_data['data'], true );
+
+    // This is for create a visual element of notification that a ticket was updated.
+	$form_data['data']['notification']['sector']['has_auto_update'] = true;
+
+	// Se tudo deu certo, então apenas retorna o objeto para ser inserido
+	$form_data['data'] = json_encode( $form_data['data'] );
+
+	// Retorna uma obj genérico para concluir a submissão com sucesso
+	return $form_data;
+
+}
+
+
 function intranet_fafar_api_create_rapid_service_ticket( $form_data ) {
 	// Verificações iniciais
 	if ( ! isset( $form_data['object_name'] ) )
@@ -670,8 +693,9 @@ function intranet_fafar_api_insert_update_on_service_ticket( $form_data ) {
 	if ( empty( $service_ticket ) )
 		return $service_ticket;
 
-	$service_ticket['data']['status'] = $form_data['data']['status'][0];
-
+	$service_ticket['data']['status']                              = $form_data['data']['status'][0];
+	// This is for create a visual element of notification that a ticket was updated.
+	$service_ticket['data']['notification']['owner']['has_update'] = true;
 	$service_ticket = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
 
 	if ( isset( $service_ticket['error_msg'] ) )
@@ -1360,6 +1384,13 @@ function intranet_fafar_api_create_service_ticket_update_handler( WP_REST_Reques
             );
         }
 
+		/* 
+		 * This is for create a visual element of notification that a ticket was updated.
+		 * It can be used on ticket tables lists, and expires every time the owner and 
+		 * the sector responsable for the the ticket, opens the vizualizar-ordem-de-servico page.
+		 */  
+		$service_ticket['data']['notification']['owner']['has_update']       = true;
+		$service_ticket['data']['notification']['sector']['has_auto_update'] = true;
         // 6. Update the service ticket's status.
         $service_ticket['data']['status'] = $request_data_status;
         $update_result = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
@@ -2817,9 +2848,7 @@ function intranet_fafar_api_get_submission_by_id(
 		$submission['owner'] = intranet_fafar_api_get_user_by_id( $submission['owner'] );
 	}
 
-	if ( isset( $submission['data']['place'] ) &&
-		is_array( $submission['data']['place'] ) &&
-		count( $submission['data']['place'] ) > 0 ) {
+	if ( ! empty( $submission['data']['place'][0] ) && is_string( $submission['data']['place'][0] ) ) {
 
 		$submission['data']['place'] = intranet_fafar_api_get_submission_by_id( $submission['data']['place'][0] );
 	}
