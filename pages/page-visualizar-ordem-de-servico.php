@@ -72,6 +72,24 @@ $service_ticket_departament_role_slug = $service_ticket['data']['departament_ass
 $prevent_insert_update = ( ! isset( $service_ticket_departament_role_slug ) ||
 	$role_slug !== $service_ticket_departament_role_slug );
 
+if ( ! empty( $service_ticket ) ) {
+	$to_update = false;
+	// Expires the notification prop to owner
+	if ( $user->ID === $service_ticket['owner']['ID'] && ! empty( $service_ticket['data']['notification']['owner']['has_update'] ) ) {
+		$service_ticket['data']['notification']['owner']['has_update'] = false;
+		$to_update = true;
+	}
+	// Expires the notification prop to professional target ticket sector
+	if ( ! $prevent_insert_update && ! empty( $service_ticket['data']['notification']['sector']['has_auto_update'] )  ) {
+		$service_ticket['data']['notification']['sector']['has_auto_update'] = false;
+		$to_update = true;
+	}
+	// Updates if one or the other
+	if ( $to_update ) {
+		$update_result = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
+	}
+}
+
 $prevent_write = isset( $service_ticket['data']['prevent_write'] );
 
 $service_evaluations = intranet_fafar_api_get_service_ticket_evaluation_by_id( $ID );
@@ -351,20 +369,26 @@ wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico', 'USER_REPORT',
 								<select id="select_assigned_to" class="form-select"
 									aria-label="Selecionador para prestador" <?php echo ( ( $prevent_insert_update ) ? "disabled" : "" ); ?>>
 									<?php
-									if ( ! isset( $service_ticket['data']['assigned_to'] ) )
+									if ( ! isset( $service_ticket['data']['assigned_to'] ) ) {
 										$service_ticket['data']['assigned_to'] = 0;
+									}
+
+									$assigned_to_id = $service_ticket['data']['assigned_to'];
+									if( ! empty( $service_ticket['data']['assigned_to']['ID'] ) ) {
+										$assigned_to_id = $service_ticket['data']['assigned_to']['ID'];
+									}
 
 									$users_by_departament = intranet_fafar_get_users_by_departament_as_options( $service_ticket_departament_role_slug, 'ATIVO' );
 									?>
 
-									<option value="0" <?php selected( strval( $service_ticket['data']['assigned_to'] ), 0 ); ?>>Selecione um</option>
+									<option value="0" <?php selected( strval( $assigned_to_id ), 0 ); ?>>Selecione um</option>
 
 									<?php
 
 									foreach ( $users_by_departament as $key => $value ) :
 										?>
 
-										<option value="<?= $key ?>" <?php selected( strval( $service_ticket['data']['assigned_to'] ), strval( $key ) ); ?>><?= $value ?>
+										<option value="<?= $key ?>" <?php selected( strval( $assigned_to_id ), strval( $key ) ); ?>><?= $value ?>
 										</option>
 
 										<?php
