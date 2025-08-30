@@ -169,6 +169,7 @@ function renderDataOnTable(data) {
     const action_column_data = JSON.stringify({
       id,
       permissions,
+      notification: data.notification ? data.notification : null,
     });
     // submission_data.departament_assigned_to.role_display_name
     return [
@@ -289,14 +290,26 @@ function createdAtColFormatter(current) {
 }
 
 function actionColFormatter(current) {
-  const { id, permissions } = JSON.parse(current);
+  const { id, permissions, notification } = JSON.parse(current);
 
   const prevent_write = parseInt(permissions.split("")[0]);
 
+  let notify = false;
+  if (notification && notification.owner.has_update === true) {
+    notify = true;
+  }
+
   const html_content = `
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary" href="/visualizar-ordem-de-servico/?id=${id}" target="_blank" title="Detalhes">
+      <a class="btn btn-outline-secondary position-relative" href="/visualizar-ordem-de-servico/?id=${id}" target="_blank" title="Detalhes">
         <i class="bi bi-info-lg"></i>
+        ${
+          notify
+            ? `<span class="position-absolute top-0 start-100 translate-middle p-2 bg-success border border-light rounded-circle">
+                <span class="visually-hidden">OS com Nova Atualização</span>
+              </span>`
+            : ""
+        }
       </a>
       ${
         prevent_write
@@ -333,8 +346,6 @@ async function deleteSubmission(id) {
     const response = await axios.delete(
       "/wp-json/intranet/v1/submissions/" + id
     );
-
-    //console.log(response);
 
     showAlert("Excluído com sucesso!", "success", true, 3000);
 

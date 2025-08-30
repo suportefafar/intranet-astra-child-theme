@@ -242,6 +242,7 @@ function renderDataOnTable(data) {
     const action_column_data = JSON.stringify({
       id,
       permissions,
+      notification: data.notification ? data.notification : null,
     });
 
     return [
@@ -381,12 +382,24 @@ function createdAtColFormatter(current) {
 }
 
 function actionColFormatter(current) {
-  const { id, permissions } = JSON.parse(current);
+  const { id, permissions, notification } = JSON.parse(current);
+
+  let notify = false;
+  if (notification && notification.sector.has_auto_update === true) {
+    notify = true;
+  }
 
   const html_content = `
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-primary" href="/visualizar-ordem-de-servico/?id=${id}" target="_blank" title="Detalhes">
+      <a class="btn btn-outline-primary position-relative" href="/visualizar-ordem-de-servico/?id=${id}" target="_blank" title="Detalhes">
         <i class="bi bi-folder2-open"></i>
+        ${
+          notify
+            ? `<span class="position-absolute top-0 start-100 translate-middle p-2 bg-success border border-light rounded-circle">
+                <span class="visually-hidden">OS com Nova Atualização</span>
+              </span>`
+            : ""
+        }
       </a>
     </div>`;
 
