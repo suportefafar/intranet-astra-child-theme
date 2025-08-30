@@ -517,7 +517,10 @@ function intranet_fafar_mail_notify( $to, $subject, $message, $headers = null, $
       </body>
     </html>';
 
-	if ( ! is_email( $to ) && wp_get_environment_type() === 'production' ) {
+  $addresses = explode( ',', str_replace( ' ', '', $to ) );
+  $valid_addresses = array_filter( $addresses, fn( $address ) => is_email( $address ) );
+
+	if ( count( $addresses ) !== count( $valid_addresses ) ) {
 		intranet_fafar_logs_register_log(
 			'ERROR',
 			'intranet_fafar_mail_notify',
