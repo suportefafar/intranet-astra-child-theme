@@ -751,19 +751,19 @@ function intranet_fafar_api_get_loans_by_equipament( $id ) {
 }
 
 function intranet_fafar_api_get_service_tickets_handler( $request ) {
-	$offset = $request->get_param( 'offset' ) ? intval( $request->get_param( 'offset' ) ) : 1;
-	$limit = $request->get_param( 'limit' ) ? intval( $request->get_param( 'limit' ) ) : -1;
-	$number = $request->get_param( 'number' ) && is_numeric( $request->get_param( 'number' ) ) ? intval( $request->get_param( 'number' ) ) : null;
-	$status = $request->get_param( 'status' ) ? sanitize_text_field( $request->get_param( 'status' ) ) : null;
+	$offset                  = $request->get_param( 'offset' ) ? intval( $request->get_param( 'offset' ) ) : 1;
+	$limit                   = $request->get_param( 'limit' ) ? intval( $request->get_param( 'limit' ) ) : -1;
+	$number                  = $request->get_param( 'number' ) && is_numeric( $request->get_param( 'number' ) ) ? intval( $request->get_param( 'number' ) ) : null;
+	$status                  = $request->get_param( 'status' ) ? sanitize_text_field( $request->get_param( 'status' ) ) : null;
 	$departament_assigned_to = $request->get_param( 'departament_assigned_to' ) ? sanitize_text_field( $request->get_param( 'departament_assigned_to' ) ) : null;
-	$type = $request->get_param( 'type' ) ? sanitize_text_field( $request->get_param( 'type' ) ) : null;
-	$created_at_from = $request->get_param( 'created_at_from' ) ? sanitize_text_field( $request->get_param( 'created_at_from' ) ) : null;
-	$created_at_until = $request->get_param( 'created_at_until' ) ? sanitize_text_field( $request->get_param( 'created_at_until' ) ) : null;
-	$place = $request->get_param( 'place' ) ? sanitize_text_field( $request->get_param( 'place' ) ) : null;
-	$owner = $request->get_param( 'owner' ) && is_numeric( $request->get_param( 'owner' ) ) ? intval( $request->get_param( 'owner' ) ) : null;
-	$assigned_to = $request->get_param( 'assigned_to' ) && is_numeric( $request->get_param( 'assigned_to' ) ) ? intval( $request->get_param( 'assigned_to' ) ) : null;
-	$user_report = $request->get_param( 'user_report' ) ? sanitize_text_field( $request->get_param( 'user_report' ) ) : null;
-	$service_report = $request->get_param( 'service_report' ) ? sanitize_text_field( $request->get_param( 'service_report' ) ) : null;
+	$type                    = $request->get_param( 'type' ) ? sanitize_text_field( $request->get_param( 'type' ) ) : null;
+	$created_at_from         = $request->get_param( 'created_at_from' ) ? sanitize_text_field( $request->get_param( 'created_at_from' ) ) : null;
+	$created_at_until        = $request->get_param( 'created_at_until' ) ? sanitize_text_field( $request->get_param( 'created_at_until' ) ) : null;
+	$place                   = $request->get_param( 'place' ) ? sanitize_text_field( $request->get_param( 'place' ) ) : null;
+	$owner                   = $request->get_param( 'owner' ) && is_numeric( $request->get_param( 'owner' ) ) ? intval( $request->get_param( 'owner' ) ) : null;
+	$assigned_to             = $request->get_param( 'assigned_to' ) && is_numeric( $request->get_param( 'assigned_to' ) ) ? intval( $request->get_param( 'assigned_to' ) ) : null;
+	$user_report             = $request->get_param( 'user_report' ) ? sanitize_text_field( $request->get_param( 'user_report' ) ) : null;
+	$service_report          = $request->get_param( 'service_report' ) ? sanitize_text_field( $request->get_param( 'service_report' ) ) : null;
 
 
 	$query_params = array(
