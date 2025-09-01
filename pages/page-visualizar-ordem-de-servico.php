@@ -86,7 +86,19 @@ if ( ! empty( $service_ticket ) ) {
 	}
 	// Updates if one or the other
 	if ( $to_update ) {
-		$update_result = intranet_fafar_api_update( $service_ticket['id'], $service_ticket );
+		$service_ticket_to_update = $service_ticket;
+	
+		if( ! empty( $service_ticket['data']['departament_assigned_to']['role_slug'] ) ){
+			$service_ticket_to_update['data']['departament_assigned_to'] = [ $service_ticket['data']['departament_assigned_to']['role_slug'] ];
+		}
+		if( ! empty( $service_ticket['data']['assigned_to']['ID'] ) ){
+			$service_ticket_to_update['data']['assigned_to'] = [ $service_ticket['data']['assigned_to']['ID'] ];
+		}
+		if( ! empty( $service_ticket['data']['place']['id'] ) ){
+			$service_ticket_to_update['data']['place'] = [ $service_ticket['data']['place']['id'] ];
+		}
+		
+		$update_result = intranet_fafar_api_update( $service_ticket_to_update['id'], $service_ticket_to_update );
 	}
 }
 
