@@ -120,15 +120,15 @@ get_header(); ?>
 						if ( ! empty( $classroom['data']['equipaments'] ) ) {
 
 							if ( in_array( 'Computador', $classroom['data']['equipaments'] ) ) {
-								$equipamets_icons[] = '<i class="bi bi-pc-display-horizontal"></i>';
+								$equipamets_icons[] = '<i class="bi bi-pc-display-horizontal" aria-label="Computador" title="Computador"></i>';
 							}
 
 							if ( in_array( 'Projetor', $classroom['data']['equipaments'] ) ) {
-								$equipamets_icons[] = '<i class="bi bi-projector"></i>';
+								$equipamets_icons[] = '<i class="bi bi-projector" aria-label="Projetor" title="Projetor"></i>';
 							}
 
 							if ( in_array( 'Som', $classroom['data']['equipaments'] ) ) {
-								$equipamets_icons[] = '<i class="bi bi-speaker"></i>';
+								$equipamets_icons[] = '<i class="bi bi-speaker" aria-label="Som" title="Som"></i>';
 							}
 
 						}
