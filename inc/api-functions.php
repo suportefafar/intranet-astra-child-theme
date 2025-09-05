@@ -2126,13 +2126,6 @@ function intranet_fafar_api_search_place( $search ) {
 */
 function intranet_fafar_api_create_or_update_reservation( $form_data, $submission_id = null ) {
 
-	// error_log( ' -------------------------> ' );
-	// error_log( ' CREATE E UPDATE RESERVATION ' );
-	// error_log( ' INICIO: ' );
-	// error_log( print_r( $form_data, true ) );
-	// error_log( print_r( $submission_id, true ) );
-	// error_log( ' -------------------------> ' );
-
 	// Verificações iniciais
 
 	if ( empty( $form_data['object_name'] ) || ! is_string( $form_data['object_name'] ) ) {
