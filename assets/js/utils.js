@@ -68,3 +68,39 @@ function getSafeValue(fn, defaultValue) {
     return defaultValue;
   }
 }
+
+function changeRadioInputValueByName(value, name) {
+  const radios = document.getElementsByName(name);
+
+  radios.forEach((radio) => {
+    if (value === radio.value) {
+      radio.checked = true;
+      document.querySelector(`input[name=${name}]`).value = value;
+    } else {
+      radio.checked = false;
+    }
+  });
+}
+
+function changeCheckboxInputValueByName(values_arr, name) {
+  const checkboxes = document.getElementsByName(name);
+
+  checkboxes.forEach((checkbox) => {
+    if (values_arr.includes(checkbox.value)) {
+      checkbox.checked = true;
+    } else {
+      checkbox.checked = false;
+    }
+  });
+}
+
+function getCheckboxesValuesByName(name) {
+  const checkboxes = document.getElementsByName(name);
+
+  let values = [];
+  checkboxes.forEach((checkbox) => {
+    if (checkbox.checked) values.push(checkbox.value);
+  });
+
+  return values;
+}
