@@ -64,10 +64,14 @@ function intranet_fafar_get_users_as_select_options( $encode = true ) {
 		$options[ esc_attr( $user->ID ) ] = esc_html( $user->display_name );
 	}
 
-	if ( ! $encode )
-		return $options;
+	/**
+	 * FAFAR-CF7CRUD plugin is sending array() with 0 element 
+	 * So, unless explicit FALSE...
+	 */
+	if ( $encode !== false ) 
+		return json_encode( $options );
 
-	return json_encode( $options );
+	return $options;
 
 }
 
@@ -157,10 +161,14 @@ function intranet_fafar_get_subjects_as_select_options( $encode = true ) {
 
 	}
 
-	if ( ! $encode )
-		return $options;
-
-	return json_encode( $options );
+	/**
+	 * FAFAR-CF7CRUD plugin is sending array() with 0 element 
+	 * So, unless explicit FALSE...
+	 */
+	if ( $encode !== false ) 
+		return json_encode( $options );
+	
+	return $options;
 
 }
 
