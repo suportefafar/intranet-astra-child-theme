@@ -4,7 +4,7 @@
 /*
  * Adiciona um evento de clique à DOM,
  * e despara se o elemento que recebeu o clique tem
- * a classe 'btn-loan-equipament' ou é filho de um elemento
+ * a classe 'btn-delete-submission' ou é filho de um elemento
  * com essa classe
  */
 document.addEventListener("click", (event) => {
@@ -453,7 +453,7 @@ function actionColFormatter(current) {
       </a>
       <button class="btn btn-outline-danger btn-delete-submission" data-id="${id}" title="Excluir">
         <i class="bi bi-trash"></i>
-      </button> `
+      </button>`
       }
     </div>`;
 
