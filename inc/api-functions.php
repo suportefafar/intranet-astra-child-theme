@@ -2275,6 +2275,14 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 
 	if ( $new_form_data['data']['frequency'][0] === 'weekly' ) {
 
+		// Pre-step weekdays field preparation
+		if (
+			is_string( $new_form_data['data']['weekdays'] ) && 
+			is_numeric( explode( ',', $new_form_data['data']['weekdays'] )[0] )
+		) {
+			$new_form_data['data']['weekdays'] = explode( ',', $new_form_data['data']['weekdays'] );
+		}
+
 		// Validando weekdays
 		if ( empty( $new_form_data['data']['weekdays'][0] ) ) {
 			return array( 'error_msg' => 'Dia(s) de semana não informado(s)!' );
