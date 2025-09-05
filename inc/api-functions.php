@@ -2166,6 +2166,15 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 		return array( 'error_msg' => 'Data, tempo, frequência ou lugar não informado!' );
 	}
 
+	// Pre-step frequency field preparation
+	$frequency_options_arr = [ 'once', 'weekly' ];
+	if (
+		is_string( $new_form_data['data']['frequency'] ) && 
+		in_array( $new_form_data['data']['frequency'], $frequency_options_arr )
+	) {
+		$new_form_data['data']['frequency'] = [ $new_form_data['data']['frequency'] ];
+	}
+
 	if (
 		! is_string( $new_form_data['data']['date'] ) ||
 		! is_string( $new_form_data['data']['start_time'] ) ||
