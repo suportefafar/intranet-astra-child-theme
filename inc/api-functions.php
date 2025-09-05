@@ -2203,13 +2203,11 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 	 * No assistente de reservas, o ID do lugar é passado por parâmetro em URL.
 	 * Isso causa uma treta.... E ai tem que fazer essas coisas: 
 	 */
-	if ( is_string( $new_form_data['data']['place'] ) ) {
-		$decoded = json_decode( stripslashes( $new_form_data['data']['place'] ), true );
-		if ( json_last_error() === JSON_ERROR_NONE ) {
-			$new_form_data['data']['place'] = $decoded;
-		} else {
-			return array( 'error_msg' => 'Erro ao processar local da reserva!' );
-		}
+	if (
+		is_string( $new_form_data['data']['place'] ) && 
+		! empty( $new_form_data['data']['place'] ) 
+	) {
+		$new_form_data['data']['place'] = [ $new_form_data['data']['place'] ];
 	}
 
 	if ( empty( $new_form_data['data']['place'][0] ) )
