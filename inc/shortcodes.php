@@ -48,7 +48,7 @@ function intranet_fafar_get_users_as_select_options_old() {
 
 }
 
-function intranet_fafar_get_users_as_select_options() {
+function intranet_fafar_get_users_as_select_options( $encode = true ) {
 
 	$users = get_users(
 		array(
@@ -63,6 +63,9 @@ function intranet_fafar_get_users_as_select_options() {
 	foreach ( $users as $user ) {
 		$options[ esc_attr( $user->ID ) ] = esc_html( $user->display_name );
 	}
+
+	if ( ! $encode )
+		return $options;
 
 	return json_encode( $options );
 
@@ -134,7 +137,7 @@ function intranet_fafar_get_ips_as_select_options() {
 
 }
 
-function intranet_fafar_get_subjects_as_select_options() {
+function intranet_fafar_get_subjects_as_select_options( $encode = true ) {
 
 	$subjects = intranet_fafar_api_get_submissions_by_object_name( 'class_subject', array(
 		'orderby_json' => 'code',
@@ -153,6 +156,9 @@ function intranet_fafar_get_subjects_as_select_options() {
 		}
 
 	}
+
+	if ( ! $encode )
+		return $options;
 
 	return json_encode( $options );
 
