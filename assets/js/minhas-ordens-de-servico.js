@@ -295,7 +295,10 @@ function actionColFormatter(current) {
   const prevent_write = parseInt(permissions.split("")[0]);
 
   let notify = false;
-  if (notification && notification.owner.has_update === true) {
+  if (
+    notification &&
+    getSafeValue(notification.owner.has_update, false) === true
+  ) {
     notify = true;
   }
 
