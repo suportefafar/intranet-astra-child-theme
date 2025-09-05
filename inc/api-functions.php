@@ -2022,22 +2022,27 @@ function intranet_fafar_api_get_available_place_for_reservation( $pre_reservatio
 
 	// Prepare common reservation data once
 	$common_data = array(
-		'date' => $pre_reservation['date'],
+		'date'       => $pre_reservation['date'],
+		'end_date'   => $pre_reservation['end_date'],
 		'start_time' => $pre_reservation['start_time'],
-		'end_time' => $pre_reservation['end_time'],
-		'frequency' => [ 'once' ],
+		'end_time'   => $pre_reservation['end_time'],
+		'frequency'  => [ $pre_reservation['frequency'] ],
+		'weekdays'   => explode( ',', $pre_reservation['weekdays'] ),
 	);
 
+	$count = 0;
 	$availables = [];
 	foreach ( $filtered_places as $place ) {
+		$percent = ($count++) / count($filtered_places) * 100;
+		error_log('Buscando: ' . $percent . '%');
 		// Create reservation payload
-		$payload = $common_data;
+		$payload          = $common_data;
 		$payload['place'] = [ $place['id'] ];
 
 		// Attempt to create reservation
 		$response = intranet_fafar_api_create_or_update_reservation( array(
 			'object_name' => 'reservation',
-			'data' => json_encode( $payload ),
+			'data'        => json_encode( $payload ),
 		) );
 
 		// Collect available places without errors
