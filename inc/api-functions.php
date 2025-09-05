@@ -2258,7 +2258,11 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 
 	if ( ! empty( $new_form_data['data']['desc'] ) ) {
 		$title = $new_form_data['data']['desc'];
-	} else if ( isset( $new_form_data['data']['class_subject'][0] ) ) {
+	} else if ( ! empty( $new_form_data['data']['class_subject'] ) ) {
+		if ( is_string( $new_form_data['data']['class_subject'] ) ) {
+			$new_form_data['data']['class_subject'] = [ $new_form_data['data']['class_subject'] ];
+		}
+
 		$class_subject = intranet_fafar_api_get_submission_by_id( $new_form_data['data']['class_subject'][0] );
 
 		if ( ! empty( $class_subject ) ) {
