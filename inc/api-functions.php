@@ -2421,6 +2421,12 @@ function intranet_fafar_api_create_or_update_reservation( $form_data, $submissio
 	}
 	
 
+	if (
+		! empty( $new_form_data['data']['applicant'] ) &&
+		is_string( $new_form_data['data']['applicant'] ) 
+	) {
+		$new_form_data['data']['applicant'] = [ $new_form_data['data']['applicant'] ];
+	}
 
 	// Se tudo deu certo, então devolve o objeto para ser inserido pelo plugin 'fafar-cf7crud'
 	$json_data = json_encode( $new_form_data['data'] );
