@@ -173,8 +173,11 @@ get_header(); ?>
 			<input type="hidden" name="place" value="<?= esc_html( $_POST['place'] ) ?>" />
 			<input type="hidden" name="frequency" value="<?= esc_html( $_POST['frequency'] ) ?>" />
 			<?php 
-				$sanitized_weekdays_array = array_map( 'sanitize_text_field', $_POST['weekdays'] );
-				$weekdays_as_str = implode( ',', $sanitized_weekdays_array ); 
+				$weekdays_as_str = '';
+				if ( isset( $_POST['weekdays'] ) ) {
+					$sanitized_weekdays_array = array_map( 'sanitize_text_field', $_POST['weekdays'] );
+					$weekdays_as_str = implode( ',', $sanitized_weekdays_array ); 
+				}
 			?>
 			<input type="hidden" name="weekdays" value="<?= $weekdays_as_str ?>" />
 			<input type="hidden" name="end_date" value="<?= esc_html( $_POST['end_date'] ) ?>" />
