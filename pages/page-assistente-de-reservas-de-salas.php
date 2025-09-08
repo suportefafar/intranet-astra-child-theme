@@ -77,7 +77,7 @@ get_header(); ?>
 			<tbody>
 				<tr>
 					<td>Descrição</td>
-      				<th scope="row"><?= esc_html( $_POST['description'] ) ?></th>
+      				<th scope="row"><?= esc_html( $_POST['desc'] ) ?></th>
 				</tr>
 				<tr>
 					<td>Disciplina</th>
@@ -180,8 +180,8 @@ get_header(); ?>
 			<input type="hidden" name="end_date" value="<?= esc_html( $_POST['end_date'] ) ?>" />
 			
 			<div class="input-group mb-3">
-				<label for="description">Descrição</label>
-				<input type="text" name="description" id="description" />
+				<label for="desc">Descrição</label>
+				<input type="text" name="desc" id="desc" />
 			</div>
 			
 			<?php 
