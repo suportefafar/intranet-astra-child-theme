@@ -166,6 +166,15 @@ function formatterHandler(current) {
 }
 
 /*
+ * O formulário do passo 1 só pode ser submetido(submit) quando
+ * o usuário escolhe uma sala(place). Então....
+ */
+document.querySelector("#form-step-1").addEventListener("submit", (e) => {
+  e.preventDefault();
+  console.log("É necessário que uma sala seja escolhida");
+});
+
+/*
  * Adiciona um evento de clique à DOM,
  * e despara se o elemento que recebeu o clique tem
  * a classe 'btn-select-place' ou é filho de um elemento
