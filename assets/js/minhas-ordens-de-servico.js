@@ -297,7 +297,7 @@ function actionColFormatter(current) {
   let notify = false;
   if (
     notification &&
-    getSafeValue(notification.owner.has_update, false) === true
+    getSafeValue(() => notification.owner.has_update, false) === true
   ) {
     notify = true;
   }
