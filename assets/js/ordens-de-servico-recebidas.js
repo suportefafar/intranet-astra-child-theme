@@ -385,7 +385,10 @@ function actionColFormatter(current) {
   const { id, permissions, notification } = JSON.parse(current);
 
   let notify = false;
-  if (notification && notification.sector.has_auto_update === true) {
+  if (
+    notification &&
+    getSafeValue(() => notification.owner.has_update, false) === true
+  ) {
     notify = true;
   }
 
