@@ -52,11 +52,22 @@ function fafar_intranet_get_status_badge( $status ) {
 	return sprintf( '<span class="badge %s">%s</span>', $type, esc_html( $status ) );
 }
 
-$ID = sanitize_text_field( wp_unslash( $_GET["id"] ) );
+$service_ticket = [];
+if ( isset( $_GET["id"] ) ) {
+	$id = sanitize_text_field( wp_unslash( $_GET["id"] ) );
 
-$service_ticket = intranet_fafar_api_get_service_ticket_by_id( $ID );
+	$service_ticket = intranet_fafar_api_get_service_ticket_by_id( $id );
+} else if ( isset( $_GET["number"] ) ) {
+	$number = sanitize_text_field( wp_unslash( $_GET["number"] ) );
+	
+	$service_ticket = intranet_fafar_api_get_service_ticket_by_number( $number );
+}
 
-$updates = intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $ID );
+if ( empty( $service_ticket ) || isset( $service_ticket['error_msg'] ) ) {
+	echo '<script>alert("Nenhuma OS encontrada!"); window.history.back();</script>';
+}
+
+$updates = intranet_fafar_api_get_service_ticket_updates_by_service_ticket( $service_ticket['id'] );
 
 $user = wp_get_current_user();
 
@@ -99,7 +110,7 @@ if ( ! empty( $service_ticket ) ) {
 
 $prevent_write = isset( $service_ticket['data']['prevent_write'] );
 
-$service_evaluations = intranet_fafar_api_get_service_ticket_evaluation_by_id( $ID );
+$service_evaluations = intranet_fafar_api_get_service_ticket_evaluation_by_id( $service_ticket['id'] );
 
 if ( isset( $updates['error_msg'] ) )
 	$updates = array();
@@ -135,7 +146,7 @@ $service_tickets = intranet_fafar_api_read(
 $previous_ticket_service_url = '#';
 $next_ticket_service_url = '#';
 foreach ( $service_tickets['data'] as $index => $ticket ) {
-	if ( $ticket['id'] === $ID ) {
+	if ( $ticket['id'] === $service_ticket['id'] ) {
 		if ( ! empty( $service_tickets['data'][ $index - 1 ]['id'] ) ) {
 			$previous_ticket_service_url = '/visualizar-ordem-de-servico/?id=' . $service_tickets['data'][ $index - 1 ]['id'];
 		}
@@ -181,12 +192,12 @@ wp_localize_script( 'intranet-fafar-visualizar-ordem-de-servico', 'USER_REPORT',
 
 	<div class="d-flex justify-content-start gap-2 mb-4">
 		<?php if ( ! $prevent_write ) : ?>
-			<a href="/editar-ordem-de-servico/?id=<?= $ID ?>" class="btn btn-outline-primary text-decoration-none w-button"
+			<a href="/editar-ordem-de-servico/?id=<?= $service_ticket['id'] ?>" class="btn btn-outline-primary text-decoration-none w-button"
 				title="Editar">
 				<i class="bi bi-pencil"></i>
 				Editar
 			</a>
-			<a class="btn btn-outline-danger text-decoration-none w-button" id="btn_delete" data-id="<?= $ID ?>"
+			<a class="btn btn-outline-danger text-decoration-none w-button" id="btn_delete" data-id="<?= $service_ticket['id'] ?>"
 				title="Excluir">
 				<i class="bi bi-trash"></i>
 				Excluir

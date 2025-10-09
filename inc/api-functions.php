@@ -1232,6 +1232,72 @@ function intranet_fafar_api_get_service_ticket_by_id( $id ) {
 
 }
 
+function intranet_fafar_api_get_service_ticket_by_number( $number ) {
+
+	if ( empty( $number ) ) {
+		return array( 'error_msg' => 'Nenhum número informado!' );
+	}
+
+	$ticket_number = str_pad( $number, 6, "0", STR_PAD_LEFT );
+
+	$service_ticket = intranet_fafar_api_read(
+            args: array(
+                'filters' => array(
+                    array(
+                        'column'   => 'object_name',
+                        'value'    => 'service_ticket',
+                        'operator' => '=',
+                    ),
+                    array(
+                        'column'   => 'data->number',
+                        'value'    => $ticket_number,
+                        'operator' => '=',
+                    ),
+                ),
+                'single' => true,
+            )
+        );
+
+	if ( isset( $service_ticket['error_msg'] ) )
+		return array( 'error_msg' => $service_ticket['error_msg'] );
+
+	if ( empty( $service_ticket ) )
+		return array( 'error_msg' => 'Nenhuma ordem de serviço encontrada!' );
+
+	/*
+	 * Substituir os campos que tem ID de outro objeto,
+	 * pelo objeto de mesmo ID
+	 */
+	if ( isset( $service_ticket['owner'] ) && is_numeric( $service_ticket['owner'] ) )
+		$service_ticket['owner'] = intranet_fafar_api_get_user_by_id( $service_ticket['owner'] );
+
+	if ( isset( $service_ticket['data']['place'][0] ) )
+		$service_ticket['data']['place'] = intranet_fafar_api_get_submission_by_id( $service_ticket['data']['place'][0] );
+
+	if ( isset( $service_ticket['data']['departament_assigned_to'][0] ) ) {
+
+		// Get the display name of the role
+		$role_slug = $service_ticket['data']['departament_assigned_to'][0];
+
+		$role_display_name = '--';
+
+		if ( isset( wp_roles()->roles[ $role_slug ] ) )
+			$role_display_name = wp_roles()->roles[ $role_slug ]['name'];
+
+		$service_ticket['data']['departament_assigned_to'] = array( 'role_slug' => $role_slug, 'role_display_name' => $role_display_name );
+
+	}
+
+	if ( isset( $service_ticket['data']['assigned_to'] ) ) {
+
+		$service_ticket['data']['assigned_to'] = intranet_fafar_api_get_user_by_id( $service_ticket['data']['assigned_to'] );
+
+	}
+
+	return $service_ticket;
+
+}
+
 function intranet_fafar_api_send_email( $request ) {
 	$request_data = $request->get_json_params();
 
