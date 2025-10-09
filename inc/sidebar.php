@@ -38,14 +38,14 @@ function intranet_fafar_sidebar_profile() {
 }
 
 function intranet_fafar_sidebar_menu() {
-	$user = wp_get_current_user();
-	$role_slug = ( isset( $user->roles[0] ) ? $user->roles[0] : '' );
+	$user              = wp_get_current_user();
+	$role_slug         = ( isset( $user->roles[0] ) ? $user->roles[0] : '' );
 	$role_display_name = '';
-	$menu_name = 'DEFAULT';
+	$menu_name         = 'DEFAULT';
 
-	if ( isset( wp_roles()->roles[ $role_slug ] ) ) {
-		$role_display_name = strtoupper( wp_roles()->roles[ $role_slug ]['name'] );
-		$menu = wp_get_nav_menu_object( $role_display_name );
+	if ( isset( wp_roles()->roles[$role_slug] ) ) {
+		$role_display_name = strtoupper( wp_roles()->roles[$role_slug]['name'] );
+		$menu              = wp_get_nav_menu_object( $role_display_name );
 
 		if ( $menu ) {
 			$menu_name = $role_display_name;
