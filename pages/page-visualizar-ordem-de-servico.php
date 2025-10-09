@@ -12,11 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-if ( ! isset( $_GET["id"] ) ) {
-	echo '<pre> Nenhum ID informado. </pre>';
-	return;
-}
-
 function fafar_intranet_format_date_local( $datetime ) {
 	// Create a DateTime object with the input string, assuming it's in UTC
 	$date = new DateTime( $datetime, new DateTimeZone( 'UTC' ) );
