@@ -8,32 +8,32 @@
  * @since 1.0.0
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
 	exit; // Exit if accessed directly.
 }
 
-$places = intranet_fafar_api_get_submissions_by_object_name( 'place', array( 'orderby_json' => 'number', 'order' => 'ASC' ) );
+$places = intranet_fafar_api_get_submissions_by_object_name('place', array('orderby_json' => 'number', 'order' => 'ASC'));
 
-if ( isset( $places['error_msg'] ) )
+if (isset($places['error_msg']))
 	$places = array();
 
-$reservables = [ "classroom", "living_room", "computer_lab", "multimedia_room" ];
+$reservables = ["classroom", "living_room", "computer_lab", "multimedia_room"];
 
-$classrooms = array_filter( $places, function ($place) use ($reservables) {
+$classrooms = array_filter($places, function ($place) use ($reservables) {
 
-	if ( ! isset( $place['data']['object_sub_type'] ) )
+	if (!isset($place['data']['object_sub_type']))
 		return false;
 
-	return in_array( $place['data']['object_sub_type'], $reservables ) ||
+	return in_array($place['data']['object_sub_type'], $reservables) ||
 		(
-			isset( $place['data']['object_sub_type'][0] ) &&
-			in_array( $place['data']['object_sub_type'][0], $reservables )
+			isset($place['data']['object_sub_type'][0]) &&
+			in_array($place['data']['object_sub_type'][0], $reservables)
 		);
-} );
+});
 
 get_header(); ?>
 
-<?php if ( astra_page_layout() == 'left-sidebar' ) : ?>
+<?php if (astra_page_layout() == 'left-sidebar'): ?>
 
 	<?php get_sidebar(); ?>
 
@@ -76,14 +76,15 @@ get_header(); ?>
 
 		$first = true;
 
-		foreach ( $classrooms as $classroom ) {
+		foreach ($classrooms as $classroom) {
 
 			echo '<li class="nav-item">
-                            <a class="text-decoration-none nav-link ' . ( $first ? ' active' : '' ) . '"' .
-				( $first ? ' aria-current="page"' : '' ) . ' 
+                            <a class="text-decoration-none nav-link ' . ($first ? ' active' : '') . '"' .
+				($first ? ' aria-current="page"' : '') . ' 
                             href="#"  
                             data-classroom-id="' . $classroom['id'] . '" 
-                            data-classroom-number="' . $classroom['data']['number'] . ( $classroom['data']['desc'] ? ' ' . $classroom['data']['desc'] : '' ) . '">' .
+                            data-classroom-number="' . $classroom['data']['number'] . ($classroom['data']['desc'] ? ' ' . $classroom['data']['desc'] : '') . '"
+				            data-classroom-capacity="' . $classroom['data']['capacity'] . '">' .
 				$classroom['data']['number'] .
 				' </a>
                         </li>';
@@ -113,21 +114,21 @@ get_header(); ?>
 					</tr>
 				</thead>
 				<tbody>
-				<?php
-					foreach ( $classrooms as $classroom ) {
+					<?php
+					foreach ($classrooms as $classroom) {
 
 						$equipamets_icons = [];
-						if ( ! empty( $classroom['data']['equipaments'] ) ) {
+						if (!empty($classroom['data']['equipaments'])) {
 
-							if ( in_array( 'Computador', $classroom['data']['equipaments'] ) ) {
+							if (in_array('Computador', $classroom['data']['equipaments'])) {
 								$equipamets_icons[] = '<i class="bi bi-pc-display-horizontal" aria-label="Computador" title="Computador"></i>';
 							}
 
-							if ( in_array( 'Projetor', $classroom['data']['equipaments'] ) ) {
+							if (in_array('Projetor', $classroom['data']['equipaments'])) {
 								$equipamets_icons[] = '<i class="bi bi-projector" aria-label="Projetor" title="Projetor"></i>';
 							}
 
-							if ( in_array( 'Som', $classroom['data']['equipaments'] ) ) {
+							if (in_array('Som', $classroom['data']['equipaments'])) {
 								$equipamets_icons[] = '<i class="bi bi-speaker" aria-label="Som" title="Som"></i>';
 							}
 
@@ -139,11 +140,11 @@ get_header(); ?>
 								<td class="text-center">' . $classroom['data']['block'] . '</td>
 								<td class="text-center">' . $classroom['data']['floor'] . 'º' . '</td>
 								<td class="text-center">' . $classroom['data']['capacity'] . '</td>
-								<td class="text-center">' . implode( ' ', $equipamets_icons ) . '</td>
+								<td class="text-center">' . implode(' ', $equipamets_icons) . '</td>
 							</tr>
 						';
-					}	
-				?>
+					}
+					?>
 				</tbody>
 			</table>
 		</div>
@@ -223,7 +224,7 @@ get_header(); ?>
 				</div>
 				<div class="modal-body">
 					<?php
-					echo do_shortcode( '[contact-form-7 id="3b3fab8" title="Adicionar Reserva"]' );
+					echo do_shortcode('[contact-form-7 id="3b3fab8" title="Adicionar Reserva"]');
 					?>
 				</div>
 			</div>
@@ -242,7 +243,7 @@ get_header(); ?>
 
 </div><!-- #primary -->
 
-<?php if ( astra_page_layout() == 'right-sidebar' ) : ?>
+<?php if (astra_page_layout() == 'right-sidebar'): ?>
 
 	<?php get_sidebar(); ?>
 

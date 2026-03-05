@@ -1,5 +1,5 @@
 let EVENTS = [];
-let CURRENT_CLASSROOM = { id: null, number: null };
+let CURRENT_CLASSROOM = { id: null, number: null, capacity: null };
 
 /*
  * LISTENER'S
@@ -142,10 +142,11 @@ async function fetchCalendarData() {
     const defaultTab = getActiveTab();
     if (defaultTab) {
       // Here, adjust property names as needed. If your active tab uses classroomId/classroomNumber:
-      const { classroomId, classroomNumber } = defaultTab.dataset;
-      if (classroomId && classroomNumber) {
+      const { classroomId, classroomNumber, classroomCapacity } = defaultTab.dataset;
+      if (classroomId && classroomNumber && classroomCapacity) {
         CURRENT_CLASSROOM.id = classroomId;
         CURRENT_CLASSROOM.number = classroomNumber;
+        CURRENT_CLASSROOM.capacity = classroomCapacity;
       } else {
         showAlert(
           "Ocorreu algum erro! Por favor, contate o setor de T.I.",
@@ -178,10 +179,11 @@ function changeActiveTab() {
   const tabs = document.querySelectorAll("#ul_classroom_tabs .nav-link");
 
   tabs.forEach((tab) => {
-    const { classroomId, classroomNumber } = tab.dataset;
+    const { classroomId, classroomNumber, classroomCapacity } = tab.dataset;
     if (classroomId === CURRENT_CLASSROOM.id) {
       tab.classList.add("active");
       CURRENT_CLASSROOM.number = classroomNumber;
+      CURRENT_CLASSROOM.capacity = classroomCapacity
     } else {
       tab.classList.remove("active");
     }
@@ -268,7 +270,7 @@ function dateClickHandler(info) {
   // CURRENT_CLASSROOM.number = classroomNumber;
 
   if (CURRENT_CLASSROOM.number)
-    document.querySelector("#place").value = CURRENT_CLASSROOM.number;
+    document.querySelector("#place").value = CURRENT_CLASSROOM.number + ' [' + CURRENT_CLASSROOM.capacity + ' cap.]';
 
   showAddEventModal();
 }
