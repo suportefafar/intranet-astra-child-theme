@@ -1,6 +1,6 @@
 <?php
 // Prevent direct access to the file.
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
 	exit;
 }
 
@@ -9,23 +9,24 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Shortcodes that returns html for forms, used on 
  * Contact Form 7 - Dynamic Text Extension plugin
  */
-add_shortcode( 'intranet_fafar_get_users_as_select_options', 'intranet_fafar_get_users_as_select_options' );
+add_shortcode('intranet_fafar_get_users_as_select_options', 'intranet_fafar_get_users_as_select_options');
 
-add_shortcode( 'intranet_fafar_get_ips_as_select_options', 'intranet_fafar_get_ips_as_select_options' );
+add_shortcode('intranet_fafar_get_ips_as_select_options', 'intranet_fafar_get_ips_as_select_options');
 
-add_shortcode( 'intranet_fafar_get_user_slug_role', 'intranet_fafar_get_user_slug_role' );
+add_shortcode('intranet_fafar_get_user_slug_role', 'intranet_fafar_get_user_slug_role');
 
-add_shortcode( 'intranet_fafar_get_classrooms_as_select_options', 'intranet_fafar_get_classrooms_as_select_options' );
+add_shortcode('intranet_fafar_get_classrooms_as_select_options', 'intranet_fafar_get_classrooms_as_select_options');
 
-add_shortcode( 'intranet_fafar_get_subjects_as_select_options', 'intranet_fafar_get_subjects_as_select_options' );
+add_shortcode('intranet_fafar_get_subjects_as_select_options', 'intranet_fafar_get_subjects_as_select_options');
 
-add_shortcode( 'intranet_fafar_generate_service_ticket_code', 'intranet_fafar_generate_service_ticket_code' );
+add_shortcode('intranet_fafar_generate_service_ticket_code', 'intranet_fafar_generate_service_ticket_code');
 
-add_shortcode( 'intranet_fafar_get_not_classrooms_as_select_options', 'intranet_fafar_get_not_classrooms_as_select_options' );
+add_shortcode('intranet_fafar_get_not_classrooms_as_select_options', 'intranet_fafar_get_not_classrooms_as_select_options');
 
-add_shortcode( 'intranet_fafar_all_places_as_select_options', 'intranet_fafar_all_places_as_select_options' );
+add_shortcode('intranet_fafar_all_places_as_select_options', 'intranet_fafar_all_places_as_select_options');
 
-function intranet_fafar_get_users_as_select_options_old() {
+function intranet_fafar_get_users_as_select_options_old()
+{
 
 	$users = get_users(
 		array(
@@ -36,7 +37,7 @@ function intranet_fafar_get_users_as_select_options_old() {
 	);
 
 	$options = '<option value=""></option>';
-	foreach ( $users as $user ) {
+	foreach ($users as $user) {
 
 		$options .= '<option value="' . $user->data->ID . '">';
 		$options .= $user->data->display_name;
@@ -48,7 +49,8 @@ function intranet_fafar_get_users_as_select_options_old() {
 
 }
 
-function intranet_fafar_get_users_as_select_options( $encode = true ) {
+function intranet_fafar_get_users_as_select_options($encode = true)
+{
 
 	$users = get_users(
 		array(
@@ -60,68 +62,73 @@ function intranet_fafar_get_users_as_select_options( $encode = true ) {
 
 	$options = array();
 
-	foreach ( $users as $user ) {
-		$options[ esc_attr( $user->ID ) ] = esc_html( $user->display_name );
+	foreach ($users as $user) {
+		$options[esc_attr($user->ID)] = esc_html($user->display_name);
 	}
 
 	/**
 	 * FAFAR-CF7CRUD plugin is sending array() with 0 element 
 	 * So, unless explicit FALSE...
 	 */
-	if ( $encode !== false ) 
-		return json_encode( $options );
+	if ($encode !== false)
+		return json_encode($options);
 
 	return $options;
 
 }
 
-function intranet_fafar_get_ips_as_select_options() {
+function intranet_fafar_get_ips_as_select_options()
+{
 
-	$ips = intranet_fafar_api_get_submissions_by_object_name( 'ip', array(
+	$ips = intranet_fafar_api_get_submissions_by_object_name('ip', array(
 		'orderby_json' => 'address',
 		'inet_aton' => '1',
-	) );
+	));
 
 	// error_log( print_r( $ips, true ) );
 
-	if ( isset( $ips['error_msg'] ) )
+	if (isset($ips['error_msg']))
 		$ips = array();
 
-	$equipaments = intranet_fafar_api_get_submissions_by_object_name( 'equipament' );
+	$equipaments = intranet_fafar_api_get_submissions_by_object_name('equipament');
 
-	if ( isset( $equipaments['error_msg'] ) )
+	if (isset($equipaments['error_msg']))
 		$equipaments = array();
 
 	$current_equipament = null;
-	if ( isset( $_GET['id'] ) ) {
+	if (isset($_GET['id'])) {
 
-		$id = intranet_fafar_api_san( $_GET['id'] );
-		$current_equipament = intranet_fafar_api_get_submission_by_id( $id );
+		$id = intranet_fafar_api_san($_GET['id']);
+		$current_equipament = intranet_fafar_api_get_submission_by_id($id);
 
 	}
 
 	$options = array();
 
-	foreach ( $ips as $ip ) {
+	foreach ($ips as $ip) {
 
 		$is_available = true;
-		foreach ( $equipaments as $equipament ) {
+		foreach ($equipaments as $equipament) {
 
 			/* 
 			 * Isso garante que o IP que está sendo usado pelo 
 			 * equipamento sendo editado, esteja na lista de opções
 			 */
-			if ( $current_equipament &&
-				isset( $current_equipament['data']['ip'][0] ) &&
-				$current_equipament['data']['ip'][0] === $ip['id'] ) {
+			if (
+				$current_equipament &&
+				isset($current_equipament['data']['ip'][0]) &&
+				$current_equipament['data']['ip'][0] === $ip['id']
+			) {
 
 				$is_available = true;
 				continue;
 
 			}
 
-			if ( isset( $equipament['data']['ip'][0] ) &&
-				$equipament['data']['ip'][0] === $ip['id'] ) {
+			if (
+				isset($equipament['data']['ip'][0]) &&
+				$equipament['data']['ip'][0] === $ip['id']
+			) {
 
 				$is_available = false;
 				break;
@@ -130,33 +137,38 @@ function intranet_fafar_get_ips_as_select_options() {
 
 		}
 
-		if ( $is_available )
-			$options[ esc_attr( $ip['id'] ) ] = esc_html( $ip['data']['address'] );
+		if ($is_available)
+			$options[esc_attr($ip['id'])] = esc_html($ip['data']['address']);
 
 	}
 
 	// error_log( print_r( $options, true ) );
 
-	return json_encode( $options );
+	return json_encode($options);
 
 }
 
-function intranet_fafar_get_subjects_as_select_options( $encode = true ) {
+function intranet_fafar_get_subjects_as_select_options($encode = true)
+{
 
-	$subjects = intranet_fafar_api_get_submissions_by_object_name( 'class_subject', array(
+	$subjects = intranet_fafar_api_get_submissions_by_object_name('class_subject', array(
 		'orderby_json' => 'code',
-	) );
+	));
 
 	$options = array();
 
-	if ( isset( $subjects['error_msg'] ) )
-		return json_encode( $options );
+	if (isset($subjects['error_msg']))
+		return json_encode($options);
 
-	foreach ( $subjects as $subject ) {
+	foreach ($subjects as $subject) {
 
-		if ( isset( $subject['data']['code'] ) ) {
-			$options[ esc_attr( $subject['id'] ) ] = esc_html( $subject['data']['code'] ) .
-				' (' . esc_html( $subject['data']['group'] ) . ')';
+		$vacancies = 'n/a';
+		if (isset($subject['data']['number_vacancies_offered']) && !empty($subject['data']['number_vacancies_offered']))
+			$vacancies = $subject['data']['number_vacancies_offered'];
+
+		if (isset($subject['data']['code'])) {
+			$options[esc_attr($subject['id'])] = esc_html($subject['data']['code']) .
+				' (' . esc_html($subject['data']['group']) . ') [' . $vacancies . ' vagas]';
 		}
 
 	}
@@ -165,42 +177,49 @@ function intranet_fafar_get_subjects_as_select_options( $encode = true ) {
 	 * FAFAR-CF7CRUD plugin is sending array() with 0 element 
 	 * So, unless explicit FALSE...
 	 */
-	if ( $encode !== false ) 
-		return json_encode( $options );
-	
+	if ($encode !== false)
+		return json_encode($options);
+
 	return $options;
 
 }
 
-function intranet_fafar_get_classrooms_as_select_options() {
+function intranet_fafar_get_classrooms_as_select_options()
+{
 	$places = intranet_fafar_api_get_reservable_places();
 
 	// error_log(print_r($places, true));
 
 	$options = array();
 
-	foreach ( $places as $place ) {
-		$desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
-		$options[ esc_attr( $place['id'] ) ] = esc_html( $desc );
+	foreach ($places as $place) {
+		$capacity = 'n/a';
+		if (isset($place['data']['capacity']) && !empty($place['data']['capacity']))
+			$capacity = $place['data']['capacity'];
+
+		$desc = $place['data']['number'] . (!empty($place['data']['desc']) ? ' ' . $place['data']['desc'] : '');
+		$options[esc_attr($place['id'])] = esc_html($desc . ' [' . $capacity . ' cap.]');
 	}
 
-	return json_encode( $options );
+	return json_encode($options);
 }
 
-function intranet_fafar_get_not_classrooms_as_select_options() {
+function intranet_fafar_get_not_classrooms_as_select_options()
+{
 	$places = intranet_fafar_api_get_not_reservable_places();
 
 	$options = array();
 
-	foreach ( $places as $place ) {
-		$desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
-		$options[ esc_attr( $place['id'] ) ] = esc_html( $desc );
+	foreach ($places as $place) {
+		$desc = $place['data']['number'] . (!empty($place['data']['desc']) ? ' ' . $place['data']['desc'] : '');
+		$options[esc_attr($place['id'])] = esc_html($desc);
 	}
 
-	return json_encode( $options );
+	return json_encode($options);
 }
 
-function intranet_fafar_all_places_as_select_options() {
+function intranet_fafar_all_places_as_select_options()
+{
 	$places = intranet_fafar_api_get_submissions_by_object_name(
 		'place',
 		array(
@@ -210,20 +229,21 @@ function intranet_fafar_all_places_as_select_options() {
 		false
 	);
 
-	if ( empty( $places ) || empty( $places['data'] ) )
-		return json_encode( [] );
+	if (empty($places) || empty($places['data']))
+		return json_encode([]);
 
 	$options = array();
 
-	foreach ( $places['data'] as $place ) {
-		$desc = $place['data']['number'] . ( ! empty( $place['data']['desc'] ) ? ' ' . $place['data']['desc'] : '' );
-		$options[ esc_attr( $place['id'] ) ] = esc_html( $desc );
+	foreach ($places['data'] as $place) {
+		$desc = $place['data']['number'] . (!empty($place['data']['desc']) ? ' ' . $place['data']['desc'] : '');
+		$options[esc_attr($place['id'])] = esc_html($desc);
 	}
 
-	return json_encode( $options );
+	return json_encode($options);
 }
 
-function intranet_fafar_generate_service_ticket_code() {
+function intranet_fafar_generate_service_ticket_code()
+{
 
 	$number_of_letters = 3;
 	$number_of_digits = 3;
@@ -232,35 +252,36 @@ function intranet_fafar_generate_service_ticket_code() {
 	$new_code = '------';
 	do {
 
-		$new_code = intranet_fafar_generate_code( $number_of_letters, $number_of_digits );
+		$new_code = intranet_fafar_generate_code($number_of_letters, $number_of_digits);
 
 		$query = "SELECT * FROM `SET_TABLE_NAME` WHERE `object_name` = 'service_ticket' AND JSON_CONTAINS(data, '\"" . $new_code . "\"', '$.code')";
 
 		// Obtém todas as ordens de serviços, mesmo que ativas
-		$submissions = intranet_fafar_api_read( $query, false, false );
+		$submissions = intranet_fafar_api_read($query, false, false);
 
-		if ( empty( $submissions ) || isset( $submissions['error_msg'] ) )
+		if (empty($submissions) || isset($submissions['error_msg']))
 			$code_used = false;
 
-	} while ( $code_used );
+	} while ($code_used);
 
 	// Concatenate letters and numbers
 	return $new_code;
 
 }
 
-function intranet_fafar_generate_code( $n_letters, $n_digits ) {
+function intranet_fafar_generate_code($n_letters, $n_digits)
+{
 
 	// Generate three random uppercase letters
 	$letters = '';
-	for ( $i = 0; $i < $n_letters; $i++ ) {
-		$letters .= chr( rand( 65, 90 ) ); // ASCII values for A-Z are 65-90
+	for ($i = 0; $i < $n_letters; $i++) {
+		$letters .= chr(rand(65, 90)); // ASCII values for A-Z are 65-90
 	}
 
 	// Generate three random digits
 	$numbers = '';
-	for ( $i = 0; $i < $n_digits; $i++ ) {
-		$numbers .= rand( 0, 9 );
+	for ($i = 0; $i < $n_digits; $i++) {
+		$numbers .= rand(0, 9);
 	}
 
 	// Concatenate letters and numbers
@@ -268,8 +289,9 @@ function intranet_fafar_generate_code( $n_letters, $n_digits ) {
 
 }
 
-function intranet_fafar_get_user_slug_role() {
+function intranet_fafar_get_user_slug_role()
+{
 
-	return ( isset( wp_get_current_user()->roles[0] ) ? wp_get_current_user()->roles[0] : '' );
+	return (isset(wp_get_current_user()->roles[0]) ? wp_get_current_user()->roles[0] : '');
 
 }
