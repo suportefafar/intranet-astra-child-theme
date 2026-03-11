@@ -73,7 +73,7 @@ async function searchForPlaces() {
 
   const data = getFormDataObj();
 
-  console.log(data);
+  // console.log(data);
 
   if (!data.date || (data.frequency !== "once" && !data.end_date)) {
     showAlert("Por favor, verifique os dados do formulário", "danger");
@@ -86,7 +86,7 @@ async function searchForPlaces() {
       "/wp-json/intranet/v1/submissions/place/available-for-reservation",
       { params: data }
     );
-    console.log(response);
+    // console.log(response);
   } catch (error) {
     console.error(error);
     return;
@@ -212,11 +212,14 @@ function setPlaceAndSubmitForm(event) {
 }
 
 // Handle the display of inputs for weekly events
-const frequencyRadio = document.querySelector("input[name=frequency]");
-frequencyRadio.addEventListener("change", (e) =>
-  frequencyInputHandler(e.target.value)
-);
-frequencyInputHandler(frequencyRadio.value);
+const frequenciesRadios = document.querySelectorAll("input[name=frequency]");
+frequenciesRadios.forEach(radio => {
+  radio.addEventListener("change", (e) => {
+    // console.log(e.target.value);
+    frequencyInputHandler(e.target.value);
+  });
+});
+frequencyInputHandler(frequenciesRadios[0].value);
 
 function frequencyInputHandler(selectedFrequency) {
   const containerWeekdays = document.querySelector("#container-weekdays");
@@ -243,14 +246,19 @@ function urlQueryParamsHandler() {
   const query_params_frequency = searchParams.get("frequency");
   const query_params_class_subject = searchParams.get("subject");
 
-  console.log({
-    query_params_capacity,
-    query_params_start_time,
-    query_params_end_time,
-    query_params_weekdays,
-    query_params_frequency,
-    query_params_class_subject,
-  });
+  // console.log({
+  //   query_params_capacity,
+  //   query_params_start_time,
+  //   query_params_end_time,
+  //   query_params_weekdays,
+  //   query_params_frequency,
+  //   query_params_class_subject,
+  // });
+
+
+  if (query_params_weekdays == null) {
+    return false;
+  }
 
   document.querySelector("input[name=class_subject]").value =
     query_params_class_subject;
@@ -261,6 +269,7 @@ function urlQueryParamsHandler() {
 
   const weekdays_arr = query_params_weekdays.split(",");
   changeCheckboxInputValueByName(weekdays_arr, "weekdays[]");
+
 
   changeRadioInputValueByName(query_params_frequency, "frequency");
 
