@@ -2090,21 +2090,36 @@ function intranet_fafar_api_get_auditorium_reservation_actions($status)
 
 function intranet_fafar_api_get_available_place_for_reservation_handler($request)
 {
-
 	$query_params = $request->get_query_params();
 
-	$submissions = intranet_fafar_api_get_available_place_for_reservation($query_params);
+	// Extract limit_moves if present, default to 3
+	$limit_moves = isset($query_params['limit_moves']) ? intval($query_params['limit_moves']) : 3;
 
-	if (isset($submissions['error_msg'])) {
+	// Call the Dike allocation service
+	$result = dike_allocate_reservation($query_params, $limit_moves);
 
-		return new WP_Error('rest_api_sad', esc_html__($submissions['error_msg'], 'intranet-fafar-api'), (($submissions['http_status']) ?? 400));
-
+	// Handle errors returned as WP_Error
+	if (is_wp_error($result)) {
+		return $result;
 	}
 
-	return rest_ensure_response($submissions);
+	// Double check for legacy error format (error_msg)
+	if (isset($result['error_msg'])) {
+		return new WP_Error(
+			'rest_api_sad',
+			esc_html__($result['error_msg'], 'intranet-fafar-api'),
+			['status' => ($result['http_status'] ?? 400)]
+		);
+	}
 
+	return rest_ensure_response($result);
 }
 
+
+/**
+ *  Depreciado em 07/04/2026, 
+ *  pelo dike_allocate_reservation usando Dike Service API
+ */
 function intranet_fafar_api_get_available_place_for_reservation($pre_reservation)
 {
 	// Validate required parameters using single isset check
@@ -2181,13 +2196,13 @@ function intranet_fafar_api_get_available_place_for_reservation($pre_reservation
  */
 function dike_allocate_reservation($new_reservation, $limit_moves = 3)
 {
-
 	$dike_api_url = 'http://dike:3002/api/allocate';
 
 	if (empty($new_reservation)) {
 		return new WP_Error(
 			'dike_no_reservation_data',
-			'Dados da nova reserva não informados.'
+			'Dados da nova reserva não informados.',
+			['status' => 400]
 		);
 	}
 
@@ -2205,7 +2220,8 @@ function dike_allocate_reservation($new_reservation, $limit_moves = 3)
 	if (empty($places)) {
 		return new WP_Error(
 			'dike_no_places',
-			'Nenhuma sala encontrada para enviar à API Dike.'
+			'Nenhuma sala encontrada para enviar à API Dike.',
+			['status' => 422]
 		);
 	}
 
@@ -2222,26 +2238,41 @@ function dike_allocate_reservation($new_reservation, $limit_moves = 3)
 		$existing_reservations = $existing_reservations_raw['data'];
 	}
 
-	// 3. Montar payload
+	// 3. Coletar disciplinas (subjects)
+	$subjects_raw = intranet_fafar_api_get_submissions_by_object_name(
+		'class_subject',
+		[],
+		['check_permissions' => false],
+		false
+	);
+
+	$subjects = [];
+	if (!empty($subjects_raw) && !empty($subjects_raw['data'])) {
+		$subjects = $subjects_raw['data'];
+	}
+
+	// 4. Montar payload
 	$payload = [
 		'new_reservation' => $new_reservation,
 		'places' => $places,
 		'existing_reservations' => $existing_reservations,
+		'subjects' => $subjects,
 		'limit_moves' => intval($limit_moves),
 	];
 
-	// 4. Enviar requisição POST para a API Dike
+	// 5. Enviar requisição POST para a API Dike
 	$response = wp_remote_post($dike_api_url, [
 		'headers' => ['Content-Type' => 'application/json'],
 		'body' => wp_json_encode($payload),
 		'timeout' => 60,
 	]);
 
-	// 5. Tratar erros de conexão
+	// 6. Tratar erros de conexão
 	if (is_wp_error($response)) {
 		return new WP_Error(
 			'dike_connection_error',
-			'Erro ao conectar com a API Dike: ' . $response->get_error_message()
+			'Erro ao conectar com a API Dike: ' . $response->get_error_message(),
+			['status' => 500]
 		);
 	}
 
@@ -2258,7 +2289,7 @@ function dike_allocate_reservation($new_reservation, $limit_moves = 3)
 		return new WP_Error(
 			'dike_api_error',
 			'API Dike retornou erro: ' . $error_message,
-			['status_code' => $status_code, 'response' => $data]
+			['status' => $status_code, 'response' => $data]
 		);
 	}
 
