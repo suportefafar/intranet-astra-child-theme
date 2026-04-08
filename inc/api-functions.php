@@ -2392,7 +2392,6 @@ function intranet_fafar_api_create_or_update_reservation($form_data, $submission
 		return array('error_msg' => 'Não autorizado!');
 	}
 
-
 	$new_form_data = $form_data;
 	if (is_string($new_form_data['data'])) {
 		$new_form_data['data'] = json_decode($new_form_data['data'], true);
@@ -2500,20 +2499,21 @@ function intranet_fafar_api_create_or_update_reservation($form_data, $submission
 		}
 	}
 
+	// Fetch class_subject if present
+	$class_subject_obj = null;
+	if (!empty($new_form_data['data']['class_subject'])) {
+		if (is_string($new_form_data['data']['class_subject'])) {
+			$new_form_data['data']['class_subject'] = [$new_form_data['data']['class_subject']];
+		}
+		$class_subject_obj = intranet_fafar_api_get_submission_by_id($new_form_data['data']['class_subject'][0]);
+	}
+
 	$title = 'Reserva ' . time();
 
 	if (!empty($new_form_data['data']['desc'])) {
 		$title = $new_form_data['data']['desc'];
-	} else if (!empty($new_form_data['data']['class_subject'])) {
-		if (is_string($new_form_data['data']['class_subject'])) {
-			$new_form_data['data']['class_subject'] = [$new_form_data['data']['class_subject']];
-		}
-
-		$class_subject = intranet_fafar_api_get_submission_by_id($new_form_data['data']['class_subject'][0]);
-
-		if (!empty($class_subject)) {
-			$title = $class_subject['data']['code'] . ' (' . $class_subject['data']['group'] . ')';
-		}
+	} else if (!empty($class_subject_obj)) {
+		$title = ($class_subject_obj['data']['code'] ?? '') . ' (' . ($class_subject_obj['data']['group'] ?? '') . ')';
 	}
 
 	// Setando a prop 'title'
@@ -2617,6 +2617,25 @@ function intranet_fafar_api_create_or_update_reservation($form_data, $submission
 	$new_form_data['data']['rrule'] = $new_rrule;
 
 	$new_form_data['data']['duration'] = $new_duration;
+
+	/*
+	 * Determine the capacity needed (capacity_needed)
+	 * If it has a class_subject, use its number_vacancies_offered.
+	 * Otherwise, use the place's capacity.
+	 */
+	$capacity_needed = 0;
+
+	if (!empty($new_form_data['data']['class_subject'][0])) {
+		$class_subject_obj = intranet_fafar_api_get_submission_by_id($new_form_data['data']['class_subject'][0]);
+		$capacity_needed = $class_subject_obj['data']['number_vacancies_offered'];
+	}
+
+	if ($capacity_needed == null && !empty($new_form_data['data']['place'][0])) {
+		$place = intranet_fafar_api_get_submission_by_id($new_form_data['data']['place'][0]);
+		$capacity_needed = $place['data']['capacity'];
+	}
+
+	$new_form_data['data']['capacity_needed'] = intval($capacity_needed ?? 0);
 
 	/*
 	 * Sim, eu sei... Isso não é necessário. 
