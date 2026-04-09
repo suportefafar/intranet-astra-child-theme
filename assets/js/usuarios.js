@@ -65,9 +65,8 @@ const grid = new gridjs.Grid({
     server: {
       url: (prev, page, limit) => {
         const filters = getCurrentFilters(); // Get current filter values
-        return `${prev}?limit=${limit}&offset=${
-          page * limit
-        }&${new URLSearchParams(filters)}`;
+        return `${prev}?limit=${limit}&offset=${page * limit
+          }&${new URLSearchParams(filters)}`;
       },
     },
     summary: true,
@@ -159,6 +158,13 @@ function nameColFormatter(current) {
     personal_phone,
   } = JSON.parse(current);
 
+  let workplace_place_simple_desc = "";
+  let workplace_place_full_desc = "";
+  if (workplace_place?.data) {
+    workplace_place_simple_desc = `${workplace_place.data.number} <small style="font-size: 12px">Bl. ${workplace_place.data.block}</small>`;
+    workplace_place_full_desc = `Sala ${workplace_place.data.number}, Bloco ${workplace_place.data.block}, Andar ${workplace_place.data.floor}`;
+  }
+
   return gridjs.html(`
     <div class="d-flex gap-2">
       <div>
@@ -180,9 +186,7 @@ function nameColFormatter(current) {
               </div>
               <div>
                 <i class="bi bi-geo-alt"></i>
-                <span>${
-                  workplace_place?.data ? workplace_place.data.number : ""
-                }</span>
+                <span ${workplace_place_full_desc ? `title="${workplace_place_full_desc}"` : ""}>${workplace_place_simple_desc ?? "--"}</span>
               </div>
             </div>
           </div>
@@ -235,15 +239,14 @@ function createdAtColFormatter(current) {
 
   return gridjs.html(`
       <div class="d-flex gap-2">
-      ${
-        user_registered
-          ? `
+      ${user_registered
+      ? `
         <i class="bi bi-calendar-event"></i>
         <span class="fs-6">${new Date(
-          user_registered
-        ).toLocaleDateString()}</span>`
-          : ""
-      }
+        user_registered
+      ).toLocaleDateString()}</span>`
+      : ""
+    }
         <span class="badge ${type}">${bond_status}</span>
       </div>
   `);
@@ -263,13 +266,12 @@ function actionColFormatter(current) {
       <a class="btn btn-outline-secondary" href="/membros/${userLogin}/bp-messages/?bm-fast-start=1&to=${id}" target="_blank" title="Enviar mensagem">
         <i class="bi bi-send"></i>
       </a>
-      ${
-        !prevent_write
-          ? `<a class="btn btn-outline-secondary" href="/wp-admin/user-edit.php?user_id=${id}" target="_blank" title="Editar">
+      ${!prevent_write
+      ? `<a class="btn btn-outline-secondary" href="/wp-admin/user-edit.php?user_id=${id}" target="_blank" title="Editar">
         <i class="bi bi-pencil"></i>
       </a>`
-          : ""
-      }
+      : ""
+    }
     </div>
   `);
 }
@@ -298,6 +300,8 @@ async function exportUsers() {
 
   const response = await getUsers();
   const users = response.results;
+
+  // console.log(users);
 
   if (!Array.isArray(users) || users.length === 0)
     return showAlert("Sem usuários para exportar!", "danger");
