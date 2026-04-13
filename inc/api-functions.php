@@ -2206,16 +2206,10 @@ function dike_allocate_reservation($new_reservation, $limit_moves = 3)
 		);
 	}
 
-	// 1. Coletar salas (places do tipo 'classroom', ordenadas por capacidade)
-	$places_raw = intranet_fafar_api_get_submissions_by_object_name(
-		'place',
-		['orderby_json' => 'capacity', 'order' => 'ASC']
+	// 1. Coletar salas
+	$places = intranet_fafar_api_get_submissions_by_object_name(
+		'place'
 	);
-
-	$places = array_values(array_filter(
-		$places_raw,
-		fn($place) => $place['data']['object_sub_type'][0] === 'classroom'
-	));
 
 	if (empty($places)) {
 		return new WP_Error(
@@ -2238,36 +2232,24 @@ function dike_allocate_reservation($new_reservation, $limit_moves = 3)
 		$existing_reservations = $existing_reservations_raw['data'];
 	}
 
-	// 3. Coletar disciplinas (subjects)
-	$subjects_raw = intranet_fafar_api_get_submissions_by_object_name(
-		'class_subject',
-		[],
-		['check_permissions' => false],
-		false
-	);
-
-	$subjects = [];
-	if (!empty($subjects_raw) && !empty($subjects_raw['data'])) {
-		$subjects = $subjects_raw['data'];
-	}
-
-	// 4. Montar payload
+	// 3. Montar payload
 	$payload = [
 		'new_reservation' => $new_reservation,
 		'places' => $places,
 		'existing_reservations' => $existing_reservations,
-		'subjects' => $subjects,
 		'limit_moves' => intval($limit_moves),
 	];
 
-	// 5. Enviar requisição POST para a API Dike
+	// error_log(print_r($payload['existing_reservations'][0], true));
+
+	// 4. Enviar requisição POST para a API Dike
 	$response = wp_remote_post($dike_api_url, [
 		'headers' => ['Content-Type' => 'application/json'],
 		'body' => wp_json_encode($payload),
 		'timeout' => 60,
 	]);
 
-	// 6. Tratar erros de conexão
+	// 5. Tratar erros de conexão
 	if (is_wp_error($response)) {
 		return new WP_Error(
 			'dike_connection_error',
@@ -2293,7 +2275,35 @@ function dike_allocate_reservation($new_reservation, $limit_moves = 3)
 		);
 	}
 
-	// 7. Retornar resultado
+	// 7. Tratar dados
+	foreach ($data['options'] as $i => $option) {
+		$place = intranet_fafar_api_get_submission_by_id($option['place_id']);
+		$data['options'][$i]['place_number'] = $place['data']['number'];
+		$data['options'][$i]['place_block'] = $place['data']['block'];
+		$data['options'][$i]['place_floor'] = $place['data']['floor'];
+
+		if (count($data['options'][$i]['moves']) > 0) {
+			foreach ($data['options'][$i]['moves'] as $j => $move) {
+				$place = intranet_fafar_api_get_submission_by_id($move['to_place']);
+				$to_place = [
+					'id' => $place['id'],
+					'number' => $place['data']['number'],
+					'block' => $place['data']['block'],
+					'floor' => $place['data']['floor'],
+				];
+				$data['options'][$i]['moves'][$j]['to_place'] = $to_place;
+
+				$reservation = intranet_fafar_api_get_submission_by_id($move['reservation_id']);
+				$data['options'][$i]['moves'][$j]['reservation'] = [
+					'id' => $reservation['id'],
+					'title' => $reservation['data']['title'],
+				];
+				unset($data['options'][$i]['moves'][$j]['reservation_id']);
+			}
+		}
+	}
+
+	// 8. Retornar resultado
 	return $data;
 }
 
