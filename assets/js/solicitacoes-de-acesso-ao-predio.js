@@ -95,7 +95,7 @@ document.addEventListener("click", (event) => {
 
     if (id) {
       renderAccessBuildingRequestDetailsModal(id);
-      showAccessBuildingRequestDetailsModal();
+      showModal("intranetFafarAccessBuildingRequestDetails");
     }
   }
 });
@@ -358,16 +358,15 @@ function lastRegisterUpdateFormatter(current) {
 
   return gridjs.html(`
     <div class="d-flex gap-1 align-items-center">
-      ${
-        last_register
-          ? `<span>
+      ${last_register
+      ? `<span>
         <i class="bi bi-clock"></i>
       </span>
       <span>
         ${last_register}
       </span>`
-          : ""
-      }
+      : ""
+    }
       <span class="badge ${type}">${text}</span>
     </div>
   `);
@@ -384,10 +383,9 @@ function actionColFormatter(current) {
   const html_content = `
     <div class="d-flex gap-2">
       
-      ${
-        prevent_write
-          ? ""
-          : `
+      ${prevent_write
+      ? ""
+      : `
           <button class="btn btn-outline-secondary btn-submission-details" data-id="${id}" title="Detalhes">
             <i class="bi bi-info-lg"></i>
           </button>
@@ -400,7 +398,7 @@ function actionColFormatter(current) {
             <i class="bi bi-building-down"></i>
           </button>
           `
-      }
+    }
     </div>`;
 
   return gridjs.html(html_content);
@@ -486,7 +484,7 @@ async function renderAccessBuildingRequestDetailsModal(id) {
   const response = await getAccessBuildingRequestByID(id);
 
   if (!response) {
-    hideAccessBuildingRequestDetailsModal();
+    hideModal("intranetFafarAccessBuildingRequestDetailsModal");
   }
 
   const access_building_request = response.data;
@@ -542,8 +540,8 @@ async function renderAccessBuildingRequestDetailsModal(id) {
     logs_html += `
     <tr>
       <td class="text-body">${new Date(
-        log["registered_at"] * 1000
-      ).toLocaleString()}</td>
+      log["registered_at"] * 1000
+    ).toLocaleString()}</td>
       <td id="access_building_request_type" class="text-body-emphasis"><span class="badge ${type}">${text}</span></td>
     </tr>`;
   }
@@ -572,22 +570,4 @@ function getLastResgisterUpdate(logs) {
     type_text: "",
     registered_at: 0,
   };
-}
-
-/*
- * Controle do modal de Detalhes
- */
-function showAccessBuildingRequestDetailsModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarAccessBuildingRequestDetailsModal")
-  );
-
-  modal.show();
-}
-
-function hideAccessBuildingRequestDetailsModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarAccessBuildingRequestDetailsModal")
-  );
-  modal.hide();
 }

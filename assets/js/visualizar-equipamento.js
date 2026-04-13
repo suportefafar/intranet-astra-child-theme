@@ -32,7 +32,7 @@ document.querySelector("#btn_loan").addEventListener("click", (event) => {
      * na página de administração
      */
     document.querySelector("#equipament_to_loan").value = id;
-    showLoanOrReturnoEquipamentModal("intranetFafarLoanModal");
+    showModal("intranetFafarLoanModal");
   }
 });
 
@@ -54,7 +54,7 @@ document
        * na página de administração
        */
       document.querySelector("#equipament_to_return").value = id;
-      showLoanOrReturnoEquipamentModal("intranetFafarLoanReturnModal");
+      showModal("intranetFafarLoanReturnModal");
     }
   });
 
@@ -111,22 +111,4 @@ async function deleteSubmission(id) {
 
     showAlert(error_msg, "danger");
   }
-}
-
-/*
- * Controle dos Modal's de Empréstimo e Devolução
- */
-function showLoanOrReturnoEquipamentModal(modal_id) {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById(modal_id)
-  );
-
-  modal.show();
-}
-
-function hideLoanOrReturnoEquipamentModal(modal_id) {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById(modal_id)
-  );
-  modal.hide();
 }

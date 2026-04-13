@@ -104,3 +104,21 @@ function getCheckboxesValuesByName(name) {
 
   return values;
 }
+
+/*
+ * Controle dos Modal's de Empréstimo e Devolução
+ */
+function showModal(modal_id) {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById(modal_id)
+  );
+
+  modal.show();
+}
+
+function hideModal(modal_id) {
+  const modal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById(modal_id)
+  );
+  modal.hide();
+}

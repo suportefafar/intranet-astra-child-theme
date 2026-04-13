@@ -39,7 +39,7 @@ document
   .querySelector("#btn_event_details_delete")
   .addEventListener("click", (event) => {
     const id = event.target.dataset.id;
-    hideEventDetailsModal();
+    hideModal("intranetFafarEventDetailsModal");
     confirmDelete(id);
   });
 
@@ -49,7 +49,7 @@ document
  */
 document.addEventListener("onAddEventSuccess", () => {
   // console.log("Evento disparado!");
-  hideAddEventModal();
+  hideModal("intranetFafarAddEvent");
   fetchCalendarData();
   showAlert("Reserva adicionada com sucesso!", "success", true);
 });
@@ -272,7 +272,7 @@ function dateClickHandler(info) {
   if (CURRENT_CLASSROOM.number)
     document.querySelector("#place").value = CURRENT_CLASSROOM.number + ' [' + CURRENT_CLASSROOM.capacity + ' cap.]';
 
-  showAddEventModal();
+  showModal("intranetFafarAddEvent");
 }
 
 async function viewEvent(info) {
@@ -319,7 +319,7 @@ async function viewEvent(info) {
     document.querySelector("#btn_event_details_delete").style.display = "none";
   }
 
-  showEventDetailsModal();
+  showModal("intranetFafarEventDetailsModal");
 
   // console.log(event);
 }
@@ -375,41 +375,6 @@ async function getEventByID(id) {
     return false;
   }
   return response.data;
-}
-
-/*
- * Controle do modal de Detalhes
- */
-function showEventDetailsModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarEventDetailsModal")
-  );
-
-  modal.show();
-}
-
-function hideEventDetailsModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarEventDetailsModal")
-  );
-
-  modal.hide();
-}
-
-function showAddEventModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarAddEvent")
-  );
-
-  modal.show();
-}
-
-function hideAddEventModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarAddEvent")
-  );
-
-  modal.hide();
 }
 
 function parseToDateInputFormat(date) {

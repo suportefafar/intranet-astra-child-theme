@@ -44,7 +44,7 @@ document.addEventListener("click", (event) => {
   if (loanButton) {
     const id = loanButton.dataset.id;
     document.querySelector("#equipament_to_return").value = id;
-    showLoanOrReturnoEquipamentModal("intranetFafarLoanReturnModal");
+    showModal("intranetFafarLoanReturnModal");
   }
 });
 
@@ -53,7 +53,7 @@ document.addEventListener("click", (event) => {
  * de submit dentro do modal de empréstimo
  */
 document.addEventListener("onLoanSuccess", () => {
-  hideLoanOrReturnoEquipamentModal("intranetFafarLoanModal");
+  hideModal("intranetFafarLoanModal");
   grid.forceRender();
 });
 
@@ -210,9 +210,8 @@ function renderDataOnTable(data) {
     });
 
     // Construct the permissions string
-    const permissions = `${prevent_write ? "1" : "0"}${
-      prevent_exec ? "1" : "0"
-    }`;
+    const permissions = `${prevent_write ? "1" : "0"}${prevent_exec ? "1" : "0"
+      }`;
 
     // Construct the action column data
     const actionColumnData = JSON.stringify({
@@ -249,9 +248,8 @@ function assetColFormatter(current) {
           </span>
         </div>
   
-        ${
-          internal_asset
-            ? `<div>
+        ${internal_asset
+      ? `<div>
           <span class="me-1"><i class="bi bi-upc"></i></span>
           <span class="text-secondary">
             <a href="/visualizar-equipamento/?id=${id}" 
@@ -262,8 +260,8 @@ function assetColFormatter(current) {
             </a>
           </span>
         </div>`
-            : ""
-        }
+      : ""
+    }
       </div>
       `);
 }
@@ -299,9 +297,8 @@ function descColFormatter(current) {
 
   // Override custom_desc for "computador" type
   if (getFirstElement(object_sub_type)?.toLowerCase() === "computador") {
-    custom_desc = `${getFirstElement(cpu_brand)} ${cpu_model ?? "--"} | ${
-      ram_capacity ?? "--"
-    } GB | ${disk_capacity_1 ?? "--"} GB`;
+    custom_desc = `${getFirstElement(cpu_brand)} ${cpu_model ?? "--"} | ${ram_capacity ?? "--"
+      } GB | ${disk_capacity_1 ?? "--"} GB`;
   }
 
   // Get the OS icon based on the OS type
@@ -323,9 +320,8 @@ function descColFormatter(current) {
       </div>
 
       <!-- OS Information -->
-      ${
-        os_type
-          ? `
+      ${os_type
+      ? `
         <div>
           <span class="me-1"><i class="bi ${os_icon}"></i></span>
           <span class="text-secondary">
@@ -333,13 +329,12 @@ function descColFormatter(current) {
           </span>
         </div>
       `
-          : ""
-      }
+      : ""
+    }
 
       <!-- IP Address -->
-      ${
-        ip?.data
-          ? `
+      ${ip?.data
+      ? `
         <div>
           <span class="me-1"><i class="bi bi-hdd-network"></i></span>
           <span class="text-secondary">
@@ -347,13 +342,12 @@ function descColFormatter(current) {
           </span>
         </div>
       `
-          : ""
-      }
+      : ""
+    }
 
       <!-- Description -->
-      ${
-        desc
-          ? `
+      ${desc
+      ? `
         <div>
           <span class="me-1"><i class="bi bi-info"></i></span>
           <span class="text-secondary">
@@ -361,8 +355,8 @@ function descColFormatter(current) {
           </span>
         </div>
       `
-          : ""
-      }
+      : ""
+    }
     </div>
   `;
 
@@ -444,17 +438,16 @@ function actionColFormatter(current) {
       <button class="btn btn-outline-primary btn-loan-return-equipament" data-id="${id}" title="Receber">
         <i class="bi bi-arrow-down"></i>
       </button>
-      ${
-        prevent_write
-          ? ""
-          : `
+      ${prevent_write
+      ? ""
+      : `
       <a class="btn btn-outline-secondary" href="/editar-equipamento/?id=${id}" title="Editar">
         <i class="bi bi-pencil"></i>
       </a>
       <button class="btn btn-outline-danger btn-delete-submission" data-id="${id}" title="Excluir">
         <i class="bi bi-trash"></i>
       </button>`
-      }
+    }
     </div>`;
 
   return gridjs.html(html_content);
@@ -497,22 +490,4 @@ async function deleteSubmission(id) {
 
     showAlert(error_msg, "danger");
   }
-}
-
-/*
- * Controle dos Modal's de Empréstimo e Devolução
- */
-function showLoanOrReturnoEquipamentModal(modal_id) {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById(modal_id)
-  );
-
-  modal.show();
-}
-
-function hideLoanOrReturnoEquipamentModal(modal_id) {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById(modal_id)
-  );
-  modal.hide();
 }

@@ -55,7 +55,7 @@ async function loadHistoryModalComponents(dataset) {
 
   hideAlert();
 
-  showIpHistoryModal();
+  showModal("intranetFafarIpHistory");
 }
 
 async function getIpCheckResults(id) {
@@ -71,24 +71,6 @@ async function getIpCheckResults(id) {
     console.log(error);
     return false;
   }
-}
-
-/*
- * Controle do modal de histórico de IP
- */
-function showIpHistoryModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarIpHistory")
-  );
-
-  modal.show();
-}
-
-function hideIpHistoryModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarIpHistory")
-  );
-  modal.hide();
 }
 
 /**
@@ -234,19 +216,18 @@ function actionColFormatter(current) {
       <a class="btn btn-outline-warning btn-ip-history" title="Histórico" data-id="${id}" data-ip-address="${address}">
         <i class="bi bi-clock-history"></i>
       </a>
-      ${
-        equipament_id
-          ? `<a class="btn btn-outline-primary" href="/visualizar-equipamento/?id=${equipament_id}" target="_blank" title="Acessar equipamento utilizador">
+      ${equipament_id
+      ? `<a class="btn btn-outline-primary" href="/visualizar-equipamento/?id=${equipament_id}" target="_blank" title="Acessar equipamento utilizador">
               <i class="bi bi-pc-horizontal"></i>
             </a>
             <a class="btn btn-outline-success" href="#" title="Liberar">
               <i class="bi bi-toggle-on"></i>
             </a>`
-          : `
+      : `
             <a class="btn btn-outline-secondary" href="#" title="Utilizar">
               <i class="bi bi-toggle-off"></i>
             </a>`
-      }
+    }
       <a class="btn btn-outline-secondary" href="/editar-ip/?id=${id}" target="_blank" title="Editar">
         <i class="bi bi-pencil"></i>
       </a>

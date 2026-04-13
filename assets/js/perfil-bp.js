@@ -11,7 +11,7 @@ document
   .querySelector("#btn-collaborators-list")
   .addEventListener("click", () => {
     loadCollaboratorsTable();
-    showCollaboratorsListModal();
+    showModal("intranetFafarCollaboratorsList");
   });
 
 /**
@@ -39,21 +39,19 @@ async function loadCollaboratorsTable() {
     tr.innerHTML = `
        <tr>
         <td>
-            <a href="/membros/${
-              collaborator.user_login
-            }" target="_blank" title="Mostrar perfil">
+            <a href="/membros/${collaborator.user_login
+      }" target="_blank" title="Mostrar perfil">
                 ${collaborator.display_name}
             </a>
         </td>
         <td>
-        ${
-          labTeamUpdatePermission
-            ? `
+        ${labTeamUpdatePermission
+        ? `
             <a class="btn btn-outline-danger btn-delete-submission" data-id="${collaborator.ID}" title="Excluir">
                 <i class="bi bi-trash"></i>
             </a>`
-            : ``
-        }
+        : ``
+      }
         </td>
       </tr>`;
 
@@ -81,21 +79,6 @@ async function getLaboratoryTeam() {
     console.error("Erro ao adicionar:", error_msg);
     showAlert(error_msg, "danger");
   }
-}
-
-function showCollaboratorsListModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarCollaboratorsList")
-  );
-
-  modal.show();
-}
-
-function hideCollaboratorsListModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarCollaboratorsList")
-  );
-  modal.hide();
 }
 
 /**

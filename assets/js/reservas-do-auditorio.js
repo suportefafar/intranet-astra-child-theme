@@ -121,8 +121,7 @@ async function getEventsByReservationStatus(
 
   try {
     const response = await axios.get(
-      `/wp-json/intranet/v1/submissions/auditorium/reservations?status=${status_param}&${
-        order_by ? "order=" + order_by + "-" + order_how : ""
+      `/wp-json/intranet/v1/submissions/auditorium/reservations?status=${status_param}&${order_by ? "order=" + order_by + "-" + order_how : ""
       }`
     );
 
@@ -387,11 +386,11 @@ function actionColFormatter(current) {
   return gridjs.html(`
     <div class="d-flex gap-2">
       ${actions
-        .map((action) => {
-          const { btnClass, icon, title, func, status } =
-            buttonStyles[action] || {};
-          return btnClass
-            ? `
+      .map((action) => {
+        const { btnClass, icon, title, func, status } =
+          buttonStyles[action] || {};
+        return btnClass
+          ? `
           <a class="btn ${btnClass}" 
              href="#" 
              title="${title}"
@@ -399,9 +398,9 @@ function actionColFormatter(current) {
              data-status="${status}">
             <i class="${icon}"></i>
           </a>`
-            : "";
-        })
-        .join("")}
+          : "";
+      })
+      .join("")}
     </div>
   `);
 }
@@ -566,7 +565,7 @@ async function showDetails(id, status) {
 
   hideAlert();
 
-  showEventDetailsModal();
+  showModal("intranetFafarEventDetailsModal");
 }
 
 async function prepareToShowSetTechnicalModal(id, status) {
@@ -582,7 +581,7 @@ async function prepareToShowSetTechnicalModal(id, status) {
 
   document.querySelector("#reservation_id").value = id;
 
-  showSetTechnicalModal();
+  showModal("intranetFafarSetTechnical");
 
   hideAlert();
 }
@@ -597,7 +596,7 @@ async function setTechnicalHandler() {
   console.log({ technical_id, reservation_id });
 
   if (!technical_id) {
-    hideSetTechnicalModal();
+    hideModal("intranetFafarSetTechnical");
     return;
   }
 
@@ -609,38 +608,5 @@ async function setTechnicalHandler() {
     loadUI();
   }
 
-  hideSetTechnicalModal();
-}
-
-/*
- * Controle dos Modal's de Empréstimo e Devolução
- */
-function showEventDetailsModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarReservationDetails")
-  );
-
-  modal.show();
-}
-
-function hideEventDetailsModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarReservationDetails")
-  );
-  modal.hide();
-}
-
-function showSetTechnicalModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarSetTechnical")
-  );
-
-  modal.show();
-}
-
-function hideSetTechnicalModal() {
-  const modal = bootstrap.Modal.getOrCreateInstance(
-    document.getElementById("intranetFafarSetTechnical")
-  );
-  modal.hide();
+  hideModal("intranetFafarSetTechnical");
 }
