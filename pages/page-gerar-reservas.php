@@ -134,7 +134,8 @@ function dike_generate_reservations()
 
 	$error_while_creating = [];
 	foreach ($data['reservations'] as $reservation) {
-		$result = intranet_fafar_api_create($reservation);
+		// $result = intranet_fafar_api_create($reservation);
+		$result = intranet_fafar_api_create_or_update_reservation($reservation);
 		if (isset($result['error_msg'])) {
 			$error_while_creating[] = $reservation;
 		}
@@ -1328,4 +1329,61 @@ endif ?>
 // 	}
 // }
 
+
+
+
+
+
+
+// $reservations = get_reservations();
+// $class_subjects = get_class_subjects();
+// foreach ($reservations['data'] as $reservation) {
+
+// 	// Definir class_subject pelo reservation['data']['title']
+// 	// No entanto, o título segue o seguinte padrão "CODE (GROUP)"
+// 	// Preciso retirar o CODE e o GROUP e depois comparar ambos
+// 	$reservation_title = $reservation['data']['title'];
+// 	foreach ($class_subjects['data'] as $class_subject) {
+// 		// comparar apenas o código
+// 		if (
+// 			str_contains(strtoupper($reservation_title), strtoupper($class_subject['data']['code'])) &&
+// 			str_contains(strtoupper($reservation_title), strtoupper($class_subject['data']['group']))
+// 		) {
+// 			$reservation['data']['class_subject'] = [$class_subject['id']];
+// 			break;
+// 		}
+// 	}
+
+// 	intranet_fafar_api_update($reservation['id'], $reservation);
+// }
+
+
+
+
+
+// $reservations = get_reservations();
+// foreach ($reservations['data'] as $reservation) {
+
+// 	$capacity_needed = 0;
+// 	if (!empty($reservation['data']['class_subject'][0])) {
+// 		$class_subject_obj = intranet_fafar_api_get_submission_by_id($reservation['data']['class_subject'][0]);
+// 		$capacity_needed = $class_subject_obj['data']['number_vacancies_offered'];
+// 		//print_r($class_subject_obj);
+// 	}
+
+// 	if ($capacity_needed == null && !empty($reservation['data']['place'][0])) {
+// 		$place = intranet_fafar_api_get_submission_by_id($reservation['data']['place'][0]);
+// 		$capacity_needed = $place['data']['capacity'];
+// 		// print_r($place);
+// 	}
+
+// 	// if ($capacity_needed == null) {
+// 	// 	print_r($reservation);
+// 	// 	echo "<br>";
+// 	// }
+
+// 	$reservation['data']['capacity_needed'] = intval($capacity_needed ?? 0);
+
+// 	intranet_fafar_api_update($reservation['id'], $reservation);
+// }
 ?>
