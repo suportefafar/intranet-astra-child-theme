@@ -329,9 +329,16 @@ get_header(); ?>
 				<input type="date" class="form-control" name="end_date" id="end_date" />
 			</div>
 			<div class="form-group mb-3">
-				<label for="capacity">* Capacidade </label>
-				<input type="number" class="form-control" id="capacity" name="capacity" min="1" max="200" placeholder="20"
+				<label for="capacity_needed">* Capacidade </label>
+				<input type="number" class="form-control" id="capacity_needed" name="capacity_needed" min="1" max="200"
+					placeholder="20" aria-required="true" required />
+			</div>
+			<div class="form-group mb-3">
+				<label for="limit_moves">* Número de Movimentações de Alocações </label>
+				<input type="number" class="form-control" id="limit_moves" name="limit_moves" min="0" max="5" value="0"
 					aria-required="true" required />
+				<div class="form-text" id="limit_moves_help">Número encadeamento de realocações para reservar a sala. Max.:
+					5.</div>
 			</div>
 		</form>
 
@@ -343,6 +350,30 @@ get_header(); ?>
 		<!-- TABLES -->
 
 		<div id="table-wrapper" class="my-5 d-none"></div>
+
+		<!-- MODAL -->
+
+		<div class="modal" tabindex="-1" id="suggestionPlaceModal">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Sugestões de Realocações</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>
+							Para viabilizar a sua nova reserva, o sistema identificou que será necessário realizar a
+							realocação das seguintes reservas existentes:<br />
+						</p>
+						<p id="suggestion-place-modal-text"></p>
+						<p>
+							Essas alterações garantem que o espaço necessário para a sua solicitação seja liberado sem
+							cancelar os compromissos já agendados.<br />
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
 
 	<?php endif; ?>
 

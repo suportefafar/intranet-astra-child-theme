@@ -73,6 +73,11 @@ async function searchForPlaces() {
 
   const data = getFormDataObj();
 
+  if (data.limit_moves < 0 || data.limit_moves > 5) {
+    showAlert("O Número de Movimentações de Alocações deve ser entre 0 e 5", "danger");
+    return false;
+  }
+
   // console.log(data);
 
   if (!data.date || (data.frequency !== "once" && !data.end_date)) {
@@ -86,25 +91,45 @@ async function searchForPlaces() {
       "/wp-json/intranet/v1/submissions/place/available-for-reservation",
       { params: data }
     );
-    // console.log(response);
+    console.log(response);
   } catch (error) {
     console.error(error);
     return;
   }
 
-  const raw_salas = response.data;
+  // {
+  // 	"moves": [
+  // 		{
+  // 			"reservation_id": "1772118813d7c5dfc487",
+  // 			"to_place": "1740679514383ee252df"
+  // 		}
+  // 	],
+  // 	"moves_count": 1,
+  // 	"place_capacity": 40,
+  // 	"place_id": "17406795150b09a05071",
+  // 	"place_number": "3060",
+  // 	"solver_status": "OPTIMAL"
+  // },
+
+  const raw_salas = response.data.options;
+  const total_options = response.data.total_options;
+
+  if (total_options === 0) {
+    hideAlert();
+    showAlert("Nenhuma sala encontrada.", "danger", true);
+    return false;
+  }
 
   const salas = [];
 
   for (const sala of raw_salas) {
-    const { id, data } = sala;
-    const { number, block, floor, capacity, desc } = data;
+    const { place_id, place_number, place_capacity, place_block, place_floor, moves_count, moves } = sala;
 
-    const descPlaceCol = JSON.stringify({ id, number, block, floor, desc });
+    const descPlaceCol = JSON.stringify({ place_id, place_number, place_block, place_floor });
 
-    const actionCol = JSON.stringify({ id, number });
+    const actionCol = JSON.stringify({ place_id, place_number, moves_count, moves });
 
-    salas.push([descPlaceCol, capacity, actionCol]);
+    salas.push([descPlaceCol, place_capacity, actionCol]);
   }
 
   document.getElementById("table-wrapper").classList.remove("d-none");
@@ -117,26 +142,24 @@ async function searchForPlaces() {
     .forceRender();
 
   hideAlert();
-
-  if (salas.length === 0) showAlert("Nenhuma sala encontrada.", "danger", true);
 }
 
 function descPlaceFormatter(current) {
-  const { number, block, floor, desc } = JSON.parse(current);
+  const { place_number, place_block, place_floor } = JSON.parse(current);
 
   return gridjs.html(`
-    ${number}${desc ? " " + desc + " " : ""}(Bloco: ${block} / Andar: ${floor}º)
+    ${place_number}, Bloco: ${place_block}, Andar: ${place_floor}
   `);
 }
 
 function formatterHandler(current) {
-  const { id, number } = JSON.parse(current);
+  const { place_id, place_number, moves_count, moves } = JSON.parse(current);
 
   const data = getFormDataObj();
 
   const queryParams = new URLSearchParams(data);
 
-  queryParams.append("place", JSON.stringify([id]));
+  queryParams.append("place", JSON.stringify([place_id]));
 
   const class_subject = document.querySelector(
     "input[name=class_subject]"
@@ -144,23 +167,31 @@ function formatterHandler(current) {
 
   queryParams.append("class_subject", class_subject);
 
-  const queryString = queryParams.toString();
-
-  // const html_content = `
-  // <div class="d-flex gap-2">
-  //   <a class="btn btn-outline-primary" href="/assistente-de-reservas-de-salas/?${queryString}" onclick title="Reserva na ${number}">
-  //     <i class="bi bi-calendar-week"></i>
-  //   </a>
-  // </div>
-  //     `;
-
-  const html_content = `
+  let html_content = `
   <div class="d-flex gap-2">
-    <button class="btn btn-outline-primary btn-select-place" data-place-id=${id} title="Reserva na ${number}">
+    <button class="btn btn-outline-primary btn-select-place" data-place-id=${place_id} title="Reserva na ${place_number}">
       <i class="bi bi-calendar-week"></i>
     </button>
   </div>  
       `;
+
+  if (moves_count > 0) {
+    const places_numbers = moves.map((move) => move.to_place.number).join(",");
+    const places_blocks = moves.map((move) => move.to_place.block).join(",");
+    const places_floors = moves.map((move) => move.to_place.floor).join(",");
+    const places_ids = moves.map((move) => move.to_place.id).join(",");
+
+    const reservations_ids = moves.map((move) => move.reservation.id).join(",");
+    const reservations_titles = moves.map((move) => move.reservation.title).join(",");
+
+    html_content = `
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary btn-select-suggestion-place" data-places="${places_numbers}" data-places-blocks="${places_blocks}" data-places-floors="${places_floors}" data-places-ids="${places_ids}" data-reservations-ids="${reservations_ids}" data-reservations-titles="${reservations_titles}" title="Sugestões de alocação na ${place_number}">
+            <i class="bi bi-person-raised-hand"></i>
+          </button>
+        </div>
+        `;
+  }
 
   return gridjs.html(html_content);
 }
@@ -211,6 +242,48 @@ function setPlaceAndSubmitForm(event) {
   form.submit();
 }
 
+/*
+ * Adiciona um evento de clique à DOM,
+ * e despara se o elemento que recebeu o clique tem
+ * a classe 'btn-select-suggestion-place' ou é filho de um elemento
+ * com essa classe
+ */
+document.addEventListener("click", setSuggestionPlaceAndSubmitForm);
+
+function setSuggestionPlaceAndSubmitForm(event) {
+  const btn_select_suggestion_place = event.target.closest(".btn-select-suggestion-place");
+
+  if (!btn_select_suggestion_place) {
+    return false;
+  }
+
+  const places_numbers = btn_select_suggestion_place.dataset.places.split(',');
+  const places_blocks = btn_select_suggestion_place.dataset.placesBlocks.split(',');
+  const places_floors = btn_select_suggestion_place.dataset.placesFloors.split(',');
+  const places_ids = btn_select_suggestion_place.dataset.placesIds.split(',');
+
+  const reservations_ids = btn_select_suggestion_place.dataset.reservationsIds.split(',');
+  const reservations_titles = btn_select_suggestion_place.dataset.reservationsTitles.split(',');
+
+  console.log(places_numbers);
+  console.log(places_ids);
+  console.log(reservations_ids);
+  console.log(reservations_titles);
+
+  let moves_list = '<ul>';
+  for (let i = 0; i < places_numbers.length; i++) {
+    moves_list += `
+    <li>Reserva "<a href="/visualizar-reserva/?id=${reservations_ids[i]}" target="_blank" title="Detalhes da ${reservations_titles[i]}">${reservations_titles[i]}</a>": Deve ser movida para a Sala <a href="/visualizar-sala/?id=${places_ids[i]}" target="_blank" title="Detalhes da ${places_numbers[i]}">${places_numbers[i]}</a>, localizada no Bloco ${places_blocks[i]}, Andar ${places_floors[i]}.</li>
+    `;
+  }
+  moves_list += '</ul>';
+
+  const suggestion_place_modal_text = document.querySelector("#suggestion-place-modal-text");
+  suggestion_place_modal_text.innerHTML = moves_list;
+
+  showModal("suggestionPlaceModal");
+}
+
 // Handle the display of inputs for weekly events
 const frequenciesRadios = document.querySelectorAll("input[name=frequency]");
 frequenciesRadios.forEach(radio => {
@@ -239,7 +312,7 @@ function urlQueryParamsHandler() {
   const paramsString = window.location.search;
   const searchParams = new URLSearchParams(paramsString);
 
-  const query_params_capacity = searchParams.get("capacity");
+  const query_params_capacity_needed = searchParams.get("capacity_needed");
   const query_params_start_time = searchParams.get("start_time");
   const query_params_end_time = searchParams.get("end_time");
   const query_params_weekdays = searchParams.get("weekdays");
@@ -247,7 +320,7 @@ function urlQueryParamsHandler() {
   const query_params_class_subject = searchParams.get("subject");
 
   // console.log({
-  //   query_params_capacity,
+  //   query_params_capacity_needed,
   //   query_params_start_time,
   //   query_params_end_time,
   //   query_params_weekdays,
@@ -265,7 +338,7 @@ function urlQueryParamsHandler() {
   document.querySelector("input[name=start_time]").value =
     query_params_start_time;
   document.querySelector("input[name=end_time]").value = query_params_end_time;
-  document.querySelector("input[name=capacity]").value = query_params_capacity;
+  document.querySelector("input[name=capacity_needed]").value = query_params_capacity_needed;
 
   const weekdays_arr = query_params_weekdays.split(",");
   changeCheckboxInputValueByName(weekdays_arr, "weekdays[]");
