@@ -2279,6 +2279,7 @@ function dike_allocate_reservation($new_reservation, $limit_moves = 3)
 	foreach ($data['options'] as $i => $option) {
 		$place = intranet_fafar_api_get_submission_by_id($option['place_id']);
 		$data['options'][$i]['place_number'] = $place['data']['number'];
+		$data['options'][$i]['place_desc'] = $place['data']['desc'] ?? '';
 		$data['options'][$i]['place_block'] = $place['data']['block'];
 		$data['options'][$i]['place_floor'] = $place['data']['floor'];
 
@@ -2288,6 +2289,7 @@ function dike_allocate_reservation($new_reservation, $limit_moves = 3)
 				$to_place = [
 					'id' => $place['id'],
 					'number' => $place['data']['number'],
+					'desc' => $place['data']['desc'] ?? '',
 					'block' => $place['data']['block'],
 					'floor' => $place['data']['floor'],
 				];

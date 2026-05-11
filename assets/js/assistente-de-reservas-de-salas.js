@@ -123,11 +123,11 @@ async function searchForPlaces() {
   const salas = [];
 
   for (const sala of raw_salas) {
-    const { place_id, place_number, place_capacity, place_block, place_floor, moves_count, moves } = sala;
+    const { place_id, place_number, place_desc, place_capacity, place_block, place_floor, moves_count, moves } = sala;
 
-    const descPlaceCol = JSON.stringify({ place_id, place_number, place_block, place_floor });
+    const descPlaceCol = JSON.stringify({ place_id, place_number, place_desc, place_block, place_floor });
 
-    const actionCol = JSON.stringify({ place_id, place_number, moves_count, moves });
+    const actionCol = JSON.stringify({ place_id, place_number, place_desc, moves_count, moves });
 
     salas.push([descPlaceCol, place_capacity, actionCol]);
   }
@@ -145,15 +145,18 @@ async function searchForPlaces() {
 }
 
 function descPlaceFormatter(current) {
-  const { place_number, place_block, place_floor } = JSON.parse(current);
+  const { place_number, place_desc, place_block, place_floor } = JSON.parse(current);
+
+  const place_display = (place_desc && place_desc.trim() !== '') ? `${place_number} (${place_desc})` : place_number;
 
   return gridjs.html(`
-    ${place_number}, Bloco: ${place_block}, Andar: ${place_floor}
+    ${place_display}, Bloco: ${place_block}, Andar: ${place_floor}
   `);
 }
 
 function formatterHandler(current) {
-  const { place_id, place_number, moves_count, moves } = JSON.parse(current);
+  const { place_id, place_number, place_desc, moves_count, moves } = JSON.parse(current);
+  const place_display = (place_desc && place_desc.trim() !== '') ? `${place_number} (${place_desc})` : place_number;
 
   const data = getFormDataObj();
 
@@ -169,14 +172,14 @@ function formatterHandler(current) {
 
   let html_content = `
   <div class="d-flex gap-2">
-    <button class="btn btn-outline-primary btn-select-place" data-place-id=${place_id} title="Reserva na ${place_number}">
+    <button class="btn btn-outline-primary btn-select-place" data-place-id=${place_id} title="Reserva na ${place_display}">
       <i class="bi bi-calendar-week"></i>
     </button>
   </div>  
       `;
 
   if (moves_count > 0) {
-    const places_numbers = moves.map((move) => move.to_place.number).join(",");
+    const places_numbers = moves.map((move) => (move.to_place.desc && move.to_place.desc.trim() !== '') ? `${move.to_place.number} (${move.to_place.desc})` : move.to_place.number).join(",");
     const places_blocks = moves.map((move) => move.to_place.block).join(",");
     const places_floors = moves.map((move) => move.to_place.floor).join(",");
     const places_ids = moves.map((move) => move.to_place.id).join(",");
@@ -186,7 +189,7 @@ function formatterHandler(current) {
 
     html_content = `
         <div class="d-flex gap-2">
-          <button class="btn btn-outline-primary btn-select-suggestion-place" data-places="${places_numbers}" data-places-blocks="${places_blocks}" data-places-floors="${places_floors}" data-places-ids="${places_ids}" data-reservations-ids="${reservations_ids}" data-reservations-titles="${reservations_titles}" title="Sugestões de alocação na ${place_number}">
+          <button class="btn btn-outline-primary btn-select-suggestion-place" data-places="${places_numbers}" data-places-blocks="${places_blocks}" data-places-floors="${places_floors}" data-places-ids="${places_ids}" data-reservations-ids="${reservations_ids}" data-reservations-titles="${reservations_titles}" title="Sugestões de alocação na ${place_display}">
             <i class="bi bi-person-raised-hand"></i>
           </button>
         </div>

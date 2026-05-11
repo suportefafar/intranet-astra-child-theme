@@ -144,7 +144,7 @@ get_header(); ?>
 
 					$place_display = '';
 					if (!empty($place)) {
-						$place_display = $place['data']['number'];
+						$place_display = !empty($place['data']['desc']) ? $place['data']['number'] . ' (' . $place['data']['desc'] . ')' : $place['data']['number'];
 					}
 					?>
 					<th scope="row"><?= $place_display ?></th>
