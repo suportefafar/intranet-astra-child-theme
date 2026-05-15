@@ -52,6 +52,8 @@ require_once get_stylesheet_directory() . '/inc/template-tags.php';
 
 require_once get_stylesheet_directory() . '/inc/mail.php';
 
+require_once get_stylesheet_directory() . '/inc/hooks.php';
+
 if ( wp_get_environment_type() === 'production' ) {
 	require_once get_stylesheet_directory() . '/inc/logs-hooks.php';
 }
